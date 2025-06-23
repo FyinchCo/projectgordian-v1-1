@@ -1,9 +1,11 @@
+
 import { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { QuestionInput } from "@/components/QuestionInput";
 import { ProcessingSection } from "@/components/ProcessingSection";
 import { ResultsSection } from "@/components/ResultsSection";
 import { EnhancedProcessingControls } from "@/components/EnhancedProcessingControls";
+import { QuestionAssessment } from "@/components/QuestionAssessment";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
