@@ -7,6 +7,8 @@ import { Settings, Play, Brain, Zap } from "lucide-react";
 import { Link } from "react-router-dom";
 import { ProcessingDisplay } from "@/components/ProcessingDisplay";
 import { ResultsDisplay } from "@/components/ResultsDisplay";
+import { ProcessingControls } from "@/components/ProcessingControls";
+import { ExportModal } from "@/components/ExportModal";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -14,7 +16,11 @@ const Index = () => {
   const [question, setQuestion] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentArchetype, setCurrentArchetype] = useState("");
+  const [currentLayer, setCurrentLayer] = useState(1);
   const [results, setResults] = useState(null);
+  const [processingDepth, setProcessingDepth] = useState([1]);
+  const [circuitType, setCircuitType] = useState("sequential");
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const { toast } = useToast();
 
   const handleStartGenius = async () => {
@@ -22,23 +28,36 @@ const Index = () => {
     
     setIsProcessing(true);
     setResults(null);
+    setCurrentLayer(1);
     
     try {
-      // Show the processing animation for each archetype
       const archetypes = ["The Visionary", "The Skeptic", "The Mystic", "The Contrarian", "The Craftsman"];
+      const totalSteps = processingDepth[0] * archetypes.length + processingDepth[0]; // agents + synthesis per layer
+      let currentStep = 0;
       
       // Start the actual AI processing
       const processingPromise = supabase.functions.invoke('genius-machine', {
-        body: { question }
+        body: { 
+          question,
+          processingDepth: processingDepth[0],
+          circuitType
+        }
       });
       
       // Show visual progress while AI is working
-      for (let i = 0; i < archetypes.length; i++) {
-        setCurrentArchetype(archetypes[i]);
-        await new Promise(resolve => setTimeout(resolve, 1500));
+      for (let layer = 1; layer <= processingDepth[0]; layer++) {
+        setCurrentLayer(layer);
+        
+        for (let i = 0; i < archetypes.length; i++) {
+          setCurrentArchetype(archetypes[i]);
+          currentStep++;
+          await new Promise(resolve => setTimeout(resolve, Math.max(800, 2000 / totalSteps)));
+        }
+        
+        setCurrentArchetype("Compression Agent");
+        currentStep++;
+        await new Promise(resolve => setTimeout(resolve, Math.max(1000, 2000 / totalSteps)));
       }
-      
-      setCurrentArchetype("Compression Agent");
       
       // Wait for the AI processing to complete
       const { data, error } = await processingPromise;
@@ -59,7 +78,12 @@ const Index = () => {
     } finally {
       setIsProcessing(false);
       setCurrentArchetype("");
+      setCurrentLayer(1);
     }
+  };
+
+  const handleExportInsight = () => {
+    setIsExportModalOpen(true);
   };
 
   return (
@@ -125,19 +149,27 @@ const Index = () => {
               </div>
             </Card>
 
+            {/* Processing Controls */}
+            <ProcessingControls
+              processingDepth={processingDepth}
+              onProcessingDepthChange={setProcessingDepth}
+              circuitType={circuitType}
+              onCircuitTypeChange={setCircuitType}
+            />
+
             {/* Info Section */}
             <div className="grid md:grid-cols-3 gap-6 mt-12">
               <Card className="p-6 text-center">
-                <h3 className="font-bold mb-2">MULTI-AGENT</h3>
-                <p className="text-sm text-gray-600">5 archetypal perspectives analyze your question</p>
+                <h3 className="font-bold mb-2">MULTI-LAYER</h3>
+                <p className="text-sm text-gray-600">Iterative processing with configurable depth</p>
               </Card>
               <Card className="p-6 text-center">
-                <h3 className="font-bold mb-2">TENSION DETECTION</h3>
-                <p className="text-sm text-gray-600">Identifies contradictions and breakthrough moments</p>
+                <h3 className="font-bold mb-2">CIRCUIT TYPES</h3>
+                <p className="text-sm text-gray-600">Sequential, parallel, and hybrid processing modes</p>
               </Card>
               <Card className="p-6 text-center">
-                <h3 className="font-bold mb-2">INSIGHT COMPRESSION</h3>
-                <p className="text-sm text-gray-600">Distills complex analysis into actionable wisdom</p>
+                <h3 className="font-bold mb-2">EXPORT READY</h3>
+                <p className="text-sm text-gray-600">Download insights in multiple formats</p>
               </Card>
             </div>
           </div>
@@ -147,6 +179,9 @@ const Index = () => {
           <ProcessingDisplay 
             currentArchetype={currentArchetype}
             question={question}
+            currentLayer={currentLayer}
+            totalLayers={processingDepth[0]}
+            circuitType={circuitType}
           />
         )}
 
@@ -158,8 +193,16 @@ const Index = () => {
               setResults(null);
               setQuestion("");
             }}
+            onExport={handleExportInsight}
           />
         )}
+
+        <ExportModal
+          isOpen={isExportModalOpen}
+          onClose={() => setIsExportModalOpen(false)}
+          results={results}
+          question={question}
+        />
       </main>
     </div>
   );

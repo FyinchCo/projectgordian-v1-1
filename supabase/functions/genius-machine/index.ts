@@ -32,7 +32,18 @@ const archetypes = [
   }
 ];
 
-async function getArchetypeResponse(archetype: any, question: string): Promise<string> {
+async function getArchetypeResponse(archetype: any, question: string, previousLayer?: any[], layerNumber?: number): Promise<string> {
+  let contextPrompt = `${archetype.systemPrompt}\n\nProvide a focused 2-3 sentence perspective on the question. Be specific and insightful from your archetypal viewpoint.`;
+  
+  if (previousLayer && layerNumber && layerNumber > 1) {
+    const previousInsights = previousLayer.map(layer => 
+      `Layer ${layer.layerNumber}: ${layer.insight}\n` +
+      layer.archetypeResponses.map(r => `${r.archetype}: ${r.contribution}`).join('\n')
+    ).join('\n\n');
+    
+    contextPrompt += `\n\nPrevious analysis layers:\n${previousInsights}\n\nBuild upon these insights while maintaining your archetypal perspective.`;
+  }
+
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -42,13 +53,10 @@ async function getArchetypeResponse(archetype: any, question: string): Promise<s
     body: JSON.stringify({
       model: 'gpt-4o-mini',
       messages: [
-        { 
-          role: 'system', 
-          content: `${archetype.systemPrompt}\n\nProvide a focused 2-3 sentence perspective on the question. Be specific and insightful from your archetypal viewpoint.`
-        },
+        { role: 'system', content: contextPrompt },
         { role: 'user', content: question }
       ],
-      max_tokens: 200,
+      max_tokens: 250,
       temperature: 0.8,
     }),
   });
@@ -57,21 +65,10 @@ async function getArchetypeResponse(archetype: any, question: string): Promise<s
   return data.choices[0].message.content;
 }
 
-async function synthesizeInsight(question: string, archetypeResponses: Array<{archetype: string, contribution: string}>): Promise<{insight: string, confidence: number, tensionPoints: number}> {
+async function synthesizeInsight(question: string, archetypeResponses: Array<{archetype: string, contribution: string}>, previousLayers?: any[], layerNumber?: number): Promise<{insight: string, confidence: number, tensionPoints: number}> {
   const allResponses = archetypeResponses.map(r => `${r.archetype}: ${r.contribution}`).join('\n\n');
   
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${openAIApiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      messages: [
-        { 
-          role: 'system', 
-          content: `You are the Compression Agent. Your role is to synthesize insights from multiple archetypal perspectives into a single breakthrough insight.
+  let systemPrompt = `You are the Compression Agent. Your role is to synthesize insights from multiple archetypal perspectives into a single breakthrough insight.
 
 Analyze the different viewpoints and identify:
 1. Points of tension or contradiction between perspectives
@@ -83,11 +80,29 @@ Respond with a JSON object containing:
 - confidence: A decimal between 0 and 1 representing synthesis confidence
 - tensionPoints: An integer representing the number of significant tensions detected
 
-Focus on finding the breakthrough moment where contradictions resolve into wisdom.`
-        },
+Focus on finding the breakthrough moment where contradictions resolve into wisdom.`;
+
+  if (previousLayers && layerNumber && layerNumber > 1) {
+    const layerContext = previousLayers.map(layer => 
+      `Layer ${layer.layerNumber}: ${layer.insight}`
+    ).join('\n');
+    
+    systemPrompt += `\n\nPrevious synthesis layers:\n${layerContext}\n\nBuild upon these previous insights to create a more refined and deeper synthesis.`;
+  }
+  
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${openAIApiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'gpt-4o-mini',
+      messages: [
+        { role: 'system', content: systemPrompt },
         { 
           role: 'user', 
-          content: `Original Question: ${question}\n\nArchetypal Perspectives:\n${allResponses}\n\nSynthesize these perspectives into a breakthrough insight.`
+          content: `Original Question: ${question}\n\nLayer ${layerNumber || 1} Archetypal Perspectives:\n${allResponses}\n\nSynthesize these perspectives into a breakthrough insight.`
         }
       ],
       max_tokens: 300,
@@ -99,7 +114,6 @@ Focus on finding the breakthrough moment where contradictions resolve into wisdo
   try {
     return JSON.parse(data.choices[0].message.content);
   } catch {
-    // Fallback if JSON parsing fails
     return {
       insight: data.choices[0].message.content,
       confidence: 0.75,
@@ -108,37 +122,81 @@ Focus on finding the breakthrough moment where contradictions resolve into wisdo
   }
 }
 
-serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
-    const { question } = await req.json();
-    console.log('Processing question:', question);
-
-    // Process each archetype
-    const archetypeResponses = [];
+async function processLayer(question: string, layerNumber: number, circuitType: string, previousLayers: any[] = []) {
+  console.log(`Processing Layer ${layerNumber} with ${circuitType} circuit...`);
+  
+  const archetypeResponses = [];
+  
+  if (circuitType === 'parallel') {
+    // Process all archetypes simultaneously
+    const promises = archetypes.map(archetype => 
+      getArchetypeResponse(archetype, question, previousLayers, layerNumber)
+    );
+    const results = await Promise.all(promises);
     
+    archetypes.forEach((archetype, index) => {
+      archetypeResponses.push({
+        archetype: archetype.name,
+        contribution: results[index]
+      });
+    });
+  } else {
+    // Sequential processing (default)
     for (const archetype of archetypes) {
-      console.log(`Processing archetype: ${archetype.name}`);
-      const contribution = await getArchetypeResponse(archetype, question);
+      const contribution = await getArchetypeResponse(archetype, question, previousLayers, layerNumber);
       archetypeResponses.push({
         archetype: archetype.name,
         contribution
       });
     }
+  }
 
-    // Synthesize final insight
-    console.log('Synthesizing final insight...');
-    const synthesis = await synthesizeInsight(question, archetypeResponses);
+  const synthesis = await synthesizeInsight(question, archetypeResponses, previousLayers, layerNumber);
 
+  return {
+    layerNumber,
+    circuitType,
+    archetypeResponses,
+    synthesis
+  };
+}
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const { question, processingDepth = 1, circuitType = 'sequential' } = await req.json();
+    console.log('Processing question:', question);
+    console.log('Processing depth:', processingDepth);
+    console.log('Circuit type:', circuitType);
+
+    const layers = [];
+    
+    for (let layerNum = 1; layerNum <= processingDepth; layerNum++) {
+      const layer = await processLayer(question, layerNum, circuitType, layers);
+      layers.push(layer);
+    }
+
+    // Final synthesis uses the last layer's data
+    const finalLayer = layers[layers.length - 1];
+    
     const results = {
-      insight: synthesis.insight,
-      confidence: synthesis.confidence,
-      tensionPoints: synthesis.tensionPoints,
-      logicTrail: archetypeResponses
+      insight: finalLayer.synthesis.insight,
+      confidence: finalLayer.synthesis.confidence,
+      tensionPoints: finalLayer.synthesis.tensionPoints,
+      processingDepth,
+      circuitType,
+      layers: layers.map(layer => ({
+        layerNumber: layer.layerNumber,
+        circuitType: layer.circuitType,
+        insight: layer.synthesis.insight,
+        confidence: layer.synthesis.confidence,
+        tensionPoints: layer.synthesis.tensionPoints,
+        archetypeResponses: layer.archetypeResponses
+      })),
+      logicTrail: finalLayer.archetypeResponses
     };
 
     return new Response(JSON.stringify(results), {
