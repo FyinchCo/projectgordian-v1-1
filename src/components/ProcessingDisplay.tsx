@@ -1,6 +1,5 @@
-
 import { Card } from "@/components/ui/card";
-import { Brain, Zap, Eye, Shield, Sparkles, Hammer, Compress } from "lucide-react";
+import { Brain, Zap, Eye, Shield, Sparkles, Hammer, Compass } from "lucide-react";
 
 interface ProcessingDisplayProps {
   currentArchetype: string;
@@ -13,7 +12,7 @@ const archetypeIcons = {
   "The Mystic": Sparkles,
   "The Contrarian": Zap,
   "The Craftsman": Hammer,
-  "Compression Agent": Compress
+  "Compression Agent": Compass
 };
 
 export const ProcessingDisplay = ({ currentArchetype, question }: ProcessingDisplayProps) => {
