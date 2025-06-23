@@ -7,12 +7,15 @@ import { Settings, Play, Brain, Zap } from "lucide-react";
 import { Link } from "react-router-dom";
 import { ProcessingDisplay } from "@/components/ProcessingDisplay";
 import { ResultsDisplay } from "@/components/ResultsDisplay";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const Index = () => {
   const [question, setQuestion] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentArchetype, setCurrentArchetype] = useState("");
   const [results, setResults] = useState(null);
+  const { toast } = useToast();
 
   const handleStartGenius = async () => {
     if (!question.trim()) return;
@@ -20,34 +23,43 @@ const Index = () => {
     setIsProcessing(true);
     setResults(null);
     
-    // Simulate the multi-agent process
-    const archetypes = ["The Visionary", "The Skeptic", "The Mystic", "The Contrarian", "The Craftsman"];
-    
-    for (let i = 0; i < archetypes.length; i++) {
-      setCurrentArchetype(archetypes[i]);
-      // Simulate processing time
-      await new Promise(resolve => setTimeout(resolve, 2000));
+    try {
+      // Show the processing animation for each archetype
+      const archetypes = ["The Visionary", "The Skeptic", "The Mystic", "The Contrarian", "The Craftsman"];
+      
+      // Start the actual AI processing
+      const processingPromise = supabase.functions.invoke('genius-machine', {
+        body: { question }
+      });
+      
+      // Show visual progress while AI is working
+      for (let i = 0; i < archetypes.length; i++) {
+        setCurrentArchetype(archetypes[i]);
+        await new Promise(resolve => setTimeout(resolve, 1500));
+      }
+      
+      setCurrentArchetype("Compression Agent");
+      
+      // Wait for the AI processing to complete
+      const { data, error } = await processingPromise;
+      
+      if (error) {
+        throw error;
+      }
+      
+      setResults(data);
+      
+    } catch (error) {
+      console.error('Error processing question:', error);
+      toast({
+        title: "Error",
+        description: "Failed to process your question. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+      setCurrentArchetype("");
     }
-    
-    setCurrentArchetype("Compression Agent");
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    // Mock results
-    setResults({
-      insight: "Innovation emerges not from answers, but from the quality of questions that refuse comfortable conclusions.",
-      confidence: 0.87,
-      tensionPoints: 3,
-      logicTrail: [
-        { archetype: "The Visionary", contribution: "Sees innovation as boundaryless exploration beyond current paradigms" },
-        { archetype: "The Skeptic", contribution: "Questions whether true innovation can exist without rigorous validation" },
-        { archetype: "The Mystic", contribution: "Recognizes innovation as an emergent property of deep pattern recognition" },
-        { archetype: "The Contrarian", contribution: "Challenges the assumption that innovation requires novelty rather than synthesis" },
-        { archetype: "The Craftsman", contribution: "Grounds innovation in practical application and iterative refinement" }
-      ]
-    });
-    
-    setIsProcessing(false);
-    setCurrentArchetype("");
   };
 
   return (
