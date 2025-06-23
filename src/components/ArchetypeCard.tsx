@@ -29,7 +29,15 @@ interface ArchetypeCardProps {
 }
 
 export const ArchetypeCard = ({ archetype, onUpdate, onRemove, canRemove }: ArchetypeCardProps) => {
-  const IconComponent = archetype.icon;
+  // Safely render the icon component
+  const renderIcon = () => {
+    const IconComponent = archetype.icon;
+    if (typeof IconComponent === 'function') {
+      return <IconComponent className="w-6 h-6" />;
+    }
+    // Fallback to a simple circle if icon is not valid
+    return <div className="w-6 h-6 rounded-full bg-gray-300" />;
+  };
 
   return (
     <Card className="p-6">
@@ -38,7 +46,7 @@ export const ArchetypeCard = ({ archetype, onUpdate, onRemove, canRemove }: Arch
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <IconComponent className="w-6 h-6" />
+              {renderIcon()}
               <h3 className="text-lg font-bold">{archetype.name}</h3>
             </div>
             {canRemove && (
