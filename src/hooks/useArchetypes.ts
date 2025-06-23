@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Eye, Shield, Sparkles, Zap, Hammer, Plus, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -20,74 +19,62 @@ const defaultArchetypes: Archetype[] = [
   {
     id: 1,
     name: "The Visionary",
-    description: "Sees beyond current limitations and imagines radical possibilities",
+    description: "Poetic dreamer of radical futures. Imagination-driven.",
     languageStyle: "poetic",
     imagination: [9],
-    skepticism: [2],
-    aggression: [3],
-    emotionality: [7],
+    skepticism: [1],
+    aggression: [2],
+    emotionality: [8],
     icon: Eye,
     constraint: ""
   },
   {
     id: 2,
-    name: "The Skeptic",
-    description: "Questions assumptions and demands rigorous validation",
-    languageStyle: "logical",
-    imagination: [4],
-    skepticism: [9],
-    aggression: [6],
-    emotionality: [2],
-    icon: Shield,
-    constraint: ""
-  },
-  {
-    id: 3,
     name: "The Mystic",
-    description: "Recognizes patterns and connections beyond rational analysis",
+    description: "Symbolic, paradox-driven explorer of the unseen.",
     languageStyle: "narrative",
     imagination: [8],
     skepticism: [3],
-    aggression: [2],
-    emotionality: [9],
+    aggression: [1],
+    emotionality: [10],
     icon: Sparkles,
     constraint: ""
   },
   {
-    id: 4,
-    name: "The Contrarian",
-    description: "Challenges consensus and reveals hidden contradictions",
-    languageStyle: "disruptive",
-    imagination: [6],
-    skepticism: [7],
-    aggression: [9],
-    emotionality: [5],
-    icon: Zap,
+    id: 3,
+    name: "The Skeptic",
+    description: "Evidence-driven challenger of all assumptions.",
+    languageStyle: "logical",
+    imagination: [3],
+    skepticism: [10],
+    aggression: [5],
+    emotionality: [1],
+    icon: Shield,
     constraint: ""
+  },
+  {
+    id: 4,
+    name: "The Realist",
+    description: "Cynical pragmatist who believes comfort > authenticity.",
+    languageStyle: "blunt",
+    imagination: [2],
+    skepticism: [7],
+    aggression: [8],
+    emotionality: [2],
+    icon: AlertCircle,
+    constraint: "Assume people are not capable of true authenticity, and that ambition is a coping strategy for mortality."
   },
   {
     id: 5,
-    name: "The Craftsman",
-    description: "Grounds ideas in practical application and iterative refinement",
-    languageStyle: "logical",
-    imagination: [5],
+    name: "The Contrarian",
+    description: "Ruthless challenger of consensus, seeks inversion.",
+    languageStyle: "disruptive",
+    imagination: [6],
     skepticism: [6],
-    aggression: [4],
-    emotionality: [4],
-    icon: Hammer,
-    constraint: ""
-  },
-  {
-    id: 6,
-    name: "The Realist",
-    description: "Exposes uncomfortable truths and challenges idealistic assumptions",
-    languageStyle: "blunt",
-    imagination: [2],
-    skepticism: [6],
-    aggression: [7],
+    aggression: [9],
     emotionality: [3],
-    icon: AlertCircle,
-    constraint: "Assume people are not capable of true authenticity, and that ambition is a coping strategy for mortality."
+    icon: Zap,
+    constraint: ""
   }
 ];
 
