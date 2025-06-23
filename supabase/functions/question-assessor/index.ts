@@ -17,6 +17,10 @@ serve(async (req) => {
   try {
     const { question } = await req.json();
     
+    if (!openAIApiKey) {
+      throw new Error('OpenAI API key not found');
+    }
+    
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -45,7 +49,7 @@ Based on assessment, recommend:
 - archetypeEmphasis: Array of archetype names to emphasize
 - reasoning: Brief explanation of recommendations
 
-Respond with JSON only.`
+Respond with valid JSON only.`
           },
           {
             role: 'user',
@@ -57,8 +61,36 @@ Respond with JSON only.`
       }),
     });
 
+    if (!response.ok) {
+      throw new Error(`OpenAI API error: ${response.status}`);
+    }
+
     const data = await response.json();
-    const assessment = JSON.parse(data.choices[0].message.content);
+    const content = data.choices[0].message.content;
+    
+    // Parse the JSON response
+    let assessment;
+    try {
+      assessment = JSON.parse(content);
+    } catch (parseError) {
+      console.error('Failed to parse OpenAI response:', content);
+      // Provide fallback assessment
+      assessment = {
+        complexityScore: 5,
+        domainType: "General",
+        abstractionLevel: "Theoretical",
+        controversyPotential: 5,
+        noveltyRequirement: 5,
+        stakeholderComplexity: 5,
+        recommendations: {
+          processingDepth: 2,
+          circuitType: "sequential",
+          enhancedMode: true,
+          archetypeEmphasis: ["The Visionary", "The Skeptic"],
+          reasoning: "Default settings applied due to analysis error."
+        }
+      };
+    }
 
     return new Response(JSON.stringify(assessment), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -66,12 +98,26 @@ Respond with JSON only.`
 
   } catch (error) {
     console.error('Error in question-assessor function:', error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    
+    // Return a fallback assessment instead of an error
+    const fallbackAssessment = {
+      complexityScore: 5,
+      domainType: "General",
+      abstractionLevel: "Theoretical", 
+      controversyPotential: 5,
+      noveltyRequirement: 5,
+      stakeholderComplexity: 5,
+      recommendations: {
+        processingDepth: 2,
+        circuitType: "sequential",
+        enhancedMode: true,
+        archetypeEmphasis: ["The Visionary", "The Skeptic"],
+        reasoning: "Fallback settings applied due to connection error."
       }
-    );
+    };
+    
+    return new Response(JSON.stringify(fallbackAssessment), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 });

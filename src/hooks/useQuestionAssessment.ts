@@ -30,22 +30,49 @@ export const useQuestionAssessment = () => {
     setIsAssessing(true);
     
     try {
+      console.log('Assessing question:', question);
+      
       const { data, error } = await supabase.functions.invoke('question-assessor', {
         body: { question }
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw error;
+      }
       
+      console.log('Assessment result:', data);
       setAssessment(data);
       return data;
     } catch (error) {
       console.error('Error assessing question:', error);
+      
+      // Provide a fallback assessment instead of failing completely
+      const fallbackAssessment: QuestionAssessment = {
+        complexityScore: 5,
+        domainType: "General",
+        abstractionLevel: "Theoretical",
+        controversyPotential: 5,
+        noveltyRequirement: 5,
+        stakeholderComplexity: 5,
+        recommendations: {
+          processingDepth: 2,
+          circuitType: "sequential",
+          enhancedMode: true,
+          archetypeEmphasis: ["The Visionary", "The Skeptic"],
+          reasoning: "Default settings applied - assessment service temporarily unavailable."
+        }
+      };
+      
+      setAssessment(fallbackAssessment);
+      
       toast({
-        title: "Assessment Error",
-        description: "Could not analyze your question. Using default settings.",
-        variant: "destructive",
+        title: "Assessment Notice",
+        description: "Using default optimization settings - assessment service temporarily unavailable.",
+        variant: "default",
       });
-      return null;
+      
+      return fallbackAssessment;
     } finally {
       setIsAssessing(false);
     }
