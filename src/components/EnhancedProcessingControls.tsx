@@ -4,8 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
-import { Brain, Zap, Target } from "lucide-react";
+import { Layers, Zap, RotateCcw, GitBranch, Brain } from "lucide-react";
 
 interface EnhancedProcessingControlsProps {
   processingDepth: number[];
@@ -16,121 +15,138 @@ interface EnhancedProcessingControlsProps {
   onEnhancedModeChange: (value: boolean) => void;
 }
 
-export const EnhancedProcessingControls = ({
-  processingDepth,
-  onProcessingDepthChange,
-  circuitType,
+const circuitTypes = [
+  { value: "sequential", label: "Sequential", icon: Layers, description: "Process agents one after another" },
+  { value: "parallel", label: "Parallel", icon: GitBranch, description: "Process all agents simultaneously" },
+  { value: "recursive", label: "Recursive", icon: RotateCcw, description: "Agents review and refine iteratively" },
+  { value: "hybrid", label: "Hybrid", icon: Zap, description: "Combine sequential and parallel approaches" }
+];
+
+export const EnhancedProcessingControls = ({ 
+  processingDepth, 
+  onProcessingDepthChange, 
+  circuitType, 
   onCircuitTypeChange,
   enhancedMode,
   onEnhancedModeChange
 }: EnhancedProcessingControlsProps) => {
-  return (
-    <Card className="p-6">
-      <div className="space-y-6">
-        <div className="text-center">
-          <h3 className="text-lg font-bold">PROCESSING CONFIGURATION</h3>
-          <p className="text-sm text-gray-600">Configure the cognitive analysis parameters</p>
-        </div>
+  const selectedCircuit = circuitTypes.find(ct => ct.value === circuitType);
+  const IconComponent = selectedCircuit?.icon || Layers;
 
-        {/* Enhanced Mode Toggle */}
-        <div className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border">
-          <div className="flex items-center space-x-3">
-            <Brain className="w-5 h-5 text-purple-600" />
-            <div>
-              <Label htmlFor="enhanced-mode" className="text-sm font-semibold">
-                Enhanced Cognitive Disruption
-              </Label>
-              <p className="text-xs text-gray-600 mt-1">
-                Enables assumption interrogation, dialectical tension, and emergence detection
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="enhanced-mode"
-              checked={enhancedMode}
-              onCheckedChange={onEnhancedModeChange}
-            />
-            {enhancedMode && (
-              <Badge className="bg-purple-100 text-purple-800">
-                <Zap className="w-3 h-3 mr-1" />
-                ACTIVE
-              </Badge>
-            )}
-          </div>
+  const getDepthDescription = (depth: number) => {
+    if (depth <= 2) return "Quick analysis with basic refinement";
+    if (depth <= 5) return "Deep analysis with iterative refinement";
+    if (depth <= 10) return "Comprehensive multi-layer analysis";
+    return "Maximum depth analysis - experimental territory";
+  };
+
+  const getDepthWarning = (depth: number) => {
+    if (depth >= 10) return "⚠️ High-depth processing may take significantly longer";
+    return null;
+  };
+
+  return (
+    <Card className="p-6 bg-gradient-to-r from-gray-50 to-blue-50">
+      <div className="space-y-6">
+        <div>
+          <h3 className="font-bold text-lg mb-4 flex items-center space-x-2">
+            <Brain className="w-5 h-5 text-blue-600" />
+            <span>ENHANCED PROCESSING CONFIGURATION</span>
+          </h3>
         </div>
 
         <div className="grid md:grid-cols-2 gap-6">
           {/* Processing Depth */}
           <div className="space-y-3">
-            <div className="flex items-center space-x-2">
-              <Target className="w-4 h-4" />
-              <Label>Processing Depth</Label>
-              <Badge variant="outline">{processingDepth[0]} layer{processingDepth[0] > 1 ? 's' : ''}</Badge>
+            <div className="flex justify-between items-center">
+              <Label className="text-sm font-semibold">Processing Depth</Label>
+              <span className="text-sm text-gray-500 font-mono">
+                {processingDepth[0]} {processingDepth[0] === 1 ? 'Layer' : 'Layers'}
+              </span>
             </div>
             <Slider
               value={processingDepth}
               onValueChange={onProcessingDepthChange}
-              max={5}
+              max={20}
               min={1}
               step={1}
               className="w-full"
             />
-            <div className="text-xs text-gray-500">
-              Higher depth creates more refined insights through iterative processing
-              {enhancedMode && " with enhanced tension detection"}
-            </div>
+            <p className="text-xs text-gray-600">
+              {getDepthDescription(processingDepth[0])}
+            </p>
+            {getDepthWarning(processingDepth[0]) && (
+              <p className="text-xs text-amber-600 font-medium">
+                {getDepthWarning(processingDepth[0])}
+              </p>
+            )}
           </div>
 
           {/* Circuit Type */}
           <div className="space-y-3">
-            <Label>Processing Circuit</Label>
+            <Label className="text-sm font-semibold">Circuit Type</Label>
             <Select value={circuitType} onValueChange={onCircuitTypeChange}>
-              <SelectTrigger>
-                <SelectValue />
+              <SelectTrigger className="w-full">
+                <SelectValue>
+                  <div className="flex items-center space-x-2">
+                    <IconComponent className="w-4 h-4" />
+                    <span>{selectedCircuit?.label}</span>
+                  </div>
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="sequential">
-                  Sequential
-                  <span className="text-xs text-gray-500 ml-2">
-                    - Ordered processing, builds context
-                  </span>
-                </SelectItem>
-                <SelectItem value="parallel">
-                  Parallel
-                  <span className="text-xs text-gray-500 ml-2">
-                    - Simultaneous analysis, faster results
-                  </span>
-                </SelectItem>
+                {circuitTypes.map((circuit) => {
+                  const Icon = circuit.icon;
+                  return (
+                    <SelectItem key={circuit.value} value={circuit.value}>
+                      <div className="flex items-center space-x-2">
+                        <Icon className="w-4 h-4" />
+                        <div>
+                          <div className="font-medium">{circuit.label}</div>
+                          <div className="text-xs text-gray-500">{circuit.description}</div>
+                        </div>
+                      </div>
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
-            <div className="text-xs text-gray-500">
-              {circuitType === 'sequential' 
-                ? 'Archetypes process sequentially, building on each other\'s insights'
-                : 'All archetypes analyze simultaneously for independent perspectives'
-              }
-              {enhancedMode && circuitType === 'sequential' && (
-                <span className="text-purple-600 block mt-1">
-                  Enhanced mode adds dialectical injection for increased tension
-                </span>
-              )}
-            </div>
           </div>
         </div>
 
-        {/* Enhanced Mode Features */}
-        {enhancedMode && (
-          <div className="mt-6 p-4 bg-blue-50 rounded-lg border-l-4 border-blue-400">
-            <h4 className="font-semibold text-blue-800 mb-2">Enhanced Mode Features Active:</h4>
-            <ul className="text-sm text-blue-700 space-y-1">
-              <li>• Assumption Interrogation - Challenges hidden premises</li>
-              <li>• Dialectical Tension Engine - Forces uncomfortable contradictions</li>
-              <li>• Emergence Detection - Identifies genuine breakthrough moments</li>
-              <li>• Novelty Scoring - Measures cognitive disruption achieved</li>
-              <li>• Consensus Risk Analysis - Prevents groupthink convergence</li>
-            </ul>
+        {/* Enhanced Mode Toggle */}
+        <div className="flex items-center justify-between p-4 bg-white rounded-lg border">
+          <div className="space-y-1">
+            <Label className="text-sm font-semibold">Enhanced Mode</Label>
+            <p className="text-xs text-gray-600">
+              Enables assumption challenging, tension analysis, and emergence detection
+            </p>
           </div>
-        )}
+          <Switch
+            checked={enhancedMode}
+            onCheckedChange={onEnhancedModeChange}
+          />
+        </div>
+
+        {/* Quick Depth Presets */}
+        <div className="space-y-2">
+          <Label className="text-xs font-semibold text-gray-600">QUICK PRESETS</Label>
+          <div className="flex flex-wrap gap-2">
+            {[1, 2, 5, 10, 20].map((depth) => (
+              <button
+                key={depth}
+                onClick={() => onProcessingDepthChange([depth])}
+                className={`px-3 py-1 text-xs rounded-full border transition-colors ${
+                  processingDepth[0] === depth
+                    ? 'bg-blue-100 border-blue-300 text-blue-700'
+                    : 'bg-gray-100 border-gray-300 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                {depth} Layer{depth > 1 ? 's' : ''}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
     </Card>
   );
