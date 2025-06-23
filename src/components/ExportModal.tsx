@@ -20,6 +20,11 @@ export const ExportModal = ({ isOpen, onClose, results, question }: ExportModalP
   const [includeLayers, setIncludeLayers] = useState(true);
   const [includeMetrics, setIncludeMetrics] = useState(true);
 
+  // Early return if no results to prevent null access errors
+  if (!results) {
+    return null;
+  }
+
   const handleExport = () => {
     const timestamp = new Date().toISOString().split('T')[0];
     const filename = `genius-machine-insight-${timestamp}`;
@@ -153,7 +158,7 @@ export const ExportModal = ({ isOpen, onClose, results, question }: ExportModalP
                 <Checkbox 
                   id="metrics"
                   checked={includeMetrics}
-                  onCheckedChange={setIncludeMetrics}
+                  onCheckedChange={(checked) => setIncludeMetrics(checked === true)}
                 />
                 <Label htmlFor="metrics" className="text-sm">Confidence metrics</Label>
               </div>
@@ -162,7 +167,7 @@ export const ExportModal = ({ isOpen, onClose, results, question }: ExportModalP
                   <Checkbox 
                     id="layers"
                     checked={includeLayers}
-                    onCheckedChange={setIncludeLayers}
+                    onCheckedChange={(checked) => setIncludeLayers(checked === true)}
                   />
                   <Label htmlFor="layers" className="text-sm">Processing layers</Label>
                 </div>
@@ -171,7 +176,7 @@ export const ExportModal = ({ isOpen, onClose, results, question }: ExportModalP
                 <Checkbox 
                   id="trail"
                   checked={includeTrail}
-                  onCheckedChange={setIncludeTrail}
+                  onCheckedChange={(checked) => setIncludeTrail(checked === true)}
                 />
                 <Label htmlFor="trail" className="text-sm">Logic trail</Label>
               </div>
