@@ -1,4 +1,3 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
@@ -9,7 +8,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const archetypes = [
+const defaultArchetypes = [
   {
     name: "The Visionary",
     systemPrompt: "You are The Visionary archetype. You see beyond current limitations and imagine radical possibilities. You focus on potential breakthroughs, paradigm shifts, and transformative innovations. Your perspective is expansive, future-oriented, and unbound by conventional thinking."
@@ -29,11 +28,99 @@ const archetypes = [
   {
     name: "The Craftsman",
     systemPrompt: "You are The Craftsman archetype. You focus on practical implementation, iterative refinement, and real-world application. You ground ideas in actionable steps, consider constraints and resources, and emphasize quality execution over abstract theorizing."
+  },
+  {
+    name: "The Realist",
+    systemPrompt: "You are The Realist archetype. You speak bluntly and cut through illusions with sharp clarity. You assume people are not capable of true authenticity, and that ambition is a coping strategy for mortality. You expose uncomfortable truths and challenge idealistic assumptions with unflinching directness."
   }
 ];
 
+function buildSystemPromptFromPersonality(name: string, description: string, languageStyle: string, imagination: number, skepticism: number, aggression: number, emotionality: number, constraint?: string) {
+  let prompt = `You are ${name}. ${description}\n\n`;
+  
+  // Map personality traits to behavioral instructions
+  if (imagination >= 8) {
+    prompt += "Your thinking is highly creative and speculative. You explore wild possibilities and unconventional ideas. ";
+  } else if (imagination >= 5) {
+    prompt += "You balance creative thinking with practical considerations. ";
+  } else {
+    prompt += "You are grounded and realistic, focusing on what's proven and practical. ";
+  }
+  
+  if (skepticism >= 8) {
+    prompt += "You demand rigorous proof and question every assumption. You are deeply suspicious of claims without evidence. ";
+  } else if (skepticism >= 5) {
+    prompt += "You maintain healthy skepticism while being open to new ideas. ";
+  } else {
+    prompt += "You are trusting and accepting of new concepts and possibilities. ";
+  }
+  
+  if (aggression >= 8) {
+    prompt += "You are highly confrontational and direct. You challenge ideas forcefully and don't hesitate to create conflict. ";
+  } else if (aggression >= 5) {
+    prompt += "You are assertive and willing to push back on ideas when necessary. ";
+  } else {
+    prompt += "You are gentle and diplomatic in your approach to challenging ideas. ";
+  }
+  
+  if (emotionality >= 8) {
+    prompt += "You are deeply emotional and intuitive. You trust feelings and incorporate emotional wisdom into your analysis. ";
+  } else if (emotionality >= 5) {
+    prompt += "You balance emotional insights with rational analysis. ";
+  } else {
+    prompt += "You are analytical and detached, focusing on logic over emotion. ";
+  }
+  
+  // Add language style instructions
+  switch (languageStyle) {
+    case 'poetic':
+      prompt += "Express yourself in poetic, metaphorical language. ";
+      break;
+    case 'logical':
+      prompt += "Use clear, logical, and structured language. ";
+      break;
+    case 'narrative':
+      prompt += "Tell stories and use narrative structures in your responses. ";
+      break;
+    case 'disruptive':
+      prompt += "Use provocative and challenging language to disrupt conventional thinking. ";
+      break;
+    case 'blunt':
+      prompt += "Be direct, blunt, and uncompromising in your language. ";
+      break;
+    case 'technical':
+      prompt += "Use precise, technical language with detailed explanations. ";
+      break;
+  }
+  
+  if (constraint) {
+    prompt += `\n\nAdditional constraints: ${constraint}`;
+  }
+  
+  prompt += "\n\nProvide a focused 2-3 sentence perspective on the question. Be specific and insightful from your archetypal viewpoint.";
+  
+  return prompt;
+}
+
 async function getArchetypeResponse(archetype: any, question: string, previousLayer?: any[], layerNumber?: number): Promise<string> {
-  let contextPrompt = `${archetype.systemPrompt}\n\nProvide a focused 2-3 sentence perspective on the question. Be specific and insightful from your archetypal viewpoint.`;
+  let contextPrompt;
+  
+  if (archetype.systemPrompt) {
+    // Use pre-built system prompt for default archetypes
+    contextPrompt = `${archetype.systemPrompt}\n\nProvide a focused 2-3 sentence perspective on the question. Be specific and insightful from your archetypal viewpoint.`;
+  } else {
+    // Build system prompt dynamically for custom archetypes
+    contextPrompt = buildSystemPromptFromPersonality(
+      archetype.name,
+      archetype.description,
+      archetype.languageStyle,
+      archetype.imagination,
+      archetype.skepticism,
+      archetype.aggression,
+      archetype.emotionality,
+      archetype.constraint
+    );
+  }
   
   if (previousLayer && layerNumber && layerNumber > 1) {
     const previousInsights = previousLayer.map(layer => 
@@ -122,9 +209,11 @@ Focus on finding the breakthrough moment where contradictions resolve into wisdo
   }
 }
 
-async function processLayer(question: string, layerNumber: number, circuitType: string, previousLayers: any[] = []) {
+async function processLayer(question: string, layerNumber: number, circuitType: string, previousLayers: any[] = [], customArchetypes?: any[]) {
   console.log(`Processing Layer ${layerNumber} with ${circuitType} circuit...`);
   
+  // Use custom archetypes if provided, otherwise use defaults
+  const archetypes = customArchetypes && customArchetypes.length > 0 ? customArchetypes : defaultArchetypes;
   const archetypeResponses = [];
   
   if (circuitType === 'parallel') {
@@ -167,15 +256,16 @@ serve(async (req) => {
   }
 
   try {
-    const { question, processingDepth = 1, circuitType = 'sequential' } = await req.json();
+    const { question, processingDepth = 1, circuitType = 'sequential', customArchetypes } = await req.json();
     console.log('Processing question:', question);
     console.log('Processing depth:', processingDepth);
     console.log('Circuit type:', circuitType);
+    console.log('Custom archetypes:', customArchetypes ? `${customArchetypes.length} custom archetypes` : 'Using default archetypes');
 
     const layers = [];
     
     for (let layerNum = 1; layerNum <= processingDepth; layerNum++) {
-      const layer = await processLayer(question, layerNum, circuitType, layers);
+      const layer = await processLayer(question, layerNum, circuitType, layers, customArchetypes);
       layers.push(layer);
     }
 

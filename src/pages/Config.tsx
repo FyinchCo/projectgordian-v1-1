@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,10 +7,13 @@ import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Save, Eye, Shield, Sparkles, Zap, Hammer } from "lucide-react";
+import { ArrowLeft, Save, Eye, Shield, Sparkles, Zap, Hammer, Plus, Trash2, AlertCircle } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 
 const Config = () => {
+  const { toast } = useToast();
+  
   const [archetypes, setArchetypes] = useState([
     {
       id: 1,
@@ -72,6 +74,18 @@ const Config = () => {
       emotionality: [4],
       icon: Hammer,
       constraint: ""
+    },
+    {
+      id: 6,
+      name: "The Realist",
+      description: "Exposes uncomfortable truths and challenges idealistic assumptions",
+      languageStyle: "blunt",
+      imagination: [2],
+      skepticism: [6],
+      aggression: [7],
+      emotionality: [3],
+      icon: AlertCircle,
+      constraint: "Assume people are not capable of true authenticity, and that ambition is a coping strategy for mortality."
     }
   ]);
 
@@ -88,10 +102,66 @@ const Config = () => {
     includeFullTranscript: false
   });
 
+  // Load saved configuration on mount
+  useEffect(() => {
+    const savedArchetypes = localStorage.getItem('genius-machine-archetypes');
+    if (savedArchetypes) {
+      setArchetypes(JSON.parse(savedArchetypes));
+    }
+  }, []);
+
   const updateArchetype = (id: number, field: string, value: any) => {
     setArchetypes(prev => prev.map(archetype => 
       archetype.id === id ? { ...archetype, [field]: value } : archetype
     ));
+  };
+
+  const addCustomArchetype = () => {
+    const newId = Math.max(...archetypes.map(a => a.id)) + 1;
+    const newArchetype = {
+      id: newId,
+      name: "Custom Archetype",
+      description: "A new archetype with custom behavior",
+      languageStyle: "logical",
+      imagination: [5],
+      skepticism: [5],
+      aggression: [5],
+      emotionality: [5],
+      icon: Plus,
+      constraint: ""
+    };
+    setArchetypes(prev => [...prev, newArchetype]);
+  };
+
+  const removeArchetype = (id: number) => {
+    if (archetypes.length <= 2) {
+      toast({
+        title: "Cannot Remove",
+        description: "You must have at least 2 archetypes for meaningful analysis.",
+        variant: "destructive"
+      });
+      return;
+    }
+    setArchetypes(prev => prev.filter(archetype => archetype.id !== id));
+  };
+
+  const saveConfiguration = () => {
+    // Save to localStorage for rapid prototyping
+    localStorage.setItem('genius-machine-archetypes', JSON.stringify(archetypes));
+    localStorage.setItem('genius-machine-tension', JSON.stringify(tensionSettings));
+    localStorage.setItem('genius-machine-compression', JSON.stringify(compressionSettings));
+    
+    toast({
+      title: "Configuration Saved",
+      description: "Your archetype configuration has been saved for this session.",
+    });
+  };
+
+  const resetToDefaults = () => {
+    localStorage.removeItem('genius-machine-archetypes');
+    localStorage.removeItem('genius-machine-tension');
+    localStorage.removeItem('genius-machine-compression');
+    window.location.reload();
   };
 
   return (
@@ -111,10 +181,15 @@ const Config = () => {
               <p className="text-xs text-gray-500 uppercase tracking-wide">Customize Agent Behavior</p>
             </div>
           </div>
-          <Button className="bg-black text-white hover:bg-gray-800">
-            <Save className="w-4 h-4 mr-2" />
-            Save Configuration
-          </Button>
+          <div className="flex space-x-2">
+            <Button variant="outline" onClick={resetToDefaults}>
+              Reset to Defaults
+            </Button>
+            <Button className="bg-black text-white hover:bg-gray-800" onClick={saveConfiguration}>
+              <Save className="w-4 h-4 mr-2" />
+              Save Configuration
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -132,6 +207,13 @@ const Config = () => {
               <p className="text-gray-600">Configure the personality and behavior of each cognitive archetype</p>
             </div>
 
+            <div className="flex justify-center">
+              <Button onClick={addCustomArchetype} className="flex items-center space-x-2">
+                <Plus className="w-4 h-4" />
+                <span>Add Custom Archetype</span>
+              </Button>
+            </div>
+
             <div className="grid gap-6">
               {archetypes.map((archetype) => {
                 const IconComponent = archetype.icon;
@@ -140,9 +222,21 @@ const Config = () => {
                     <div className="grid lg:grid-cols-2 gap-6">
                       {/* Basic Info */}
                       <div className="space-y-4">
-                        <div className="flex items-center space-x-3">
-                          <IconComponent className="w-6 h-6" />
-                          <h3 className="text-lg font-bold">{archetype.name}</h3>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <IconComponent className="w-6 h-6" />
+                            <h3 className="text-lg font-bold">{archetype.name}</h3>
+                          </div>
+                          {archetype.id > 6 && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => removeArchetype(archetype.id)}
+                              className="text-red-600 hover:text-red-800"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          )}
                         </div>
 
                         <div className="space-y-3">
@@ -180,6 +274,7 @@ const Config = () => {
                                 <SelectItem value="narrative">Narrative</SelectItem>
                                 <SelectItem value="disruptive">Disruptive</SelectItem>
                                 <SelectItem value="technical">Technical</SelectItem>
+                                <SelectItem value="blunt">Blunt</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
