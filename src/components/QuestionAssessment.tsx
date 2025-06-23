@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -8,7 +7,7 @@ import { useQuestionAssessment } from "@/hooks/useQuestionAssessment";
 
 interface QuestionAssessmentProps {
   question: string;
-  onApplyRecommendations: (recommendations: any) => void;
+  onApplyRecommendations: (recommendations: any, fullAssessment: any) => void;
 }
 
 export const QuestionAssessment = ({ question, onApplyRecommendations }: QuestionAssessmentProps) => {
@@ -25,7 +24,8 @@ export const QuestionAssessment = ({ question, onApplyRecommendations }: Questio
 
   const handleApplyRecommendations = () => {
     if (assessment?.recommendations) {
-      onApplyRecommendations(assessment.recommendations);
+      console.log('Applying recommendations with full assessment context');
+      onApplyRecommendations(assessment.recommendations, assessment);
     }
   };
 

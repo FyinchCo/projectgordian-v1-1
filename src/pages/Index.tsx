@@ -21,6 +21,7 @@ const Index = () => {
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [customArchetypes, setCustomArchetypes] = useState(null);
   const [showAssessment, setShowAssessment] = useState(false);
+  const [currentAssessment, setCurrentAssessment] = useState(null);
   const { toast } = useToast();
 
   // Load custom archetypes on mount
@@ -51,12 +52,14 @@ const Index = () => {
     setCurrentLayer(1);
     
     try {
-      console.log('Starting genius processing with parameters:', {
+      console.log('Starting genius processing with full configuration:', {
         question: question.trim(),
         processingDepth: processingDepth[0],
         circuitType,
         customArchetypes: customArchetypes ? customArchetypes.length : 0,
-        enhancedMode
+        enhancedMode,
+        hasAssessment: !!currentAssessment,
+        assessmentRecommendations: currentAssessment?.recommendations
       });
       
       // Use custom archetypes if available, otherwise use defaults
@@ -69,17 +72,27 @@ const Index = () => {
       const totalSteps = processingDepth[0] * totalArchetypes + processingDepth[0]; // agents + synthesis per layer
       let currentStep = 0;
       
-      console.log('Invoking genius-machine function...');
+      console.log('Invoking genius-machine function with assessment-informed configuration...');
+      
+      // Prepare the processing configuration - include assessment data if available
+      const processingConfig = {
+        question,
+        processingDepth: processingDepth[0],
+        circuitType,
+        customArchetypes: customArchetypes,
+        enhancedMode,
+        assessmentConfiguration: currentAssessment ? {
+          archetypeConfigurations: currentAssessment.archetypeConfigurations,
+          tensionParameters: currentAssessment.tensionParameters,
+          processingConfiguration: currentAssessment.processingConfiguration
+        } : null
+      };
+      
+      console.log('Full processing configuration being sent:', processingConfig);
       
       // Start the actual AI processing
       const processingPromise = supabase.functions.invoke('genius-machine', {
-        body: { 
-          question,
-          processingDepth: processingDepth[0],
-          circuitType,
-          customArchetypes: customArchetypes,
-          enhancedMode
-        }
+        body: processingConfig
       });
       
       // Show visual progress while AI is working
@@ -142,14 +155,18 @@ const Index = () => {
     }
   };
 
-  const handleApplyRecommendations = (recommendations: any) => {
+  const handleApplyRecommendations = (recommendations: any, fullAssessment: any) => {
+    console.log('Applying AI recommendations:', recommendations);
+    console.log('Full assessment data:', fullAssessment);
+    
     setProcessingDepth([recommendations.processingDepth]);
     setCircuitType(recommendations.circuitType);
     setEnhancedMode(recommendations.enhancedMode);
+    setCurrentAssessment(fullAssessment);
     
     toast({
-      title: "Settings Applied",
-      description: "AI recommendations have been applied to your processing configuration.",
+      title: "AI Configuration Applied",
+      description: `Processing optimized: ${recommendations.processingDepth} layers, ${recommendations.circuitType} circuit, enhanced mode ${recommendations.enhancedMode ? 'ON' : 'OFF'}`,
     });
   };
 
