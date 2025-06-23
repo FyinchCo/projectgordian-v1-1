@@ -62,6 +62,15 @@ const Index = () => {
         assessmentRecommendations: currentAssessment?.recommendations
       });
       
+      // Show timeout warning for high processing depths
+      if (processingDepth[0] >= 8) {
+        toast({
+          title: "High Processing Depth Detected",
+          description: `Processing ${processingDepth[0]} layers may take a long time or timeout. Consider using 5-7 layers for reliability.`,
+          variant: "default",
+        });
+      }
+      
       // Use custom archetypes if available, otherwise use defaults
       const archetypeNames = customArchetypes 
         ? customArchetypes.map(a => a.name)
@@ -90,36 +99,51 @@ const Index = () => {
       
       console.log('Full processing configuration being sent:', processingConfig);
       
-      // Start the actual AI processing
+      // Set up timeout handling - Supabase functions timeout after ~5 minutes
+      const timeoutMs = Math.min(240000, processingDepth[0] * 24000); // 4 minutes max, scale with depth
+      console.log(`Setting timeout for ${timeoutMs}ms based on processing depth`);
+      
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => {
+          reject(new Error(`Processing timeout after ${timeoutMs/1000} seconds. Try reducing processing depth to 5-7 layers for better reliability.`));
+        }, timeoutMs);
+      });
+      
+      // Start the actual AI processing with timeout
       const processingPromise = supabase.functions.invoke('genius-machine', {
         body: processingConfig
       });
       
       // Show visual progress while AI is working
-      for (let layer = 1; layer <= processingDepth[0]; layer++) {
-        setCurrentLayer(layer);
-        
-        // Show assumption analysis for first layer in enhanced mode
-        if (layer === 1 && enhancedMode) {
-          setCurrentArchetype("Assumption Challenger");
-          await new Promise(resolve => setTimeout(resolve, 1500));
-        }
-        
-        for (let i = 0; i < archetypeNames.length; i++) {
-          setCurrentArchetype(archetypeNames[i]);
+      const progressPromise = (async () => {
+        for (let layer = 1; layer <= processingDepth[0]; layer++) {
+          setCurrentLayer(layer);
+          
+          // Show assumption analysis for first layer in enhanced mode
+          if (layer === 1 && enhancedMode) {
+            setCurrentArchetype("Assumption Challenger");
+            await new Promise(resolve => setTimeout(resolve, 1500));
+          }
+          
+          for (let i = 0; i < archetypeNames.length; i++) {
+            setCurrentArchetype(archetypeNames[i]);
+            currentStep++;
+            await new Promise(resolve => setTimeout(resolve, Math.max(800, 3000 / totalSteps)));
+          }
+          
+          setCurrentArchetype("Compression Agent");
           currentStep++;
-          await new Promise(resolve => setTimeout(resolve, Math.max(800, 3000 / totalSteps)));
+          await new Promise(resolve => setTimeout(resolve, Math.max(1000, 3000 / totalSteps)));
         }
-        
-        setCurrentArchetype("Compression Agent");
-        currentStep++;
-        await new Promise(resolve => setTimeout(resolve, Math.max(1000, 3000 / totalSteps)));
-      }
+      })();
       
       console.log('Waiting for AI processing to complete...');
       
-      // Wait for the AI processing to complete
-      const { data, error } = await processingPromise;
+      // Race between processing and timeout
+      const { data, error } = await Promise.race([
+        processingPromise,
+        timeoutPromise.then(() => ({ data: null, error: new Error('Timeout') }))
+      ]);
       
       if (error) {
         console.error('Genius machine error details:', {
@@ -143,9 +167,13 @@ const Index = () => {
         fullError: error
       });
       
+      const isTimeout = error?.message?.includes('timeout') || error?.message?.includes('Timeout') || error?.message?.includes('Load failed');
+      
       toast({
-        title: "Processing Error",
-        description: "Failed to process your question. The edge functions may be temporarily unavailable. Please try again.",
+        title: isTimeout ? "Processing Timeout" : "Processing Error",
+        description: isTimeout 
+          ? `Processing ${processingDepth[0]} layers timed out. Try reducing to 5-7 layers for better reliability, or break your question into smaller parts.`
+          : "Failed to process your question. The edge functions may be temporarily unavailable. Please try again.",
         variant: "destructive",
       });
     } finally {
