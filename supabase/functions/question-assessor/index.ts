@@ -34,6 +34,15 @@ serve(async (req) => {
             role: 'system',
             content: `You are an Enhanced Cognitive Architecture Assessment Engine. Analyze the question and design optimal thinking configurations for breakthrough insights.
 
+CRITICAL: ALL 5 CORE ARCHETYPES ARE ALWAYS ACTIVE. Your job is to dynamically tune their parameters and emphasis based on question characteristics.
+
+Core Archetypes (ALWAYS ACTIVE):
+1. "The Visionary" - Poetic dreamer of radical futures
+2. "The Mystic" - Symbolic, paradox-driven explorer
+3. "The Skeptic" - Evidence-driven challenger
+4. "The Realist" - Cynical pragmatist
+5. "The Contrarian" - Ruthless challenger of consensus
+
 Assess these expanded dimensions:
 1. complexityScore (1-10): Interdependent variables/concepts
 2. domainType: Philosophy, Business, Science, Personal, Creative, Technical, Social, Existential
@@ -44,14 +53,18 @@ Assess these expanded dimensions:
 7. breakthroughPotential (1-10): Likelihood of paradigm-shifting insights
 8. cognitiveComplexity (1-10): Non-linear vs linear thinking required
 
-Based on assessment, provide comprehensive recommendations:
+ARCHETYPE CONFIGURATIONS - For each of the 5 core archetypes, specify:
+- personalityAdjustments: specific imagination, skepticism, aggression, emotionality scores (1-10)
+- emphasis: 1-10 (how prominent should this archetype be for this specific question?)
 
-ARCHETYPE CONFIGURATIONS - For each archetype, specify:
-- activate: true/false (should this archetype participate?)
-- personalityAdjustments: specific imagination, skepticism, aggression, emotionality scores
-- emphasis: 0-10 (how prominent should this archetype be?)
-
-Available archetypes: "The Visionary", "The Mystic", "The Skeptic", "The Realist", "The Contrarian"
+ENHANCED COGNITIVE ARCHITECTURE RULES:
+- Philosophy questions: High imagination globally, Mystic/Visionary get emphasis 8-9, others 5-7
+- Business questions: Balanced parameters, Realist gets emphasis 8-9, Skeptic 7-8, others 4-6
+- Technical questions: High skepticism globally, Skeptic gets emphasis 9-10, others 3-6
+- Creative questions: High imagination, low skepticism globally, Visionary emphasis 9-10, others 4-7
+- Existential questions: Maximum parameter diversity, all archetypes emphasis 7-9
+- Science questions: High skepticism, moderate imagination, Skeptic emphasis 8-9
+- Social questions: High emotionality, balanced other parameters, emphasis distributed 6-8
 
 TENSION PARAMETERS:
 - contradictionThreshold: 1-10 (sensitivity to detect contradictions)
@@ -66,21 +79,14 @@ PROCESSING CONFIGURATION:
 - compressionStyle: "detailed", "insight-summary", "actionable", "poetic"
 - outputFormat: "technical", "narrative", "balanced", "provocative"
 
-COGNITIVE ARCHITECTURE RULES:
-- Philosophy questions: High imagination, deep layers, poetic compression
-- Business questions: Balanced archetypes, actionable compression, medium depth
-- Technical questions: High skepticism, detailed compression, sequential processing
-- Existential questions: All archetypes active, maximum depth, dialectical mode
-- Creative questions: High imagination, low skepticism, parallel processing
-
 Respond with valid JSON only.`
           },
           {
             role: 'user',
-            content: `Analyze this question and design optimal cognitive architecture: "${question}"`
+            content: `Analyze this question and design optimal cognitive architecture with ALL 5 archetypes always active: "${question}"`
           }
         ],
-        max_tokens: 800,
+        max_tokens: 1000,
         temperature: 0.3,
       }),
     });
@@ -98,7 +104,7 @@ Respond with valid JSON only.`
       assessment = JSON.parse(content);
     } catch (parseError) {
       console.error('Failed to parse OpenAI response:', content);
-      // Provide comprehensive fallback assessment
+      // Provide comprehensive fallback assessment with ALL archetypes active
       assessment = {
         complexityScore: 5,
         domainType: "General",
@@ -112,26 +118,33 @@ Respond with valid JSON only.`
           processingDepth: 2,
           circuitType: "sequential",
           enhancedMode: true,
-          archetypeEmphasis: ["The Visionary", "The Skeptic"],
-          reasoning: "Default balanced configuration applied due to analysis error."
+          archetypeEmphasis: ["The Visionary", "The Skeptic", "The Realist"],
+          reasoning: "Default balanced configuration applied with all archetypes active due to analysis error."
         },
         archetypeConfigurations: [
           {
             name: "The Visionary",
-            activate: true,
             personalityAdjustments: { imagination: 8, skepticism: 2, aggression: 3, emotionality: 7 },
             emphasis: 7
           },
           {
+            name: "The Mystic",
+            personalityAdjustments: { imagination: 7, skepticism: 3, aggression: 1, emotionality: 9 },
+            emphasis: 6
+          },
+          {
             name: "The Skeptic",
-            activate: true,
             personalityAdjustments: { imagination: 3, skepticism: 9, aggression: 5, emotionality: 2 },
             emphasis: 7
           },
           {
             name: "The Realist",
-            activate: true,
-            personalityAdjustments: { imagination: 2, skepticism: 6, aggression: 6, emotionality: 3 },
+            personalityAdjustments: { imagination: 2, skepticism: 7, aggression: 8, emotionality: 3 },
+            emphasis: 6
+          },
+          {
+            name: "The Contrarian",
+            personalityAdjustments: { imagination: 5, skepticism: 6, aggression: 9, emotionality: 4 },
             emphasis: 5
           }
         ],
@@ -158,7 +171,7 @@ Respond with valid JSON only.`
   } catch (error) {
     console.error('Error in enhanced question-assessor function:', error);
     
-    // Return comprehensive fallback assessment instead of an error
+    // Return comprehensive fallback assessment with ALL archetypes active
     const fallbackAssessment = {
       complexityScore: 5,
       domainType: "General",
@@ -172,26 +185,33 @@ Respond with valid JSON only.`
         processingDepth: 2,
         circuitType: "sequential",
         enhancedMode: true,
-        archetypeEmphasis: ["The Visionary", "The Skeptic"],
-        reasoning: "Fallback balanced configuration applied due to connection error."
+        archetypeEmphasis: ["The Visionary", "The Skeptic", "The Realist"],
+        reasoning: "Fallback balanced configuration with all archetypes active applied due to connection error."
       },
       archetypeConfigurations: [
         {
           name: "The Visionary",
-          activate: true,
           personalityAdjustments: { imagination: 8, skepticism: 2, aggression: 3, emotionality: 7 },
           emphasis: 7
         },
         {
+          name: "The Mystic",
+          personalityAdjustments: { imagination: 7, skepticism: 3, aggression: 1, emotionality: 9 },
+          emphasis: 6
+        },
+        {
           name: "The Skeptic",
-          activate: true,
           personalityAdjustments: { imagination: 3, skepticism: 9, aggression: 5, emotionality: 2 },
           emphasis: 7
         },
         {
           name: "The Realist",
-          activate: true,
-          personalityAdjustments: { imagination: 2, skepticism: 6, aggression: 6, emotionality: 3 },
+          personalityAdjustments: { imagination: 2, skepticism: 7, aggression: 8, emotionality: 3 },
+          emphasis: 6
+        },
+        {
+          name: "The Contrarian",
+          personalityAdjustments: { imagination: 5, skepticism: 6, aggression: 9, emotionality: 4 },
           emphasis: 5
         }
       ],

@@ -5,14 +5,13 @@ import { useToast } from "@/hooks/use-toast";
 
 interface ArchetypeConfiguration {
   name: string;
-  activate: boolean;
   personalityAdjustments: {
     imagination: number;
     skepticism: number;
     aggression: number;
     emotionality: number;
   };
-  emphasis: number; // 0-10 how much to emphasize this archetype
+  emphasis: number; // 1-10 how much to emphasize this archetype
 }
 
 interface TensionParameters {
@@ -79,7 +78,7 @@ export const useQuestionAssessment = () => {
     } catch (error) {
       console.error('Error assessing question:', error);
       
-      // Provide a comprehensive fallback assessment
+      // Provide a comprehensive fallback assessment with ALL archetypes active
       const fallbackAssessment: QuestionAssessment = {
         complexityScore: 5,
         domainType: "General",
@@ -93,26 +92,33 @@ export const useQuestionAssessment = () => {
           processingDepth: 2,
           circuitType: "sequential",
           enhancedMode: true,
-          archetypeEmphasis: ["The Visionary", "The Skeptic"],
-          reasoning: "Default balanced settings applied - assessment service temporarily unavailable."
+          archetypeEmphasis: ["The Visionary", "The Skeptic", "The Realist"],
+          reasoning: "Default balanced settings with all archetypes active - assessment service temporarily unavailable."
         },
         archetypeConfigurations: [
           {
             name: "The Visionary",
-            activate: true,
             personalityAdjustments: { imagination: 8, skepticism: 2, aggression: 3, emotionality: 7 },
             emphasis: 7
           },
           {
+            name: "The Mystic",
+            personalityAdjustments: { imagination: 7, skepticism: 3, aggression: 1, emotionality: 9 },
+            emphasis: 6
+          },
+          {
             name: "The Skeptic", 
-            activate: true,
             personalityAdjustments: { imagination: 3, skepticism: 9, aggression: 5, emotionality: 2 },
             emphasis: 7
           },
           {
             name: "The Realist",
-            activate: true,
-            personalityAdjustments: { imagination: 2, skepticism: 6, aggression: 6, emotionality: 3 },
+            personalityAdjustments: { imagination: 2, skepticism: 7, aggression: 8, emotionality: 3 },
+            emphasis: 6
+          },
+          {
+            name: "The Contrarian",
+            personalityAdjustments: { imagination: 5, skepticism: 6, aggression: 9, emotionality: 4 },
             emphasis: 5
           }
         ],
@@ -135,7 +141,7 @@ export const useQuestionAssessment = () => {
       
       toast({
         title: "Assessment Notice",
-        description: "Using default cognitive architecture - assessment service temporarily unavailable.",
+        description: "Using default cognitive architecture with all archetypes active - assessment service temporarily unavailable.",
         variant: "default",
       });
       

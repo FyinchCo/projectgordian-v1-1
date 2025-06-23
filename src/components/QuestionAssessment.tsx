@@ -36,6 +36,13 @@ export const QuestionAssessment = ({ question, onApplyRecommendations }: Questio
     return "bg-green-500";
   };
 
+  const getEmphasisColor = (emphasis: number) => {
+    if (emphasis >= 8) return "bg-purple-500";
+    if (emphasis >= 6) return "bg-blue-500";
+    if (emphasis >= 4) return "bg-green-500";
+    return "bg-gray-400";
+  };
+
   return (
     <Card className="p-6 bg-gradient-to-r from-purple-50 to-blue-50">
       <div className="space-y-4">
@@ -66,7 +73,7 @@ export const QuestionAssessment = ({ question, onApplyRecommendations }: Questio
         </div>
 
         <p className="text-sm text-purple-700">
-          AI-powered cognitive architecture optimization for breakthrough insights
+          AI-powered cognitive architecture optimization - all archetypes always active with dynamic tuning
         </p>
 
         {showAssessment && assessment && (
@@ -97,13 +104,14 @@ export const QuestionAssessment = ({ question, onApplyRecommendations }: Questio
               {assessment.processingConfiguration && (
                 <Badge variant="secondary">{assessment.processingConfiguration.outputFormat}</Badge>
               )}
+              <Badge className="bg-green-100 text-green-800">All Archetypes Active</Badge>
             </div>
 
             {/* Core Recommendations */}
             <div className="p-4 bg-white rounded-lg border border-purple-200">
               <h4 className="font-semibold text-sm mb-3 flex items-center">
                 <Lightbulb className="w-4 h-4 mr-2" />
-                Cognitive Configuration
+                Dynamic Cognitive Configuration
               </h4>
               
               <div className="space-y-2 text-sm">
@@ -121,20 +129,30 @@ export const QuestionAssessment = ({ question, onApplyRecommendations }: Questio
                     {assessment.recommendations.enhancedMode ? "ON" : "OFF"}
                   </Badge>
                 </div>
-                
-                {assessment.recommendations.archetypeEmphasis.length > 0 && (
-                  <div>
-                    <span className="text-gray-600">Active Archetypes:</span>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {assessment.recommendations.archetypeEmphasis.map((archetype, index) => (
-                        <Badge key={index} variant="secondary" className="text-xs">
-                          {archetype}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
+
+              {/* Enhanced Archetype Configuration Display */}
+              {assessment.archetypeConfigurations && (
+                <div className="mt-4 space-y-2">
+                  <h5 className="font-semibold text-xs flex items-center">
+                    <Users className="w-3 h-3 mr-1" />
+                    Archetype Emphasis Levels (All Active)
+                  </h5>
+                  <div className="grid grid-cols-1 gap-2">
+                    {assessment.archetypeConfigurations.map((config, index) => (
+                      <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                        <span className="text-xs font-medium">{config.name}</span>
+                        <div className="flex items-center space-x-2">
+                          <div className={`w-2 h-2 rounded-full ${getEmphasisColor(config.emphasis)}`}></div>
+                          <Badge variant="outline" className="text-xs">
+                            {config.emphasis}/10
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Advanced Configuration Toggle */}
               {assessment.archetypeConfigurations && (
@@ -145,7 +163,7 @@ export const QuestionAssessment = ({ question, onApplyRecommendations }: Questio
                   className="mt-3 w-full"
                 >
                   <Settings className="w-4 h-4 mr-2" />
-                  {showAdvanced ? "Hide" : "Show"} Advanced Configuration
+                  {showAdvanced ? "Hide" : "Show"} Parameter Details
                 </Button>
               )}
 
@@ -154,25 +172,23 @@ export const QuestionAssessment = ({ question, onApplyRecommendations }: Questio
                 <div className="mt-4 space-y-3 p-3 bg-gray-50 rounded">
                   <h5 className="font-semibold text-xs flex items-center">
                     <Layers className="w-3 h-3 mr-1" />
-                    Archetype Configurations
+                    Detailed Personality Parameters
                   </h5>
                   
                   {assessment.archetypeConfigurations.map((config, index) => (
                     <div key={index} className="text-xs p-2 bg-white rounded border">
-                      <div className="flex justify-between items-center mb-1">
+                      <div className="flex justify-between items-center mb-2">
                         <span className="font-medium">{config.name}</span>
-                        <Badge variant={config.activate ? "default" : "outline"}>
-                          {config.activate ? "Active" : "Inactive"} (Emphasis: {config.emphasis}/10)
+                        <Badge className={`text-xs ${getEmphasisColor(config.emphasis)}`}>
+                          Emphasis: {config.emphasis}/10
                         </Badge>
                       </div>
-                      {config.activate && (
-                        <div className="grid grid-cols-2 gap-1 text-xs text-gray-600">
-                          <span>Imagination: {config.personalityAdjustments.imagination}</span>
-                          <span>Skepticism: {config.personalityAdjustments.skepticism}</span>
-                          <span>Aggression: {config.personalityAdjustments.aggression}</span>
-                          <span>Emotionality: {config.personalityAdjustments.emotionality}</span>
-                        </div>
-                      )}
+                      <div className="grid grid-cols-2 gap-1 text-xs text-gray-600">
+                        <span>Imagination: {config.personalityAdjustments.imagination}/10</span>
+                        <span>Skepticism: {config.personalityAdjustments.skepticism}/10</span>
+                        <span>Aggression: {config.personalityAdjustments.aggression}/10</span>
+                        <span>Emotionality: {config.personalityAdjustments.emotionality}/10</span>
+                      </div>
                     </div>
                   ))}
 
@@ -200,7 +216,7 @@ export const QuestionAssessment = ({ question, onApplyRecommendations }: Questio
                 size="sm"
               >
                 <Zap className="w-4 h-4 mr-2" />
-                Apply Cognitive Architecture
+                Apply Dynamic Architecture
               </Button>
             </div>
           </div>
