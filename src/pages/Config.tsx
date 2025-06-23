@@ -99,7 +99,8 @@ const Config = () => {
     style: "insight-summary",
     length: "medium",
     includeTrail: true,
-    includeFullTranscript: false
+    includeFullTranscript: false,
+    customInstructions: ""
   });
 
   // Load saved configuration on mount
@@ -437,6 +438,7 @@ const Config = () => {
                       <SelectItem value="insight-summary">Insight Summary</SelectItem>
                       <SelectItem value="philosophical-phrase">Philosophical Phrase</SelectItem>
                       <SelectItem value="narrative-form">Narrative Form</SelectItem>
+                      <SelectItem value="custom">Custom Instructions</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -456,6 +458,23 @@ const Config = () => {
                       <SelectItem value="poetic">Poetic (Extended metaphor)</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="customInstructions" className="text-base mb-3 block">
+                    Custom Compression Instructions
+                  </Label>
+                  <Textarea
+                    id="customInstructions"
+                    placeholder="Enter custom instructions for how the compression agent should synthesize and present insights. For example: 'Focus on actionable implications' or 'Present as a series of questions' or 'Use metaphors from nature'..."
+                    value={compressionSettings.customInstructions}
+                    onChange={(e) => setCompressionSettings(prev => ({ ...prev, customInstructions: e.target.value }))}
+                    rows={4}
+                    className="resize-none"
+                  />
+                  <p className="text-sm text-gray-500 mt-2">
+                    These instructions will override the default compression style when provided. Leave blank to use the selected compression style above.
+                  </p>
                 </div>
 
                 <div className="space-y-4">
