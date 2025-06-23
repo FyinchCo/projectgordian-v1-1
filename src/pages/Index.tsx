@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { ProcessingSection } from "@/components/ProcessingSection";
@@ -6,9 +5,11 @@ import { ResultsSection } from "@/components/ResultsSection";
 import { ProcessingLogic } from "@/components/ProcessingLogic";
 import { QuestionSection } from "@/components/QuestionSection";
 import { ControlsSection } from "@/components/ControlsSection";
+import { PasswordGate } from "@/components/PasswordGate";
 import { useToast } from "@/hooks/use-toast";
 
 const Index = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [question, setQuestion] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentArchetype, setCurrentArchetype] = useState("");
@@ -23,6 +24,14 @@ const Index = () => {
   const [currentAssessment, setCurrentAssessment] = useState(null);
   const [chunkProgress, setChunkProgress] = useState({ current: 0, total: 0 });
   const { toast } = useToast();
+
+  // Check authentication status on mount
+  useEffect(() => {
+    const authStatus = localStorage.getItem("genius-machine-authenticated");
+    if (authStatus === "true") {
+      setIsAuthenticated(true);
+    }
+  }, []);
 
   // Load custom archetypes on mount
   useEffect(() => {
@@ -101,6 +110,11 @@ const Index = () => {
     onCurrentLayerChange: setCurrentLayer,
     onChunkProgressChange: setChunkProgress
   });
+
+  // Show password gate if not authenticated
+  if (!isAuthenticated) {
+    return <PasswordGate onAuthenticated={() => setIsAuthenticated(true)} />;
+  }
 
   return (
     <div className="min-h-screen bg-white">
