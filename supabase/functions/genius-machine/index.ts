@@ -14,16 +14,31 @@ serve(async (req) => {
   }
 
   try {
-    const { question, processingDepth = 1, circuitType = 'sequential', customArchetypes, enhancedMode = true } = await req.json();
-    console.log('Processing question:', question);
-    console.log('Processing depth:', processingDepth);
-    console.log('Circuit type:', circuitType);
-    console.log('Enhanced mode:', enhancedMode);
-    console.log('Custom archetypes:', customArchetypes ? `${customArchetypes.length} custom archetypes` : 'Using default archetypes');
-
-    const layers = [];
+    const { 
+      question, 
+      processingDepth = 1, 
+      circuitType = 'sequential', 
+      customArchetypes, 
+      enhancedMode = true,
+      previousLayers = [],
+      startFromLayer = 1
+    } = await req.json();
     
-    for (let layerNum = 1; layerNum <= processingDepth; layerNum++) {
+    console.log('Processing request:', {
+      question: question?.substring(0, 100) + '...',
+      processingDepth,
+      circuitType,
+      enhancedMode,
+      customArchetypes: customArchetypes ? `${customArchetypes.length} custom` : 'default',
+      previousLayers: previousLayers.length,
+      startFromLayer
+    });
+
+    const layers = [...previousLayers];
+    
+    // Process only the requested depth, starting from the specified layer
+    for (let layerNum = startFromLayer; layerNum < startFromLayer + processingDepth; layerNum++) {
+      console.log(`Processing layer ${layerNum}...`);
       const layer = await processLayer(question, layerNum, circuitType, layers, customArchetypes, enhancedMode);
       layers.push(layer);
     }
@@ -37,7 +52,7 @@ serve(async (req) => {
       tensionPoints: finalLayer.synthesis.tensionPoints,
       noveltyScore: finalLayer.synthesis.noveltyScore || 5,
       emergenceDetected: finalLayer.synthesis.emergenceDetected || false,
-      processingDepth,
+      processingDepth: layers.length,
       circuitType,
       enhancedMode,
       assumptionAnalysis: layers[0]?.assumptionAnalysis,
@@ -56,6 +71,8 @@ serve(async (req) => {
       })),
       logicTrail: finalLayer.archetypeResponses
     };
+
+    console.log(`Successfully processed ${layers.length} layers`);
 
     return new Response(JSON.stringify(results), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

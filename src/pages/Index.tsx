@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { QuestionInput } from "@/components/QuestionInput";
@@ -6,6 +5,7 @@ import { ProcessingSection } from "@/components/ProcessingSection";
 import { ResultsSection } from "@/components/ResultsSection";
 import { EnhancedProcessingControls } from "@/components/EnhancedProcessingControls";
 import { QuestionAssessment } from "@/components/QuestionAssessment";
+import { ProcessingDepthWarning } from "@/components/ProcessingDepthWarning";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -22,6 +22,7 @@ const Index = () => {
   const [customArchetypes, setCustomArchetypes] = useState(null);
   const [showAssessment, setShowAssessment] = useState(false);
   const [currentAssessment, setCurrentAssessment] = useState(null);
+  const [chunkProgress, setChunkProgress] = useState({ current: 0, total: 0 });
   const { toast } = useToast();
 
   // Load custom archetypes on mount
@@ -29,7 +30,6 @@ const Index = () => {
     const savedArchetypes = localStorage.getItem('genius-machine-archetypes');
     if (savedArchetypes) {
       const archetypes = JSON.parse(savedArchetypes);
-      // Convert to format expected by edge function
       const formattedArchetypes = archetypes.map(archetype => ({
         name: archetype.name,
         description: archetype.description,
@@ -44,49 +44,117 @@ const Index = () => {
     }
   }, []);
 
+  const processChunkedLayers = async (baseConfig, totalDepth, chunkSize = 4) => {
+    const chunks = Math.ceil(totalDepth / chunkSize);
+    let accumulatedLayers = [];
+    
+    setChunkProgress({ current: 0, total: chunks });
+    
+    for (let chunkIndex = 0; chunkIndex < chunks; chunkIndex++) {
+      const startLayer = chunkIndex * chunkSize + 1;
+      const endLayer = Math.min((chunkIndex + 1) * chunkSize, totalDepth);
+      const chunkDepth = endLayer - startLayer + 1;
+      
+      console.log(`Processing chunk ${chunkIndex + 1}/${chunks}: layers ${startLayer}-${endLayer}`);
+      setChunkProgress({ current: chunkIndex + 1, total: chunks });
+      
+      // Update visual progress
+      for (let layer = startLayer; layer <= endLayer; layer++) {
+        setCurrentLayer(layer);
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+      
+      const chunkConfig = {
+        ...baseConfig,
+        processingDepth: chunkDepth,
+        previousLayers: accumulatedLayers,
+        startFromLayer: startLayer
+      };
+      
+      try {
+        console.log(`Invoking chunk ${chunkIndex + 1} with config:`, chunkConfig);
+        
+        const { data, error } = await supabase.functions.invoke('genius-machine', {
+          body: chunkConfig
+        });
+        
+        if (error) {
+          console.error(`Chunk ${chunkIndex + 1} error:`, error);
+          throw error;
+        }
+        
+        console.log(`Chunk ${chunkIndex + 1} completed:`, data);
+        
+        // Accumulate layers
+        if (data.layers) {
+          accumulatedLayers = [...accumulatedLayers, ...data.layers];
+        }
+        
+        // Update intermediate results
+        if (chunkIndex === chunks - 1) {
+          // Final chunk - return complete results
+          return {
+            ...data,
+            layers: accumulatedLayers,
+            processingDepth: totalDepth,
+            chunkProcessed: true
+          };
+        } else {
+          // Intermediate chunk - show progress
+          toast({
+            title: `Chunk ${chunkIndex + 1}/${chunks} Complete`,
+            description: `Processed layers ${startLayer}-${endLayer}. Continuing...`,
+            variant: "default",
+          });
+        }
+        
+      } catch (chunkError) {
+        console.error(`Chunk ${chunkIndex + 1} failed:`, chunkError);
+        
+        if (accumulatedLayers.length > 0) {
+          // Return partial results if we have some progress
+          toast({
+            title: "Partial Results Available",
+            description: `Completed ${accumulatedLayers.length} layers before timeout. Returning available insights.`,
+            variant: "default",
+          });
+          
+          const lastLayer = accumulatedLayers[accumulatedLayers.length - 1];
+          return {
+            insight: lastLayer.insight,
+            confidence: lastLayer.confidence,
+            tensionPoints: lastLayer.tensionPoints,
+            layers: accumulatedLayers,
+            processingDepth: accumulatedLayers.length,
+            partialResults: true
+          };
+        } else {
+          throw chunkError;
+        }
+      }
+    }
+  };
+
   const handleStartGenius = async () => {
     if (!question.trim()) return;
     
     setIsProcessing(true);
     setResults(null);
     setCurrentLayer(1);
+    setChunkProgress({ current: 0, total: 0 });
     
     try {
-      console.log('Starting genius processing with full configuration:', {
+      console.log('Starting genius processing with configuration:', {
         question: question.trim(),
         processingDepth: processingDepth[0],
         circuitType,
         customArchetypes: customArchetypes ? customArchetypes.length : 0,
         enhancedMode,
-        hasAssessment: !!currentAssessment,
-        assessmentRecommendations: currentAssessment?.recommendations
+        hasAssessment: !!currentAssessment
       });
       
-      // Show timeout warning for high processing depths
-      if (processingDepth[0] >= 8) {
-        toast({
-          title: "High Processing Depth Detected",
-          description: `Processing ${processingDepth[0]} layers may take a long time or timeout. Consider using 5-7 layers for reliability.`,
-          variant: "default",
-        });
-      }
-      
-      // Use custom archetypes if available, otherwise use defaults
-      const archetypeNames = customArchetypes 
-        ? customArchetypes.map(a => a.name)
-        : ["The Visionary", "The Skeptic", "The Mystic", "The Contrarian", "The Craftsman", "The Realist"];
-      
-      // Add assumption challenger if enhanced mode
-      const totalArchetypes = enhancedMode ? archetypeNames.length + 1 : archetypeNames.length;
-      const totalSteps = processingDepth[0] * totalArchetypes + processingDepth[0]; // agents + synthesis per layer
-      let currentStep = 0;
-      
-      console.log('Invoking genius-machine function with assessment-informed configuration...');
-      
-      // Prepare the processing configuration - include assessment data if available
-      const processingConfig = {
+      const baseConfig = {
         question,
-        processingDepth: processingDepth[0],
         circuitType,
         customArchetypes: customArchetypes,
         enhancedMode,
@@ -97,89 +165,67 @@ const Index = () => {
         } : null
       };
       
-      console.log('Full processing configuration being sent:', processingConfig);
+      let finalResults;
       
-      // Set up timeout handling - Supabase functions timeout after ~5 minutes
-      const timeoutMs = Math.min(240000, processingDepth[0] * 24000); // 4 minutes max, scale with depth
-      console.log(`Setting timeout for ${timeoutMs}ms based on processing depth`);
-      
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => {
-          reject(new Error(`Processing timeout after ${timeoutMs/1000} seconds. Try reducing processing depth to 5-7 layers for better reliability.`));
-        }, timeoutMs);
-      });
-      
-      // Start the actual AI processing with timeout
-      const processingPromise = supabase.functions.invoke('genius-machine', {
-        body: processingConfig
-      });
-      
-      // Show visual progress while AI is working
-      const progressPromise = (async () => {
-        for (let layer = 1; layer <= processingDepth[0]; layer++) {
-          setCurrentLayer(layer);
-          
-          // Show assumption analysis for first layer in enhanced mode
-          if (layer === 1 && enhancedMode) {
-            setCurrentArchetype("Assumption Challenger");
-            await new Promise(resolve => setTimeout(resolve, 1500));
-          }
-          
-          for (let i = 0; i < archetypeNames.length; i++) {
-            setCurrentArchetype(archetypeNames[i]);
-            currentStep++;
-            await new Promise(resolve => setTimeout(resolve, Math.max(800, 3000 / totalSteps)));
-          }
-          
-          setCurrentArchetype("Compression Agent");
-          currentStep++;
-          await new Promise(resolve => setTimeout(resolve, Math.max(1000, 3000 / totalSteps)));
-        }
-      })();
-      
-      console.log('Waiting for AI processing to complete...');
-      
-      // Race between processing and timeout
-      const { data, error } = await Promise.race([
-        processingPromise,
-        timeoutPromise.then(() => ({ data: null, error: new Error('Timeout') }))
-      ]);
-      
-      if (error) {
-        console.error('Genius machine error details:', {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code,
-          fullError: error
+      // Use chunked processing for high depths
+      if (processingDepth[0] >= 8) {
+        toast({
+          title: "High-Depth Processing",
+          description: `Processing ${processingDepth[0]} layers in chunks to avoid timeouts. This may take a few minutes.`,
+          variant: "default",
         });
-        throw error;
+        
+        finalResults = await processChunkedLayers(baseConfig, processingDepth[0]);
+      } else {
+        // Regular processing for lower depths
+        const config = { ...baseConfig, processingDepth: processingDepth[0] };
+        
+        const { data, error } = await supabase.functions.invoke('genius-machine', {
+          body: config
+        });
+        
+        if (error) {
+          console.error('Processing error:', error);
+          throw error;
+        }
+        
+        finalResults = data;
       }
       
-      console.log('Processing completed successfully:', data);
-      setResults(data);
+      console.log('Processing completed:', finalResults);
+      setResults(finalResults);
+      
+      if (finalResults.partialResults) {
+        toast({
+          title: "Partial Results Generated",
+          description: `Generated insights from ${finalResults.processingDepth} layers. Consider using 5-7 layers for full reliability.`,
+          variant: "default",
+        });
+      } else if (finalResults.chunkProcessed) {
+        toast({
+          title: "High-Depth Processing Complete",
+          description: `Successfully processed all ${finalResults.processingDepth} layers using chunked processing.`,
+          variant: "default",
+        });
+      }
       
     } catch (error) {
-      console.error('Error processing question - detailed analysis:', {
-        errorType: typeof error,
-        errorConstructor: error?.constructor?.name,
-        errorMessage: error?.message,
-        fullError: error
-      });
+      console.error('Error processing question:', error);
       
-      const isTimeout = error?.message?.includes('timeout') || error?.message?.includes('Timeout') || error?.message?.includes('Load failed');
+      const isTimeout = error?.message?.includes('timeout') || error?.message?.includes('Load failed');
       
       toast({
         title: isTimeout ? "Processing Timeout" : "Processing Error",
         description: isTimeout 
-          ? `Processing ${processingDepth[0]} layers timed out. Try reducing to 5-7 layers for better reliability, or break your question into smaller parts.`
-          : "Failed to process your question. The edge functions may be temporarily unavailable. Please try again.",
+          ? `Processing failed. Try reducing depth to 5-7 layers, or the system may be experiencing high load.`
+          : "Failed to process your question. Please try again.",
         variant: "destructive",
       });
     } finally {
       setIsProcessing(false);
       setCurrentArchetype("");
       setCurrentLayer(1);
+      setChunkProgress({ current: 0, total: 0 });
     }
   };
 
@@ -236,6 +282,8 @@ const Index = () => {
               />
             )}
 
+            <ProcessingDepthWarning depth={processingDepth[0]} />
+
             <EnhancedProcessingControls
               processingDepth={processingDepth}
               onProcessingDepthChange={setProcessingDepth}
@@ -254,6 +302,7 @@ const Index = () => {
             currentLayer={currentLayer}
             processingDepth={processingDepth}
             circuitType={circuitType}
+            chunkProgress={chunkProgress}
           />
         )}
 
