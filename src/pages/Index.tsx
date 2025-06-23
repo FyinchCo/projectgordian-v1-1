@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { QuestionInput } from "@/components/QuestionInput";
@@ -19,6 +18,7 @@ const Index = () => {
   const [enhancedMode, setEnhancedMode] = useState(true);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [customArchetypes, setCustomArchetypes] = useState(null);
+  const [showAssessment, setShowAssessment] = useState(false);
   const { toast } = useToast();
 
   // Load custom archetypes on mount
@@ -114,6 +114,17 @@ const Index = () => {
     }
   };
 
+  const handleApplyRecommendations = (recommendations: any) => {
+    setProcessingDepth([recommendations.processingDepth]);
+    setCircuitType(recommendations.circuitType);
+    setEnhancedMode(recommendations.enhancedMode);
+    
+    toast({
+      title: "Settings Applied",
+      description: "AI recommendations have been applied to your processing configuration.",
+    });
+  };
+
   const handleExportInsight = () => {
     setIsExportModalOpen(true);
   };
@@ -121,6 +132,11 @@ const Index = () => {
   const handleReset = () => {
     setResults(null);
     setQuestion("");
+    setShowAssessment(false);
+  };
+
+  const toggleAssessment = () => {
+    setShowAssessment(!showAssessment);
   };
 
   return (
@@ -136,7 +152,16 @@ const Index = () => {
               onStartGenius={handleStartGenius}
               customArchetypes={customArchetypes}
               enhancedMode={enhancedMode}
+              onToggleAssessment={toggleAssessment}
+              showAssessment={showAssessment}
             />
+
+            {showAssessment && (
+              <QuestionAssessment
+                question={question}
+                onApplyRecommendations={handleApplyRecommendations}
+              />
+            )}
 
             <EnhancedProcessingControls
               processingDepth={processingDepth}

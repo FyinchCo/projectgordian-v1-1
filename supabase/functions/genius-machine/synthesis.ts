@@ -40,6 +40,66 @@ Respond with JSON only:
   }
 }
 
+export async function addTensionTags(archetypeResponses: ArchetypeResponse[]): Promise<ArchetypeResponse[]> {
+  const taggedResponses: ArchetypeResponse[] = [];
+  
+  for (let i = 0; i < archetypeResponses.length; i++) {
+    const currentResponse = archetypeResponses[i];
+    const previousResponses = archetypeResponses.slice(0, i);
+    
+    if (previousResponses.length === 0) {
+      taggedResponses.push(currentResponse);
+      continue;
+    }
+    
+    const analysisPrompt = `Analyze if this new perspective creates significant tension or novelty compared to previous ones.
+
+Previous perspectives:
+${previousResponses.map(r => `${r.archetype}: ${r.contribution}`).join('\n')}
+
+New perspective:
+${currentResponse.archetype}: ${currentResponse.contribution}
+
+If this creates significant contradiction, add [contradiction emerged here] at the start.
+If this introduces a genuinely novel insight, add [novel insight surfaced here] at the start.
+Otherwise, return the contribution unchanged.
+
+Return only the (possibly tagged) contribution text.`;
+
+    try {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openAIApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            { role: 'system', content: 'You are a tension detection system. Add tags only when there is genuine contradiction or novel insight.' },
+            { role: 'user', content: analysisPrompt }
+          ],
+          max_tokens: 300,
+          temperature: 0.2,
+        }),
+      });
+
+      const data = await response.json();
+      const taggedContribution = data.choices[0].message.content;
+      
+      taggedResponses.push({
+        ...currentResponse,
+        contribution: taggedContribution
+      });
+    } catch (error) {
+      console.error('Error adding tension tags:', error);
+      taggedResponses.push(currentResponse);
+    }
+  }
+  
+  return taggedResponses;
+}
+
 export async function synthesizeInsight(
   question: string, 
   archetypeResponses: ArchetypeResponse[], 
@@ -47,7 +107,9 @@ export async function synthesizeInsight(
   layerNumber?: number, 
   tensionMetrics?: TensionMetrics
 ): Promise<SynthesisResult> {
-  const allResponses = archetypeResponses.map(r => `${r.archetype}: ${r.contribution}`).join('\n\n');
+  // Add tension tags to responses
+  const taggedResponses = await addTensionTags(archetypeResponses);
+  const allResponses = taggedResponses.map(r => `${r.archetype}: ${r.contribution}`).join('\n\n');
   
   let systemPrompt = `You are the Enhanced Compression Agent. Your role is to synthesize insights from multiple archetypal perspectives into breakthrough insights that transcend conventional wisdom.
 
@@ -56,6 +118,8 @@ Your analysis must:
 2. Detect novelty - how much this challenges typical thinking patterns
 3. Preserve essential tensions rather than smoothing them over
 4. Flag when synthesis creates true cognitive disruption vs. elegant restatement
+
+Pay special attention to tension tags like [contradiction emerged here] and [novel insight surfaced here] - these indicate fault lines where breakthrough thinking is most likely.
 
 Respond with a JSON object containing:
 - insight: A profound, actionable insight (1-2 sentences) that creates cognitive disruption

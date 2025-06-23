@@ -45,8 +45,8 @@ export async function processLayer(
     tensionMetrics = await calculateTensionMetrics(archetypeResponses);
   }
 
-  // Phase 4: Enhanced Synthesis with Emergence Detection
-  console.log('Synthesizing with emergence detection...');
+  // Phase 4: Enhanced Synthesis with Emergence Detection and Tension Tags
+  console.log('Synthesizing with emergence detection and tension tags...');
   const synthesis = await synthesizeInsight(question, archetypeResponses, previousLayers, layerNumber, tensionMetrics);
 
   return {

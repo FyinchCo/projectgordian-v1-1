@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { Play, Zap } from "lucide-react";
+import { Play, Zap, Brain } from "lucide-react";
 
 interface QuestionInputProps {
   question: string;
@@ -11,6 +11,8 @@ interface QuestionInputProps {
   onStartGenius: () => void;
   customArchetypes: any;
   enhancedMode: boolean;
+  onToggleAssessment?: () => void;
+  showAssessment?: boolean;
 }
 
 export const QuestionInput = ({ 
@@ -18,7 +20,9 @@ export const QuestionInput = ({
   setQuestion, 
   onStartGenius, 
   customArchetypes, 
-  enhancedMode 
+  enhancedMode,
+  onToggleAssessment,
+  showAssessment
 }: QuestionInputProps) => {
   return (
     <div className="space-y-8">
@@ -54,8 +58,21 @@ export const QuestionInput = ({
           />
           
           <div className="flex justify-between items-center pt-4 border-t">
-            <div className="text-sm text-gray-500">
-              {question.length} characters
+            <div className="flex items-center space-x-4">
+              <div className="text-sm text-gray-500">
+                {question.length} characters
+              </div>
+              {onToggleAssessment && (
+                <Button
+                  onClick={onToggleAssessment}
+                  variant="ghost"
+                  size="sm"
+                  className="flex items-center space-x-2"
+                >
+                  <Brain className="w-4 h-4" />
+                  <span>{showAssessment ? "Hide" : "Show"} AI Assessment</span>
+                </Button>
+              )}
             </div>
             <Button 
               onClick={onStartGenius}
