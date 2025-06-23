@@ -161,7 +161,7 @@ export const QuestionAssessment = ({ question, onApplyRecommendations }: Questio
                     <div key={index} className="text-xs p-2 bg-white rounded border">
                       <div className="flex justify-between items-center mb-1">
                         <span className="font-medium">{config.name}</span>
-                        <Badge size="sm" variant={config.activate ? "default" : "outline"}>
+                        <Badge variant={config.activate ? "default" : "outline"}>
                           {config.activate ? "Active" : "Inactive"} (Emphasis: {config.emphasis}/10)
                         </Badge>
                       </div>
