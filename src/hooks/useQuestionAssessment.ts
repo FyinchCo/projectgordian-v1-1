@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -62,13 +61,19 @@ export const useQuestionAssessment = () => {
     
     try {
       console.log('Assessing question with enhanced cognitive architecture analysis:', question);
+      console.log('Supabase client status:', supabase ? 'initialized' : 'not initialized');
       
       const { data, error } = await supabase.functions.invoke('question-assessor', {
         body: { question }
       });
       
       if (error) {
-        console.error('Supabase function error:', error);
+        console.error('Supabase function error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
         throw error;
       }
       
@@ -76,7 +81,9 @@ export const useQuestionAssessment = () => {
       setAssessment(data);
       return data;
     } catch (error) {
-      console.error('Error assessing question:', error);
+      console.error('Error assessing question - full error object:', error);
+      console.error('Error type:', typeof error);
+      console.error('Error constructor:', error?.constructor?.name);
       
       // Provide a comprehensive fallback assessment with ALL archetypes active
       const fallbackAssessment: QuestionAssessment = {

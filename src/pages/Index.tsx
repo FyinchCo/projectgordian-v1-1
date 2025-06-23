@@ -51,6 +51,14 @@ const Index = () => {
     setCurrentLayer(1);
     
     try {
+      console.log('Starting genius processing with parameters:', {
+        question: question.trim(),
+        processingDepth: processingDepth[0],
+        circuitType,
+        customArchetypes: customArchetypes ? customArchetypes.length : 0,
+        enhancedMode
+      });
+      
       // Use custom archetypes if available, otherwise use defaults
       const archetypeNames = customArchetypes 
         ? customArchetypes.map(a => a.name)
@@ -60,6 +68,8 @@ const Index = () => {
       const totalArchetypes = enhancedMode ? archetypeNames.length + 1 : archetypeNames.length;
       const totalSteps = processingDepth[0] * totalArchetypes + processingDepth[0]; // agents + synthesis per layer
       let currentStep = 0;
+      
+      console.log('Invoking genius-machine function...');
       
       // Start the actual AI processing
       const processingPromise = supabase.functions.invoke('genius-machine', {
@@ -93,20 +103,36 @@ const Index = () => {
         await new Promise(resolve => setTimeout(resolve, Math.max(1000, 3000 / totalSteps)));
       }
       
+      console.log('Waiting for AI processing to complete...');
+      
       // Wait for the AI processing to complete
       const { data, error } = await processingPromise;
       
       if (error) {
+        console.error('Genius machine error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code,
+          fullError: error
+        });
         throw error;
       }
       
+      console.log('Processing completed successfully:', data);
       setResults(data);
       
     } catch (error) {
-      console.error('Error processing question:', error);
+      console.error('Error processing question - detailed analysis:', {
+        errorType: typeof error,
+        errorConstructor: error?.constructor?.name,
+        errorMessage: error?.message,
+        fullError: error
+      });
+      
       toast({
-        title: "Error",
-        description: "Failed to process your question. Please try again.",
+        title: "Processing Error",
+        description: "Failed to process your question. The edge functions may be temporarily unavailable. Please try again.",
         variant: "destructive",
       });
     } finally {
