@@ -6,8 +6,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Settings, Play, Brain, Zap } from "lucide-react";
 import { Link } from "react-router-dom";
 import { ProcessingDisplay } from "@/components/ProcessingDisplay";
-import { ResultsDisplay } from "@/components/ResultsDisplay";
-import { ProcessingControls } from "@/components/ProcessingControls";
+import { EnhancedResultsDisplay } from "@/components/EnhancedResultsDisplay";
+import { EnhancedProcessingControls } from "@/components/EnhancedProcessingControls";
 import { ExportModal } from "@/components/ExportModal";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -20,6 +20,7 @@ const Index = () => {
   const [results, setResults] = useState(null);
   const [processingDepth, setProcessingDepth] = useState([1]);
   const [circuitType, setCircuitType] = useState("sequential");
+  const [enhancedMode, setEnhancedMode] = useState(true);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [customArchetypes, setCustomArchetypes] = useState(null);
   const { toast } = useToast();
@@ -57,7 +58,9 @@ const Index = () => {
         ? customArchetypes.map(a => a.name)
         : ["The Visionary", "The Skeptic", "The Mystic", "The Contrarian", "The Craftsman", "The Realist"];
       
-      const totalSteps = processingDepth[0] * archetypeNames.length + processingDepth[0]; // agents + synthesis per layer
+      // Add assumption challenger if enhanced mode
+      const totalArchetypes = enhancedMode ? archetypeNames.length + 1 : archetypeNames.length;
+      const totalSteps = processingDepth[0] * totalArchetypes + processingDepth[0]; // agents + synthesis per layer
       let currentStep = 0;
       
       // Start the actual AI processing
@@ -66,7 +69,8 @@ const Index = () => {
           question,
           processingDepth: processingDepth[0],
           circuitType,
-          customArchetypes: customArchetypes
+          customArchetypes: customArchetypes,
+          enhancedMode
         }
       });
       
@@ -74,15 +78,21 @@ const Index = () => {
       for (let layer = 1; layer <= processingDepth[0]; layer++) {
         setCurrentLayer(layer);
         
+        // Show assumption analysis for first layer in enhanced mode
+        if (layer === 1 && enhancedMode) {
+          setCurrentArchetype("Assumption Challenger");
+          await new Promise(resolve => setTimeout(resolve, 1500));
+        }
+        
         for (let i = 0; i < archetypeNames.length; i++) {
           setCurrentArchetype(archetypeNames[i]);
           currentStep++;
-          await new Promise(resolve => setTimeout(resolve, Math.max(800, 2000 / totalSteps)));
+          await new Promise(resolve => setTimeout(resolve, Math.max(800, 3000 / totalSteps)));
         }
         
         setCurrentArchetype("Compression Agent");
         currentStep++;
-        await new Promise(resolve => setTimeout(resolve, Math.max(1000, 2000 / totalSteps)));
+        await new Promise(resolve => setTimeout(resolve, Math.max(1000, 3000 / totalSteps)));
       }
       
       // Wait for the AI processing to complete
@@ -128,6 +138,11 @@ const Index = () => {
                     Custom Config
                   </span>
                 )}
+                {enhancedMode && (
+                  <span className="ml-2 px-2 py-0.5 bg-purple-100 text-purple-800 rounded text-xs">
+                    Enhanced Mode
+                  </span>
+                )}
               </p>
             </div>
           </div>
@@ -156,6 +171,11 @@ const Index = () => {
               {customArchetypes && (
                 <p className="text-sm text-blue-600">
                   Using {customArchetypes.length} custom archetypes from your configuration
+                </p>
+              )}
+              {enhancedMode && (
+                <p className="text-sm text-purple-600">
+                  Enhanced mode: Assumption interrogation and dialectical tension active
                 </p>
               )}
             </div>
@@ -187,27 +207,29 @@ const Index = () => {
               </div>
             </Card>
 
-            {/* Processing Controls */}
-            <ProcessingControls
+            {/* Enhanced Processing Controls */}
+            <EnhancedProcessingControls
               processingDepth={processingDepth}
               onProcessingDepthChange={setProcessingDepth}
               circuitType={circuitType}
               onCircuitTypeChange={setCircuitType}
+              enhancedMode={enhancedMode}
+              onEnhancedModeChange={setEnhancedMode}
             />
 
             {/* Info Section */}
             <div className="grid md:grid-cols-3 gap-6 mt-12">
               <Card className="p-6 text-center">
-                <h3 className="font-bold mb-2">MULTI-LAYER</h3>
-                <p className="text-sm text-gray-600">Iterative processing with configurable depth</p>
+                <h3 className="font-bold mb-2">COGNITIVE DISRUPTION</h3>
+                <p className="text-sm text-gray-600">Challenge assumptions and force breakthrough thinking</p>
               </Card>
               <Card className="p-6 text-center">
-                <h3 className="font-bold mb-2">CUSTOM ARCHETYPES</h3>
-                <p className="text-sm text-gray-600">Configure personality matrices and constraints</p>
+                <h3 className="font-bold mb-2">DIALECTICAL TENSION</h3>
+                <p className="text-sm text-gray-600">Generate productive conflict between perspectives</p>
               </Card>
               <Card className="p-6 text-center">
-                <h3 className="font-bold mb-2">EXPORT READY</h3>
-                <p className="text-sm text-gray-600">Download insights in multiple formats</p>
+                <h3 className="font-bold mb-2">EMERGENCE DETECTION</h3>
+                <p className="text-sm text-gray-600">Identify moments of genuine insight breakthrough</p>
               </Card>
             </div>
           </div>
@@ -224,7 +246,7 @@ const Index = () => {
         )}
 
         {results && (
-          <ResultsDisplay 
+          <EnhancedResultsDisplay 
             results={results}
             question={question}
             onReset={() => {
