@@ -9,6 +9,7 @@ interface ProcessingDisplayProps {
   currentLayer?: number;
   totalLayers?: number;
   circuitType?: string;
+  chunkProgress?: { current: number; total: number };
 }
 
 const getCircuitIcon = (circuitType: string) => {
@@ -25,7 +26,8 @@ export const ProcessingDisplay = ({
   question,
   currentLayer = 1,
   totalLayers = 1,
-  circuitType = 'sequential'
+  circuitType = 'sequential',
+  chunkProgress
 }: ProcessingDisplayProps) => {
   const CircuitIcon = getCircuitIcon(circuitType);
   
@@ -46,6 +48,20 @@ export const ProcessingDisplay = ({
         <h3 className="font-bold text-sm uppercase tracking-wide text-gray-500 mb-2">PROCESSING QUESTION</h3>
         <p className="text-lg">{question}</p>
       </Card>
+
+      {/* Chunk Progress (if chunked processing) */}
+      {chunkProgress && chunkProgress.total > 1 && (
+        <Card className="p-4 bg-blue-50 border-blue-200">
+          <div className="flex items-center justify-between">
+            <div className="font-semibold text-blue-800">
+              Chunk {chunkProgress.current} of {chunkProgress.total}
+            </div>
+            <div className="text-sm text-blue-600">
+              High-depth processing in progress...
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* Processing Status */}
       <Card className="p-8 border-2">
