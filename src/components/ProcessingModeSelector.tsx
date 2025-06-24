@@ -26,7 +26,7 @@ const processingModes: ProcessingMode[] = [
     depthRange: [3, 8],
     recommendedDepth: 5,
     icon: Brain,
-    color: "bg-blue-50 border-blue-200 text-blue-800",
+    color: "border-mono-pure-black bg-mono-pure-white",
     expectedOutcome: "Strong Insight",
     cognitiveStage: "Thesis + Antithesis → Resolution",
     estimatedTime: "1-2 minutes"
@@ -38,7 +38,7 @@ const processingModes: ProcessingMode[] = [
     depthRange: [12, 20],
     recommendedDepth: 16,
     icon: Zap,
-    color: "bg-purple-50 border-purple-200 text-purple-800",
+    color: "border-mono-pure-black bg-mono-pure-white",
     expectedOutcome: "Profound Breakthrough",
     cognitiveStage: "Recursive Inquiry → Emergent Synthesis",
     estimatedTime: "3-5 minutes"
@@ -50,7 +50,7 @@ const processingModes: ProcessingMode[] = [
     depthRange: [20, 30],
     recommendedDepth: 25,
     icon: Rocket,
-    color: "bg-amber-50 border-amber-200 text-amber-800",
+    color: "border-mono-pure-black bg-mono-pure-white",
     expectedOutcome: "Transcendent Insight",
     cognitiveStage: "Recursive Synthesis → Cognitive Alchemy",
     estimatedTime: "5-8 minutes"
@@ -73,14 +73,13 @@ export const ProcessingModeSelector = ({
   const currentMode = processingModes.find(mode => mode.id === selectedMode) || processingModes[0];
 
   return (
-    <Card className="p-6 bg-gradient-to-r from-gray-50 to-blue-50">
-      <div className="space-y-6">
-        <div>
-          <h3 className="font-bold text-lg mb-2 flex items-center space-x-2">
-            <Sparkles className="w-5 h-5 text-blue-600" />
-            <span>COGNITIVE PROCESSING MODE</span>
+    <div className="border-4 border-mono-pure-black bg-mono-pure-white shadow-2xl">
+      <div className="p-4 space-y-6">
+        <div className="text-center">
+          <h3 className="text-2xl font-cormorant font-bold tracking-tight text-mono-pure-black uppercase mb-2">
+            COGNITIVE PROCESSING MODE
           </h3>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm font-inter text-mono-dark-gray leading-relaxed">
             Select the depth of cognitive analysis based on your question's complexity
           </p>
         </div>
@@ -100,89 +99,93 @@ export const ProcessingModeSelector = ({
               <ToggleGroupItem 
                 key={mode.id} 
                 value={mode.id}
-                className={`h-auto p-0 data-[state=on]:bg-transparent`}
+                className="h-auto p-0 data-[state=on]:bg-transparent"
               >
-                <Card className={`p-4 w-full transition-all cursor-pointer hover:shadow-md ${
+                <div className={`p-4 w-full transition-all cursor-pointer border-2 ${
                   isSelected 
-                    ? `${mode.color} border-2 shadow-md` 
-                    : 'bg-white border hover:border-gray-300'
+                    ? 'border-mono-pure-black bg-mono-pure-black text-mono-pure-white shadow-lg' 
+                    : 'border-mono-pure-black bg-mono-pure-white text-mono-pure-black hover:bg-mono-light-gray'
                 }`}>
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">
                         <IconComponent className="w-5 h-5" />
-                        <span className="font-semibold text-sm">{mode.name}</span>
+                        <span className="font-mono font-bold text-sm uppercase tracking-wide">{mode.name}</span>
                       </div>
-                      <Badge variant="secondary" className="text-xs">
+                      <div className={`px-2 py-1 text-xs font-mono uppercase border ${
+                        isSelected 
+                          ? 'border-mono-pure-white text-mono-pure-white' 
+                          : 'border-mono-pure-black text-mono-pure-black'
+                      }`}>
                         {mode.recommendedDepth} layers
-                      </Badge>
+                      </div>
                     </div>
                     
-                    <p className="text-xs text-gray-600 leading-relaxed">
+                    <p className="text-xs font-inter leading-relaxed">
                       {mode.description}
                     </p>
                     
                     <div className="space-y-2">
                       <div className="flex items-center space-x-1 text-xs">
                         <Target className="w-3 h-3" />
-                        <span className="font-medium">{mode.expectedOutcome}</span>
+                        <span className="font-mono font-medium uppercase">{mode.expectedOutcome}</span>
                       </div>
-                      <div className="flex items-center space-x-1 text-xs text-gray-500">
+                      <div className="flex items-center space-x-1 text-xs">
                         <Clock className="w-3 h-3" />
-                        <span>{mode.estimatedTime}</span>
+                        <span className="font-mono">{mode.estimatedTime}</span>
                       </div>
                     </div>
                   </div>
-                </Card>
+                </div>
               </ToggleGroupItem>
             );
           })}
         </ToggleGroup>
 
         {/* Selected Mode Details */}
-        <Card className={`p-4 ${currentMode.color}`}>
+        <div className="border-2 border-mono-pure-black bg-mono-light-gray p-4">
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <h4 className="font-semibold">Selected: {currentMode.name}</h4>
-              <Badge variant="outline" className="text-xs">
+              <h4 className="font-mono font-bold text-mono-pure-black uppercase tracking-wide">Selected: {currentMode.name}</h4>
+              <div className="px-2 py-1 text-xs font-mono uppercase border border-mono-pure-black bg-mono-pure-white text-mono-pure-black">
                 {currentMode.depthRange[0]}-{currentMode.depthRange[1]} layers
-              </Badge>
+              </div>
             </div>
             <div className="text-sm">
-              <div className="font-medium">Cognitive Process:</div>
-              <div className="text-xs opacity-80">{currentMode.cognitiveStage}</div>
+              <div className="font-mono font-medium text-mono-pure-black uppercase tracking-wide">Cognitive Process:</div>
+              <div className="text-xs font-inter text-mono-dark-gray">{currentMode.cognitiveStage}</div>
             </div>
             {customDepth && customDepth !== currentMode.recommendedDepth && (
-              <div className="text-xs opacity-80">
+              <div className="text-xs font-mono text-mono-pure-black bg-mono-pure-white inline-block px-2 py-1 border border-mono-pure-black uppercase tracking-wide">
                 Custom depth: {customDepth} layers
               </div>
             )}
           </div>
-        </Card>
+        </div>
 
         {/* Advanced Options */}
         {onCustomDepthChange && (
           <details className="text-sm">
-            <summary className="cursor-pointer text-gray-600 hover:text-gray-800">
+            <summary className="cursor-pointer font-mono text-mono-pure-black hover:text-mono-charcoal uppercase tracking-wide">
               Advanced: Custom Depth Override
             </summary>
-            <div className="mt-3 p-3 bg-white rounded border">
-              <Label className="text-xs">Custom Processing Depth</Label>
+            <div className="mt-3 p-3 border-2 border-mono-pure-black bg-mono-pure-white">
+              <Label className="text-xs font-mono text-mono-pure-black uppercase tracking-wide">Custom Processing Depth</Label>
               <input
                 type="number"
                 min={1}
                 max={30}
                 value={customDepth || currentMode.recommendedDepth}
                 onChange={(e) => onCustomDepthChange(parseInt(e.target.value) || currentMode.recommendedDepth)}
-                className="w-full mt-1 px-2 py-1 border rounded text-sm"
+                className="w-full mt-1 px-2 py-1 border-2 border-mono-pure-black text-sm font-mono bg-mono-pure-white text-mono-pure-black focus:outline-none focus:ring-0"
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs font-inter text-mono-dark-gray mt-1">
                 Override the recommended depth for this mode
               </p>
             </div>
           </details>
         )}
       </div>
-    </Card>
+    </div>
   );
 };
