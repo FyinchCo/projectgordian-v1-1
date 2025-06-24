@@ -114,14 +114,14 @@ export const ConsolidatedGeniusInterface = ({
             setOutputType={setOutputType}
           />
 
-          {/* AI Optimization Button */}
-          <div className="p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200">
+          {/* AI Optimization Button - Updated to match brutal monochrome style */}
+          <div className="p-4 bg-mono-light-gray rounded-none border-2 border-mono-pure-black">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
-                <Brain className="w-5 h-5 text-purple-600" />
+                <Brain className="w-5 h-5 text-mono-pure-black" />
                 <div>
-                  <h3 className="font-semibold text-purple-800 text-sm">AI Configuration Optimizer</h3>
-                  <p className="text-xs text-purple-700">
+                  <h3 className="font-mono font-bold text-mono-pure-black text-sm uppercase tracking-wide">AI Configuration Optimizer</h3>
+                  <p className="text-xs text-mono-dark-gray font-inter">
                     Automatically optimize archetype personalities, tension detection, and compression settings
                   </p>
                 </div>
@@ -130,7 +130,7 @@ export const ConsolidatedGeniusInterface = ({
                 onClick={handleOptimizeAllSettings}
                 disabled={!question.trim() || isOptimizing}
                 size="sm"
-                className="bg-purple-600 hover:bg-purple-700 text-white"
+                className="bg-mono-pure-black hover:bg-mono-charcoal text-mono-pure-white border-2 border-mono-pure-black font-mono uppercase tracking-wide"
               >
                 {isOptimizing ? (
                   <>
