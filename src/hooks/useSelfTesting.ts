@@ -11,6 +11,8 @@ export const useSelfTesting = () => {
   const [performanceMetrics, setPerformanceMetrics] = useState<PerformanceMetrics | null>(null);
   const [improvementPlan, setImprovementPlan] = useState<ImprovementPlan | null>(null);
   const [currentTestProgress, setCurrentTestProgress] = useState<{ current: number; total: number }>({ current: 0, total: 0 });
+  const [testStatus, setTestStatus] = useState<string>('');
+  const [testErrors, setTestErrors] = useState<string[]>([]);
   const { toast } = useToast();
 
   const evaluateResult = useCallback((scenario: TestScenario, result: ProcessingResult): TestResult => {
@@ -65,6 +67,9 @@ export const useSelfTesting = () => {
   ) => {
     console.log('useSelfTesting: Starting full test suite...');
     setIsRunningTests(true);
+    setTestErrors([]);
+    setTestStatus('Initializing test suite...');
+    
     const scenarios = selfTestingEngine.getTestScenarios();
     const results: TestResult[] = [];
     
@@ -76,6 +81,7 @@ export const useSelfTesting = () => {
         console.log(`useSelfTesting: Running test ${i + 1}/${scenarios.length}: ${scenario.description}`);
         
         setCurrentTestProgress({ current: i + 1, total: scenarios.length });
+        setTestStatus(`Testing ${scenario.category}: ${scenario.description}`);
         
         toast({
           title: "Running Test",
@@ -85,8 +91,23 @@ export const useSelfTesting = () => {
         
         try {
           console.log(`useSelfTesting: Calling processFunction for: ${scenario.question}`);
-          const processingResult = await processFunction(scenario.question);
+          
+          // Add timeout to prevent hanging
+          const timeoutPromise = new Promise<never>((_, reject) => {
+            setTimeout(() => reject(new Error('Test timeout after 60 seconds')), 60000);
+          });
+          
+          const processingResult = await Promise.race([
+            processFunction(scenario.question),
+            timeoutPromise
+          ]);
+          
           console.log(`useSelfTesting: Processing completed for scenario ${i + 1}:`, processingResult);
+          
+          // Validate the result structure
+          if (!processingResult || typeof processingResult.confidence !== 'number') {
+            throw new Error('Invalid processing result structure');
+          }
           
           const testResult = evaluateResult(scenario, processingResult);
           results.push(testResult);
@@ -103,19 +124,22 @@ export const useSelfTesting = () => {
         } catch (testError) {
           console.error(`useSelfTesting: Error in test ${i + 1}:`, testError);
           
+          const errorMessage = testError instanceof Error ? testError.message : 'Unknown error';
+          setTestErrors(prev => [...prev, `Test ${i + 1} (${scenario.category}): ${errorMessage}`]);
+          
           // Create a failed test result for this scenario
           const failedResult: TestResult = {
             scenarioId: scenario.id,
             passed: false,
             actualResult: {
-              insight: 'Test failed to execute',
+              insight: `Test failed to execute: ${errorMessage}`,
               confidence: 0,
               tensionPoints: 0,
               noveltyScore: 0,
               emergenceDetected: false
             },
             qualityScore: 0,
-            issues: [`Test execution failed: ${testError.message}`],
+            issues: [`Test execution failed: ${errorMessage}`],
             recommendations: ['Check system configuration and try again'],
             timestamp: Date.now()
           };
@@ -124,16 +148,17 @@ export const useSelfTesting = () => {
           
           toast({
             title: "Test Error",
-            description: `Failed to run ${scenario.category} test: ${testError.message}`,
+            description: `Failed to run ${scenario.category} test: ${errorMessage}`,
             variant: "destructive",
           });
         }
         
         // Small delay between tests to prevent overwhelming the system
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 2000));
       }
       
       // Final analysis
+      setTestStatus('Analyzing results...');
       const metrics = selfTestingEngine.analyzePerformance();
       setPerformanceMetrics(metrics);
       
@@ -141,6 +166,8 @@ export const useSelfTesting = () => {
       const totalCount = results.length;
       
       console.log(`useSelfTesting: Test suite completed. ${passedCount}/${totalCount} passed`);
+      
+      setTestStatus(`Test suite complete: ${passedCount}/${totalCount} passed`);
       
       toast({
         title: "Test Suite Complete",
@@ -150,9 +177,13 @@ export const useSelfTesting = () => {
       
     } catch (error) {
       console.error('useSelfTesting: Test suite failed:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      setTestErrors(prev => [...prev, `Test suite failed: ${errorMessage}`]);
+      setTestStatus(`Test suite failed: ${errorMessage}`);
+      
       toast({
         title: "Test Suite Failed",
-        description: `Error running automated tests: ${error.message}`,
+        description: `Error running automated tests: ${errorMessage}`,
         variant: "destructive",
       });
     } finally {
@@ -191,6 +222,8 @@ export const useSelfTesting = () => {
     setTestResults([]);
     setPerformanceMetrics(null);
     setImprovementPlan(null);
+    setTestErrors([]);
+    setTestStatus('');
     
     toast({
       title: "Test History Cleared",
@@ -210,6 +243,8 @@ export const useSelfTesting = () => {
     performanceMetrics,
     improvementPlan,
     currentTestProgress,
+    testStatus,
+    testErrors,
     selfTestingEngine,
     autoImprovementEngine
   };

@@ -12,7 +12,9 @@ import {
   BarChart3,
   Lightbulb,
   RefreshCw,
-  Clock
+  Clock,
+  AlertCircle,
+  Activity
 } from "lucide-react";
 import { useSelfTesting } from "@/hooks/useSelfTesting";
 
@@ -28,6 +30,8 @@ export const SelfTestingDashboard = ({ onRunFullTest, isVisible }: SelfTestingDa
     performanceMetrics,
     improvementPlan,
     currentTestProgress,
+    testStatus,
+    testErrors,
     getPerformanceInsights,
     clearTestHistory
   } = useSelfTesting();
@@ -81,27 +85,49 @@ export const SelfTestingDashboard = ({ onRunFullTest, isVisible }: SelfTestingDa
         </div>
       </div>
 
-      {/* Test Progress */}
-      {isRunningTests && currentTestProgress.total > 0 && (
+      {/* Test Status and Progress */}
+      {isRunningTests && (
         <Card className="p-4 border-blue-200 bg-blue-50">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="font-semibold text-blue-800">Running Tests</h3>
+            <h3 className="font-semibold text-blue-800 flex items-center space-x-2">
+              <Activity className="w-5 h-5" />
+              <span>Running Tests</span>
+            </h3>
             <span className="text-sm text-blue-600">
               {currentTestProgress.current}/{currentTestProgress.total}
             </span>
           </div>
-          <Progress 
-            value={(currentTestProgress.current / currentTestProgress.total) * 100} 
-            className="h-2"
-          />
-          <p className="text-sm text-blue-600 mt-2">
-            Testing scenario {currentTestProgress.current} of {currentTestProgress.total}
+          {currentTestProgress.total > 0 && (
+            <Progress 
+              value={(currentTestProgress.current / currentTestProgress.total) * 100} 
+              className="h-2 mb-2"
+            />
+          )}
+          <p className="text-sm text-blue-600">
+            {testStatus || `Testing scenario ${currentTestProgress.current} of ${currentTestProgress.total}`}
           </p>
         </Card>
       )}
 
+      {/* Test Errors */}
+      {testErrors.length > 0 && (
+        <Card className="p-4 border-red-200 bg-red-50">
+          <h3 className="font-semibold text-red-800 mb-3 flex items-center space-x-2">
+            <AlertCircle className="w-5 h-5" />
+            <span>Test Errors ({testErrors.length})</span>
+          </h3>
+          <div className="space-y-2 max-h-32 overflow-y-auto">
+            {testErrors.map((error, index) => (
+              <div key={index} className="text-sm text-red-700 bg-white p-2 rounded border">
+                {error}
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
       {/* No Results Message */}
-      {!isRunningTests && testResults.length === 0 && (
+      {!isRunningTests && testResults.length === 0 && testErrors.length === 0 && (
         <Card className="p-6 text-center">
           <Target className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-gray-600 mb-2">No Test Results Yet</h3>
@@ -247,7 +273,6 @@ export const SelfTestingDashboard = ({ onRunFullTest, isVisible }: SelfTestingDa
         </Card>
       )}
 
-      {/* Recent Test Results */}
       {recentTests.length > 0 && (
         <Card className="p-6">
           <h3 className="text-lg font-semibold mb-4 flex items-center space-x-2">
