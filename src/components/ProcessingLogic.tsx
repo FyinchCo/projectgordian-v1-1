@@ -1,7 +1,8 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useChunkedProcessor } from "@/components/processing/ChunkedProcessor";
-import { useEnhancedAIConfigOptimization } from "@/hooks/useEnhancedAIConfigOptimization";
+import { useMetaLearning } from "@/hooks/useMetaLearning";
 
 interface ProcessingLogicProps {
   question: string;
@@ -34,7 +35,7 @@ export const ProcessingLogic = ({
 }: ProcessingLogicProps) => {
   const { toast } = useToast();
   const { processChunkedLayers } = useChunkedProcessor();
-  const { recordProcessingResults } = useEnhancedAIConfigOptimization();
+  const { recordProcessingResults } = useMetaLearning();
 
   const handleStartGenius = async () => {
     if (!question.trim()) return;
@@ -99,31 +100,48 @@ export const ProcessingLogic = ({
       }
       
       console.log('Processing completed:', finalResults);
+      console.log('Question quality in results:', finalResults.questionQuality);
       
       // Record learning cycle - CRITICAL INTEGRATION POINT
-      if (currentAssessment && finalResults.questionQuality) {
-        console.log('Recording learning cycle for meta-learning system...');
+      if (finalResults.questionQuality) {
+        console.log('ProcessingLogic: Recording learning cycle for meta-learning system...');
+        
+        const assessment = currentAssessment || {
+          complexityScore: processingDepth[0],
+          domainType: "General",
+          abstractionLevel: "Theoretical",
+          controversyPotential: 5,
+          noveltyRequirement: 5,
+          stakeholderComplexity: 5,
+          breakthroughPotential: finalResults.emergenceDetected ? 8 : 5,
+          cognitiveComplexity: processingDepth[0]
+        };
         
         const configuration = {
           processingDepth: processingDepth[0],
           circuitType,
           enhancedMode,
-          archetypeConfigurations: currentAssessment.archetypeConfigurations || [],
-          tensionParameters: currentAssessment.tensionParameters || {}
+          archetypeConfigurations: currentAssessment?.archetypeConfigurations || [],
+          tensionParameters: currentAssessment?.tensionParameters || {}
         };
         
         recordProcessingResults(
           question,
+          assessment,
           configuration,
           finalResults,
           finalResults.questionQuality
         );
+        
+        console.log('ProcessingLogic: Learning data recorded successfully');
         
         toast({
           title: "Learning Cycle Recorded",
           description: "Results added to meta-learning system for future optimization.",
           variant: "default",
         });
+      } else {
+        console.log('ProcessingLogic: No question quality metrics found, learning not recorded');
       }
       
       onProcessingComplete(finalResults);

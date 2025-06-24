@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { RotateCcw, Download, Brain, TrendingUp } from "lucide-react";
@@ -8,7 +9,7 @@ import { TensionAnalysisSection } from "@/components/results/TensionAnalysisSect
 import { ProcessingLayersSection } from "@/components/results/ProcessingLayersSection";
 import { LogicTrailSection } from "@/components/results/LogicTrailSection";
 import { Badge } from "@/components/ui/badge";
-import { useEnhancedAIConfigOptimization } from "@/hooks/useEnhancedAIConfigOptimization";
+import { useMetaLearning } from "@/hooks/useMetaLearning";
 import { useEffect } from "react";
 
 interface QuestionQualityMetrics {
@@ -72,23 +73,40 @@ interface EnhancedResultsDisplayProps {
 }
 
 export const EnhancedResultsDisplay = ({ results, question, onReset, onExport }: EnhancedResultsDisplayProps) => {
-  const { recordProcessingResults } = useEnhancedAIConfigOptimization();
+  const { recordProcessingResults } = useMetaLearning();
 
   // Record learning data when results are displayed
   useEffect(() => {
     if (results && results.questionQuality && question) {
-      console.log('EnhancedResultsDisplay: Recording processing results for learning...');
+      console.log('EnhancedResultsDisplay: Recording processing results for meta-learning...');
+      console.log('Question:', question);
+      console.log('Results quality metrics:', results.questionQuality);
+      
+      // Create assessment object from results
+      const assessment = {
+        complexityScore: results.processingDepth || 5,
+        domainType: "General", // We'll improve this later
+        abstractionLevel: "Theoretical",
+        controversyPotential: results.tensionPoints || 5,
+        noveltyRequirement: results.noveltyScore || 5,
+        stakeholderComplexity: 5,
+        breakthroughPotential: results.emergenceDetected ? 8 : 5,
+        cognitiveComplexity: results.processingDepth || 5
+      };
       
       // Create configuration object from results
       const configuration = {
         processingDepth: results.processingDepth || 5,
         circuitType: results.circuitType || 'sequential',
-        enhancedMode: results.enhancedMode !== false
+        enhancedMode: results.enhancedMode !== false,
+        archetypeConfigurations: [],
+        tensionParameters: {}
       };
       
       // Record the results for meta-learning
       recordProcessingResults(
         question,
+        assessment,
         configuration,
         {
           insight: results.insight,
@@ -100,7 +118,13 @@ export const EnhancedResultsDisplay = ({ results, question, onReset, onExport }:
         results.questionQuality
       );
       
-      console.log('EnhancedResultsDisplay: Learning data recorded');
+      console.log('EnhancedResultsDisplay: Learning data recorded successfully');
+    } else {
+      console.log('EnhancedResultsDisplay: Missing required data for learning:', {
+        hasResults: !!results,
+        hasQuestionQuality: !!results?.questionQuality,
+        hasQuestion: !!question
+      });
     }
   }, [results, question, recordProcessingResults]);
 
