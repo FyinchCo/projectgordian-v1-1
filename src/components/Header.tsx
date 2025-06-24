@@ -1,6 +1,5 @@
 
-import { Brain, Settings, TestTube } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Brain, Settings } from "lucide-react";
 
 interface Archetype {
   name: string;
@@ -16,15 +15,11 @@ interface Archetype {
 interface HeaderProps {
   customArchetypes?: Archetype[] | null;
   enhancedMode: boolean;
-  onToggleSelfTesting?: () => void;
-  showSelfTestingToggle?: boolean;
 }
 
 export const Header = ({ 
   customArchetypes, 
-  enhancedMode,
-  onToggleSelfTesting,
-  showSelfTestingToggle = false
+  enhancedMode
 }: HeaderProps) => {
   return (
     <header className="border-b border-zen-border bg-white/80 backdrop-blur-sm sticky top-0 z-50">
@@ -43,18 +38,6 @@ export const Header = ({
           </div>
           
           <div className="flex items-center space-x-2">
-            {showSelfTestingToggle && onToggleSelfTesting && (
-              <Button
-                onClick={onToggleSelfTesting}
-                variant="outline"
-                size="sm"
-                className="flex items-center space-x-2"
-              >
-                <TestTube className="w-4 h-4" />
-                <span>Self-Testing</span>
-              </Button>
-            )}
-            
             <div className="flex items-center space-x-2">
               <Settings className="w-4 h-4 text-zen-muted" />
               <span className="text-xs text-zen-muted">v2.1.0</span>
