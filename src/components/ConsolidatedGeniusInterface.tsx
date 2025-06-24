@@ -6,10 +6,9 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Play, Zap, Users } from "lucide-react";
+import { Play, Zap, Users, Brain } from "lucide-react";
 import { OutputType } from "@/types/outputTypes";
-import { useQuestionAssessment } from "@/hooks/useQuestionAssessment";
-import { useAIConfigOptimization } from "@/hooks/useAIConfigOptimization";
+import { useEnhancedAIConfigOptimization } from "@/hooks/useEnhancedAIConfigOptimization";
 import { QuestionInputSection } from "./interface/QuestionInputSection";
 import { OptimizationReasoningCard } from "./OptimizationReasoningCard";
 
@@ -48,8 +47,11 @@ export const ConsolidatedGeniusInterface = ({
 }: ConsolidatedGeniusInterfaceProps) => {
   const {
     optimizationReasoning,
-    clearOptimizationReasoning
-  } = useAIConfigOptimization();
+    clearOptimizationReasoning,
+    getLearningInsights
+  } = useEnhancedAIConfigOptimization();
+
+  const learningInsights = getLearningInsights();
 
   const getDepthLabel = (depth: number) => {
     if (depth <= 5) return "Quick Analysis";
@@ -64,16 +66,70 @@ export const ConsolidatedGeniusInterface = ({
   };
 
   return <div className="space-zen-lg max-w-4xl mx-auto">
-      {/* Optimization Reasoning Display - Only show if exists from config page */}
-      {optimizationReasoning && <OptimizationReasoningCard reasoning={optimizationReasoning.reasoning} domainType={optimizationReasoning.domainType} onDismiss={clearOptimizationReasoning} />}
+      {/* Meta-Learning Status - Show if system is learning */}
+      {learningInsights?.isSystemLearning && (
+        <Card className="p-4 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 mb-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <Brain className="w-5 h-5 text-purple-600" />
+              <div>
+                <h3 className="text-sm font-semibold text-purple-800">Meta-Learning System Active</h3>
+                <p className="text-xs text-purple-600">
+                  System maturity: {Math.round(learningInsights.maturityLevel * 100)}% | 
+                  Total experience: {learningInsights.totalExperience} questions | 
+                  Quality trend: {learningInsights.qualityTrend}
+                </p>
+              </div>
+            </div>
+            <Badge variant="outline" className="border-purple-300 text-purple-700">
+              Learning Enabled
+            </Badge>
+          </div>
+          
+          {learningInsights.bestPerformingDomains.length > 0 && (
+            <div className="mt-3 pt-3 border-t border-purple-200">
+              <p className="text-xs text-purple-600">
+                <strong>Best performance:</strong> {learningInsights.bestPerformingDomains.map(d => `${d.domain} (${Math.round(d.averageQuality * 10) / 10}/10)`).join(', ')}
+              </p>
+            </div>
+          )}
+        </Card>
+      )}
+
+      {/* Optimization Reasoning Display - Enhanced with meta-learning info */}
+      {optimizationReasoning && (
+        <div className="mb-6">
+          <OptimizationReasoningCard
+            reasoning={optimizationReasoning.reasoning}
+            domainType={optimizationReasoning.domainType}
+            onDismiss={clearOptimizationReasoning}
+          />
+          
+          {optimizationReasoning.metaLearningApplied && (
+            <Card className="mt-3 p-3 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200">
+              <div className="flex items-center space-x-2">
+                <Brain className="w-4 h-4 text-green-600" />
+                <span className="text-sm font-medium text-green-800">Meta-Learning Enhanced</span>
+                <Badge variant="outline" className="text-xs border-green-300 text-green-700">
+                  {Math.round((optimizationReasoning.systemConfidence || 0) * 100)}% Confidence
+                </Badge>
+              </div>
+              <p className="text-xs text-green-700 mt-1">
+                Configuration optimized using patterns learned from {learningInsights?.totalExperience || 0} previous questions.
+              </p>
+            </Card>
+          )}
+        </div>
+      )}
 
       {/* Main Question Input and Configuration */}
       <Card className="border border-zen-light bg-zen-paper shadow-zen-lg rounded-md">
         <div className="p-8 space-zen">
           <QuestionInputSection question={question} setQuestion={setQuestion} outputType={outputType} setOutputType={setOutputType} />
 
-          {/* Assessment Display - Only show if exists */}
-          {currentAssessment && <div className="p-6 bg-zen-whisper border border-zen-light rounded-md">
+          {/* Assessment Display - Enhanced with meta-learning info */}
+          {currentAssessment && (
+            <div className="p-6 bg-zen-whisper border border-zen-light rounded-md">
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-zen-mono text-xs uppercase tracking-wide text-zen-charcoal">Domain</span>
@@ -83,11 +139,23 @@ export const ConsolidatedGeniusInterface = ({
                   <span className="text-zen-mono text-xs uppercase tracking-wide text-zen-charcoal">Complexity</span>
                   <Badge variant="outline" className="text-xs border-zen-medium text-zen-charcoal">{currentAssessment.complexityScore}/10</Badge>
                 </div>
+                {currentAssessment.recommendations?.metaLearningApplied && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-zen-mono text-xs uppercase tracking-wide text-zen-charcoal">Learning Applied</span>
+                    <Badge className="text-xs bg-purple-100 text-purple-800 border-purple-200">
+                      {Math.round(currentAssessment.recommendations.learningConfidence * 100)}% Confidence
+                    </Badge>
+                  </div>
+                )}
                 <div className="text-xs text-zen-body text-zen-medium mt-3 leading-relaxed">
-                  Configuration optimized for maximum insight generation. Detailed reasoning shown above.
+                  {currentAssessment.recommendations?.metaLearningApplied 
+                    ? "Configuration enhanced with meta-learning insights. System continuously improves based on results."
+                    : "Configuration optimized for maximum insight generation. System is learning your preferences."
+                  }
                 </div>
               </div>
-            </div>}
+            </div>
+          )}
 
           {/* Manual Configuration Section */}
           <div className="pt-6 space-zen border-t border-zen-light">
@@ -139,7 +207,8 @@ export const ConsolidatedGeniusInterface = ({
             </div>
 
             {/* Archetype Status */}
-            {customArchetypes && <div className="space-y-2 mt-6">
+            {customArchetypes && (
+              <div className="space-y-2 mt-6">
                 <Label className="text-zen-mono text-sm uppercase tracking-wide text-zen-charcoal">Custom Archetypes</Label>
                 <div className="flex items-center space-x-3">
                   <Users className="w-4 h-4 text-zen-medium" />
@@ -147,7 +216,26 @@ export const ConsolidatedGeniusInterface = ({
                     {customArchetypes.length} custom archetypes loaded
                   </span>
                 </div>
-              </div>}
+              </div>
+            )}
+
+            {/* Learning System Status */}
+            {learningInsights?.isSystemLearning && (
+              <div className="space-y-2 mt-6">
+                <Label className="text-zen-mono text-sm uppercase tracking-wide text-zen-charcoal">Learning System</Label>
+                <div className="flex items-center space-x-3">
+                  <Brain className="w-4 h-4 text-purple-500" />
+                  <span className="text-xs text-zen-body text-zen-medium">
+                    Active - Continuously improving based on results
+                  </span>
+                  {learningInsights.isImproving && (
+                    <Badge variant="outline" className="text-xs border-green-300 text-green-700">
+                      Improving
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Launch Button */}
