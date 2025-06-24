@@ -47,6 +47,51 @@ export type Database = {
           },
         ]
       }
+      insights_history: {
+        Row: {
+          circuit_type: string
+          confidence: number
+          created_at: string
+          emergence_detected: boolean
+          full_results: Json
+          id: string
+          insight: string
+          novelty_score: number | null
+          processing_depth: number
+          question: string
+          tension_points: number
+          user_id: string | null
+        }
+        Insert: {
+          circuit_type?: string
+          confidence?: number
+          created_at?: string
+          emergence_detected?: boolean
+          full_results: Json
+          id?: string
+          insight: string
+          novelty_score?: number | null
+          processing_depth?: number
+          question: string
+          tension_points?: number
+          user_id?: string | null
+        }
+        Update: {
+          circuit_type?: string
+          confidence?: number
+          created_at?: string
+          emergence_detected?: boolean
+          full_results?: Json
+          id?: string
+          insight?: string
+          novelty_score?: number | null
+          processing_depth?: number
+          question?: string
+          tension_points?: number
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       submissions: {
         Row: {
           created_at: string
