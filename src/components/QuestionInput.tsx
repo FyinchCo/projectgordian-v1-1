@@ -67,7 +67,11 @@ export const QuestionInput = ({
                   <SelectTrigger className="w-[140px] h-8 border-gordian-beige bg-gordian-cream text-gordian-dark-brown font-inter text-sm">
                     <SelectValue />
                   </SelectTrigger>
-                  
+                  <SelectContent className="bg-white border-gordian-beige shadow-lg">
+                    {OUTPUT_TYPE_CONFIGS.map(config => <SelectItem key={config.id} value={config.id} className="font-inter text-gordian-dark-brown hover:bg-gordian-cream focus:bg-gordian-cream">
+                        {config.label}
+                      </SelectItem>)}
+                  </SelectContent>
                 </Select>
               </div>
             </div>
