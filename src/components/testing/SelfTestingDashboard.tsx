@@ -1,3 +1,4 @@
+
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,7 +11,8 @@ import {
   XCircle,
   BarChart3,
   Lightbulb,
-  RefreshCw
+  RefreshCw,
+  Clock
 } from "lucide-react";
 import { useSelfTesting } from "@/hooks/useSelfTesting";
 
@@ -25,6 +27,7 @@ export const SelfTestingDashboard = ({ onRunFullTest, isVisible }: SelfTestingDa
     testResults,
     performanceMetrics,
     improvementPlan,
+    currentTestProgress,
     getPerformanceInsights,
     clearTestHistory
   } = useSelfTesting();
@@ -46,6 +49,12 @@ export const SelfTestingDashboard = ({ onRunFullTest, isVisible }: SelfTestingDa
         <div className="flex items-center space-x-2">
           <Target className="w-6 h-6 text-blue-600" />
           <h2 className="text-2xl font-bold">Self-Testing Dashboard</h2>
+          {isRunningTests && (
+            <Badge variant="secondary" className="ml-2">
+              <Clock className="w-3 h-3 mr-1" />
+              Testing...
+            </Badge>
+          )}
         </div>
         <div className="flex space-x-2">
           <Button
@@ -64,12 +73,47 @@ export const SelfTestingDashboard = ({ onRunFullTest, isVisible }: SelfTestingDa
             onClick={clearTestHistory}
             variant="outline"
             className="flex items-center space-x-2"
+            disabled={isRunningTests}
           >
             <RefreshCw className="w-4 h-4" />
             <span>Clear History</span>
           </Button>
         </div>
       </div>
+
+      {/* Test Progress */}
+      {isRunningTests && currentTestProgress.total > 0 && (
+        <Card className="p-4 border-blue-200 bg-blue-50">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="font-semibold text-blue-800">Running Tests</h3>
+            <span className="text-sm text-blue-600">
+              {currentTestProgress.current}/{currentTestProgress.total}
+            </span>
+          </div>
+          <Progress 
+            value={(currentTestProgress.current / currentTestProgress.total) * 100} 
+            className="h-2"
+          />
+          <p className="text-sm text-blue-600 mt-2">
+            Testing scenario {currentTestProgress.current} of {currentTestProgress.total}
+          </p>
+        </Card>
+      )}
+
+      {/* No Results Message */}
+      {!isRunningTests && testResults.length === 0 && (
+        <Card className="p-6 text-center">
+          <Target className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-gray-600 mb-2">No Test Results Yet</h3>
+          <p className="text-gray-500 mb-4">
+            Run the full test suite to see performance metrics and insights.
+          </p>
+          <Button onClick={handleRunFullTest} className="flex items-center space-x-2 mx-auto">
+            <Target className="w-4 h-4" />
+            <span>Run Your First Test</span>
+          </Button>
+        </Card>
+      )}
 
       {/* Performance Overview */}
       {performanceMetrics && (
@@ -208,7 +252,7 @@ export const SelfTestingDashboard = ({ onRunFullTest, isVisible }: SelfTestingDa
         <Card className="p-6">
           <h3 className="text-lg font-semibold mb-4 flex items-center space-x-2">
             <CheckCircle className="w-5 h-5" />
-            <span>Recent Test Results</span>
+            <span>Recent Test Results ({recentTests.length})</span>
           </h3>
           <div className="space-y-3">
             {recentTests.map((result, index) => (
@@ -224,6 +268,11 @@ export const SelfTestingDashboard = ({ onRunFullTest, isVisible }: SelfTestingDa
                     <p className="text-sm text-gray-600">
                       Quality: {result.qualityScore}% | Issues: {result.issues.length}
                     </p>
+                    {result.issues.length > 0 && (
+                      <p className="text-xs text-red-600 mt-1">
+                        {result.issues[0]}
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div className="text-right">
