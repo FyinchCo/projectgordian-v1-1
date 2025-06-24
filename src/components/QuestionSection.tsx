@@ -1,6 +1,7 @@
 
 import { QuestionInput } from "@/components/QuestionInput";
 import { QuestionAssessment } from "@/components/QuestionAssessment";
+import { OutputType } from "@/types/outputTypes";
 
 interface QuestionSectionProps {
   question: string;
@@ -11,6 +12,8 @@ interface QuestionSectionProps {
   showAssessment: boolean;
   onToggleAssessment: () => void;
   onApplyRecommendations: (recommendations: any, fullAssessment: any) => void;
+  outputType: OutputType;
+  onOutputTypeChange: (type: OutputType) => void;
 }
 
 export const QuestionSection = ({
@@ -21,7 +24,9 @@ export const QuestionSection = ({
   enhancedMode,
   showAssessment,
   onToggleAssessment,
-  onApplyRecommendations
+  onApplyRecommendations,
+  outputType,
+  onOutputTypeChange
 }: QuestionSectionProps) => {
   return (
     <div className="space-y-8">
@@ -33,6 +38,8 @@ export const QuestionSection = ({
         enhancedMode={enhancedMode}
         onToggleAssessment={onToggleAssessment}
         showAssessment={showAssessment}
+        outputType={outputType}
+        onOutputTypeChange={onOutputTypeChange}
       />
 
       {showAssessment && (

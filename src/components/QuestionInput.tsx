@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Play, Zap, Brain } from "lucide-react";
+import { OutputTypeSelector } from "@/components/OutputTypeSelector";
+import { OutputType } from "@/types/outputTypes";
 
 interface QuestionInputProps {
   question: string;
@@ -13,6 +15,8 @@ interface QuestionInputProps {
   enhancedMode: boolean;
   onToggleAssessment?: () => void;
   showAssessment?: boolean;
+  outputType: OutputType;
+  onOutputTypeChange: (type: OutputType) => void;
 }
 
 export const QuestionInput = ({ 
@@ -22,7 +26,9 @@ export const QuestionInput = ({
   customArchetypes, 
   enhancedMode,
   onToggleAssessment,
-  showAssessment
+  showAssessment,
+  outputType,
+  onOutputTypeChange
 }: QuestionInputProps) => {
   return (
     <div className="space-y-8">
@@ -47,6 +53,12 @@ export const QuestionInput = ({
           </p>
         )}
       </div>
+
+      {/* Output Type Selector */}
+      <OutputTypeSelector 
+        selectedType={outputType}
+        onTypeChange={onOutputTypeChange}
+      />
 
       <Card className="p-8 shadow-sm border-2">
         <div className="space-y-6">

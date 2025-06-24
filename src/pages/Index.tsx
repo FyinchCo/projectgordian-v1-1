@@ -7,6 +7,7 @@ import { QuestionSection } from "@/components/QuestionSection";
 import { ControlsSection } from "@/components/ControlsSection";
 import { PasswordGate } from "@/components/PasswordGate";
 import { useToast } from "@/hooks/use-toast";
+import { useOutputType } from "@/hooks/useOutputType";
 
 const Index = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -24,6 +25,9 @@ const Index = () => {
   const [currentAssessment, setCurrentAssessment] = useState(null);
   const [chunkProgress, setChunkProgress] = useState({ current: 0, total: 0 });
   const { toast } = useToast();
+
+  // Add output type state
+  const { outputType, setOutputType } = useOutputType('practical');
 
   // Check authentication status on mount
   useEffect(() => {
@@ -132,6 +136,8 @@ const Index = () => {
               showAssessment={showAssessment}
               onToggleAssessment={toggleAssessment}
               onApplyRecommendations={handleApplyRecommendations}
+              outputType={outputType}
+              onOutputTypeChange={setOutputType}
             />
 
             <ControlsSection
