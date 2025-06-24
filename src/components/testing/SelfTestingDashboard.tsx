@@ -1,4 +1,3 @@
-
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,7 +13,9 @@ import {
   RefreshCw,
   Clock,
   AlertCircle,
-  Activity
+  Activity,
+  Timer,
+  Info
 } from "lucide-react";
 import { useSelfTesting } from "@/hooks/useSelfTesting";
 
@@ -32,6 +33,7 @@ export const SelfTestingDashboard = ({ onRunFullTest, isVisible }: SelfTestingDa
     currentTestProgress,
     testStatus,
     testErrors,
+    currentTestDetails,
     getPerformanceInsights,
     clearTestHistory
   } = useSelfTesting();
@@ -42,7 +44,7 @@ export const SelfTestingDashboard = ({ onRunFullTest, isVisible }: SelfTestingDa
   const insights = getPerformanceInsights();
 
   const handleRunFullTest = async () => {
-    console.log('Dashboard: Starting full test suite...');
+    console.log('Dashboard: Starting comprehensive test suite...');
     await onRunFullTest();
   };
 
@@ -54,8 +56,8 @@ export const SelfTestingDashboard = ({ onRunFullTest, isVisible }: SelfTestingDa
           <Target className="w-6 h-6 text-blue-600" />
           <h2 className="text-2xl font-bold">Self-Testing Dashboard</h2>
           {isRunningTests && (
-            <Badge variant="secondary" className="ml-2">
-              <Clock className="w-3 h-3 mr-1" />
+            <Badge variant="secondary" className="ml-2 animate-pulse">
+              <Activity className="w-3 h-3 mr-1" />
               Testing...
             </Badge>
           )}
@@ -85,41 +87,74 @@ export const SelfTestingDashboard = ({ onRunFullTest, isVisible }: SelfTestingDa
         </div>
       </div>
 
-      {/* Test Status and Progress */}
+      {/* Enhanced Test Status and Progress */}
       {isRunningTests && (
-        <Card className="p-4 border-blue-200 bg-blue-50">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="font-semibold text-blue-800 flex items-center space-x-2">
-              <Activity className="w-5 h-5" />
-              <span>Running Tests</span>
-            </h3>
-            <span className="text-sm text-blue-600">
-              {currentTestProgress.current}/{currentTestProgress.total}
-            </span>
-          </div>
-          {currentTestProgress.total > 0 && (
-            <Progress 
-              value={(currentTestProgress.current / currentTestProgress.total) * 100} 
-              className="h-2 mb-2"
-            />
+        <div className="space-y-4">
+          <Card className="p-4 border-blue-200 bg-blue-50">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold text-blue-800 flex items-center space-x-2">
+                <Activity className="w-5 h-5 animate-pulse" />
+                <span>Running Comprehensive Tests</span>
+              </h3>
+              <div className="flex items-center space-x-2">
+                <Timer className="w-4 h-4 text-blue-600" />
+                <span className="text-sm text-blue-600">
+                  {currentTestProgress.current}/{currentTestProgress.total}
+                </span>
+              </div>
+            </div>
+            {currentTestProgress.total > 0 && (
+              <Progress 
+                value={(currentTestProgress.current / currentTestProgress.total) * 100} 
+                className="h-3 mb-3"
+              />
+            )}
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-blue-700">
+                {testStatus || `Processing test ${currentTestProgress.current} of ${currentTestProgress.total}`}
+              </p>
+              {currentTestDetails && (
+                <div className="flex items-start space-x-2">
+                  <Info className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                  <p className="text-xs text-blue-600 leading-relaxed">
+                    {currentTestDetails}
+                  </p>
+                </div>
+              )}
+            </div>
+          </Card>
+          
+          {/* Real-time error display during testing */}
+          {testErrors.length > 0 && (
+            <Card className="p-4 border-orange-200 bg-orange-50">
+              <h4 className="font-semibold text-orange-800 mb-2 flex items-center space-x-2">
+                <AlertTriangle className="w-4 h-4" />
+                <span>Issues Detected ({testErrors.length})</span>
+              </h4>
+              <div className="space-y-1 max-h-24 overflow-y-auto">
+                {testErrors.slice(-3).map((error, index) => (
+                  <div key={index} className="text-xs text-orange-700 bg-white p-2 rounded">
+                    {error}
+                  </div>
+                ))}
+              </div>
+            </Card>
           )}
-          <p className="text-sm text-blue-600">
-            {testStatus || `Testing scenario ${currentTestProgress.current} of ${currentTestProgress.total}`}
-          </p>
-        </Card>
+        </div>
       )}
 
-      {/* Test Errors */}
-      {testErrors.length > 0 && (
+      {/* Test Errors - Enhanced Display */}
+      {!isRunningTests && testErrors.length > 0 && (
         <Card className="p-4 border-red-200 bg-red-50">
           <h3 className="font-semibold text-red-800 mb-3 flex items-center space-x-2">
             <AlertCircle className="w-5 h-5" />
             <span>Test Errors ({testErrors.length})</span>
           </h3>
-          <div className="space-y-2 max-h-32 overflow-y-auto">
+          <div className="space-y-2 max-h-40 overflow-y-auto">
             {testErrors.map((error, index) => (
-              <div key={index} className="text-sm text-red-700 bg-white p-2 rounded border">
-                {error}
+              <div key={index} className="text-sm text-red-700 bg-white p-3 rounded border">
+                <div className="font-medium mb-1">Error {index + 1}:</div>
+                <div className="text-xs">{error}</div>
               </div>
             ))}
           </div>
@@ -132,7 +167,7 @@ export const SelfTestingDashboard = ({ onRunFullTest, isVisible }: SelfTestingDa
           <Target className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-gray-600 mb-2">No Test Results Yet</h3>
           <p className="text-gray-500 mb-4">
-            Run the full test suite to see performance metrics and insights.
+            Run the comprehensive test suite to see performance metrics and improvement suggestions.
           </p>
           <Button onClick={handleRunFullTest} className="flex items-center space-x-2 mx-auto">
             <Target className="w-4 h-4" />
