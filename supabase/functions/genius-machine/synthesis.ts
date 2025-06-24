@@ -1,6 +1,7 @@
 
 import { ArchetypeResponse, TensionMetrics, SynthesisResult, LayerResult } from './types.ts';
 import { evaluateQuestionQuality, QuestionQualityMetrics } from './question-quality.ts';
+import { generateCompressionFormats, CompressionFormats } from './compression.ts';
 
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 
@@ -107,7 +108,7 @@ export async function synthesizeInsight(
   previousLayers?: LayerResult[], 
   layerNumber?: number, 
   tensionMetrics?: TensionMetrics
-): Promise<SynthesisResult & { questionQuality?: QuestionQualityMetrics }> {
+): Promise<SynthesisResult & { questionQuality?: QuestionQualityMetrics; compressionFormats?: CompressionFormats }> {
   // Add tension tags to responses
   const taggedResponses = await addTensionTags(archetypeResponses);
   const allResponses = taggedResponses.map(r => `${r.archetype}: ${r.contribution}`).join('\n\n');
@@ -229,6 +230,19 @@ Focus on breakthrough moments where contradictions resolve into paradigm-shiftin
     console.log(`Layer ${layerNumber || 1} using dynamic fallback:`, synthesisResult);
   }
 
+  // Generate compression formats
+  let compressionFormats: CompressionFormats | undefined;
+  try {
+    compressionFormats = await generateCompressionFormats(
+      synthesisResult.insight,
+      synthesisResult,
+      question
+    );
+    console.log(`Layer ${layerNumber || 1} compression formats generated:`, compressionFormats);
+  } catch (error) {
+    console.error(`Layer ${layerNumber || 1} compression generation failed:`, error);
+  }
+
   // Evaluate question quality only for final synthesis (no previous layers or layer 1)
   let questionQuality: QuestionQualityMetrics | undefined;
   if (!previousLayers || !layerNumber || layerNumber === 1) {
@@ -242,6 +256,7 @@ Focus on breakthrough moments where contradictions resolve into paradigm-shiftin
 
   return {
     ...synthesisResult,
-    questionQuality
+    questionQuality,
+    compressionFormats
   };
 }

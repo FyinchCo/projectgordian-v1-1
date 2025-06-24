@@ -1,7 +1,9 @@
 
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Lightbulb, Brain } from "lucide-react";
+import { InsightFormatToggle, InsightFormat } from "./InsightFormatToggle";
 
 interface MainInsightDisplayProps {
   insight: string;
@@ -13,6 +15,11 @@ interface MainInsightDisplayProps {
   circuitType?: string;
   processingDepth?: number;
   logicTrailLength: number;
+  compressionFormats?: {
+    ultraConcise: string;
+    medium: string;
+    comprehensive: string;
+  };
 }
 
 export const MainInsightDisplay = ({
@@ -25,7 +32,10 @@ export const MainInsightDisplay = ({
   circuitType,
   processingDepth,
   logicTrailLength,
+  compressionFormats,
 }: MainInsightDisplayProps) => {
+  const [currentFormat, setCurrentFormat] = useState<InsightFormat>('medium');
+
   const getNoveltyColor = (score: number) => {
     if (score >= 8) return "bg-red-500";
     if (score >= 6) return "bg-yellow-500";
@@ -61,7 +71,37 @@ export const MainInsightDisplay = ({
     return cleaned;
   };
 
-  const displayInsight = cleanInsight(insight);
+  const getCurrentInsight = () => {
+    if (!compressionFormats) {
+      return cleanInsight(insight);
+    }
+
+    switch (currentFormat) {
+      case 'ultra':
+        return compressionFormats.ultraConcise;
+      case 'medium':
+        return compressionFormats.medium;
+      case 'comprehensive':
+        return compressionFormats.comprehensive;
+      default:
+        return cleanInsight(insight);
+    }
+  };
+
+  const getInsightStyle = () => {
+    switch (currentFormat) {
+      case 'ultra':
+        return "text-4xl font-black tracking-tight text-center";
+      case 'medium':
+        return "text-2xl font-bold leading-tight";
+      case 'comprehensive':
+        return "text-xl font-semibold leading-relaxed";
+      default:
+        return "text-2xl font-bold leading-tight";
+    }
+  };
+
+  const displayInsight = getCurrentInsight();
 
   return (
     <Card className="p-8 border-2 border-black">
@@ -83,9 +123,20 @@ export const MainInsightDisplay = ({
               <Badge variant="outline" className="ml-2">Enhanced Mode</Badge>
             )}
           </h2>
-          <p className="text-2xl font-bold leading-tight">
-            "{displayInsight}"
-          </p>
+
+          {/* Format Toggle */}
+          {compressionFormats && (
+            <InsightFormatToggle
+              currentFormat={currentFormat}
+              onFormatChange={setCurrentFormat}
+            />
+          )}
+
+          <div className={`transition-all duration-300 ${currentFormat === 'ultra' ? 'py-8' : 'py-4'}`}>
+            <p className={getInsightStyle()}>
+              {currentFormat === 'ultra' ? displayInsight : `"${displayInsight}"`}
+            </p>
+          </div>
         </div>
 
         {/* Enhanced Metrics */}

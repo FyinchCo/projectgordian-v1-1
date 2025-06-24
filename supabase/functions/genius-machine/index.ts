@@ -58,6 +58,7 @@ serve(async (req) => {
       assumptionAnalysis: layers[0]?.assumptionAnalysis,
       assumptionChallenge: layers[0]?.assumptionChallenge,
       finalTensionMetrics: finalLayer.tensionMetrics,
+      compressionFormats: finalLayer.synthesis.compressionFormats,
       layers: layers.map(layer => ({
         layerNumber: layer.layerNumber,
         circuitType: layer.circuitType,
@@ -67,7 +68,8 @@ serve(async (req) => {
         noveltyScore: layer.synthesis.noveltyScore || 5,
         emergenceDetected: layer.synthesis.emergenceDetected || false,
         tensionMetrics: layer.tensionMetrics,
-        archetypeResponses: layer.archetypeResponses
+        archetypeResponses: layer.archetypeResponses,
+        compressionFormats: layer.synthesis.compressionFormats
       })),
       logicTrail: finalLayer.archetypeResponses
     };
