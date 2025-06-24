@@ -1,73 +1,85 @@
 
-export const createProcessingTimeout = (chunkIndex: number, timeoutMs: number = 90000) => {
-  return new Promise<never>((_, reject) => {
-    setTimeout(() => {
-      console.log(`Chunk ${chunkIndex + 1} timeout triggered after ${timeoutMs}ms at:`, new Date().toISOString());
-      reject(new Error(`CHUNK_TIMEOUT: Chunk ${chunkIndex + 1} timed out after ${timeoutMs / 1000} seconds`));
-    }, timeoutMs);
-  });
+import { ProcessingResult } from './types';
+
+export const createProcessingTimeout = (chunkIndex: number, timeoutMs: number = 120000) => {
+  return new Promise((_, reject) => 
+    setTimeout(() => reject(new Error(`Chunk ${chunkIndex + 1} timed out after ${timeoutMs}ms`)), timeoutMs)
+  );
 };
 
 export const validateChunkResult = (result: any, chunkIndex: number) => {
   if (!result) {
-    throw new Error(`CHUNK_RESULT_MISSING: Chunk ${chunkIndex + 1} returned no result`);
+    throw new Error(`Chunk ${chunkIndex + 1} returned null result`);
   }
   
   if (result.error) {
-    console.error(`Chunk ${chunkIndex + 1} Supabase error:`, result.error);
-    throw new Error(`SUPABASE_ERROR: ${result.error.message || 'Unknown Supabase error'}`);
+    throw new Error(`Chunk ${chunkIndex + 1} error: ${result.error.message || 'Unknown error'}`);
   }
   
-  if (!result.data) {
-    console.error(`Chunk ${chunkIndex + 1} no data in response:`, result);
-    throw new Error(`NO_DATA: Chunk ${chunkIndex + 1} response contains no data`);
+  const { data } = result;
+  if (!data) {
+    throw new Error(`Chunk ${chunkIndex + 1} returned no data`);
   }
   
-  return result;
+  return { data };
 };
 
-export const createFinalResult = (data: any, accumulatedLayers: any[], totalDepth: number) => {
-  console.log('Creating final result with:', {
-    hasData: !!data,
-    accumulatedLayersCount: accumulatedLayers.length,
-    totalDepth,
-    dataKeys: data ? Object.keys(data) : []
-  });
+export const createFinalResult = (data: any, accumulatedLayers: any[], totalDepth: number): ProcessingResult => {
+  // Use the final layer's synthesis as the main result
+  const finalLayer = accumulatedLayers[accumulatedLayers.length - 1];
   
   return {
-    ...data,
+    insight: finalLayer?.synthesis?.insight || data.insight,
+    confidence: finalLayer?.synthesis?.confidence || data.confidence,
+    tensionPoints: finalLayer?.synthesis?.tensionPoints || data.tensionPoints,
+    noveltyScore: finalLayer?.synthesis?.noveltyScore || data.noveltyScore,
+    emergenceDetected: finalLayer?.synthesis?.emergenceDetected || data.emergenceDetected,
     layers: accumulatedLayers,
     processingDepth: accumulatedLayers.length,
-    chunkProcessed: true,
-    partialResults: accumulatedLayers.length < totalDepth
+    logicTrail: finalLayer?.archetypeResponses || data.logicTrail || [],
+    circuitType: data.circuitType,
+    enhancedMode: data.enhancedMode,
+    assumptionAnalysis: data.assumptionAnalysis,
+    assumptionChallenge: data.assumptionChallenge,
+    finalTensionMetrics: finalLayer?.tensionMetrics || data.finalTensionMetrics,
+    compressionFormats: finalLayer?.synthesis?.compressionFormats || data.compressionFormats
   };
 };
 
 export const handleChunkError = (chunkError: any, accumulatedLayers: any[], chunkIndex: number) => {
   console.error(`Chunk ${chunkIndex + 1} error details:`, {
-    error: chunkError.message,
-    errorType: chunkError.constructor.name,
+    message: chunkError.message,
     accumulatedLayers: accumulatedLayers.length,
-    timestamp: new Date().toISOString()
+    hasValidLayers: accumulatedLayers.some(l => l?.synthesis?.insight)
   });
-  
-  // If we have some layers, return partial results
+
+  // If we have accumulated layers with valid insights, use the last one
   if (accumulatedLayers.length > 0) {
-    const lastLayer = accumulatedLayers[accumulatedLayers.length - 1];
-    return {
-      insight: lastLayer.synthesis?.insight || `Partial processing completed with ${accumulatedLayers.length} layers processed.`,
-      confidence: lastLayer.synthesis?.confidence || 0.5,
-      tensionPoints: lastLayer.synthesis?.tensionPoints || 3,
-      noveltyScore: lastLayer.synthesis?.noveltyScore || 5,
-      emergenceDetected: lastLayer.synthesis?.emergenceDetected || false,
-      layers: accumulatedLayers,
-      processingDepth: accumulatedLayers.length,
-      partialResults: true,
-      errorMessage: chunkError.message,
-      logicTrail: lastLayer.archetypeResponses || []
-    };
+    const lastValidLayer = accumulatedLayers
+      .slice()
+      .reverse()
+      .find(layer => layer?.synthesis?.insight);
+    
+    if (lastValidLayer) {
+      return {
+        insight: lastValidLayer.synthesis.insight,
+        confidence: lastValidLayer.synthesis.confidence || 0.5,
+        tensionPoints: lastValidLayer.synthesis.tensionPoints || 3,
+        noveltyScore: lastValidLayer.synthesis.noveltyScore || 5,
+        emergenceDetected: lastValidLayer.synthesis.emergenceDetected || false,
+        layers: accumulatedLayers,
+        processingDepth: accumulatedLayers.length,
+        partialResults: true,
+        errorMessage: chunkError.message,
+        logicTrail: lastValidLayer.archetypeResponses || [],
+        compressionFormats: lastValidLayer.synthesis.compressionFormats
+      };
+    }
   }
-  
-  // No partial results available
-  throw chunkError;
+
+  // Only return generic fallback if no valid layers exist
+  return {
+    partialResults: false,
+    errorMessage: chunkError.message
+  };
 };
