@@ -69,7 +69,7 @@ const Index = () => {
   };
 
   const handleExportInsight = () => {
-    setIsExportModalOpen(true);
+    set#ExportModalOpen(true);
   };
 
   const handleReset = () => {
@@ -100,10 +100,10 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-mono-off-white">
+    <div className="min-h-screen bg-zen-paper">
       <Header customArchetypes={customArchetypes} enhancedMode={enhancedMode} />
 
-      <main className="max-w-5xl mx-auto px-6 py-16">
+      <main className="px-8 py-zen-xl">
         {!isProcessing && !results && (
           <ConsolidatedGeniusInterface
             question={question}

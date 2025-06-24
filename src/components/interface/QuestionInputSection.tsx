@@ -17,48 +17,48 @@ export const QuestionInputSection = ({
   setOutputType
 }: QuestionInputSectionProps) => {
   return (
-    <>
-      {/* Header */}
-      <div className="text-center space-y-2">
-        <h1 className="text-2xl font-cormorant font-bold tracking-tight text-mono-pure-black uppercase">
+    <div className="space-zen">
+      {/* Refined Header */}
+      <div className="text-center space-y-6">
+        <h1 className="text-4xl text-zen-heading text-zen-ink leading-tight">
           THE GENIUS MACHINE
         </h1>
-        <p className="text-sm font-inter text-mono-dark-gray">
+        <p className="text-base text-zen-body text-zen-charcoal max-w-lg mx-auto leading-relaxed">
           AI's Recursive Distillation of Complex Questions
         </p>
       </div>
 
-      {/* Question Input */}
-      <div className="space-y-3">
+      {/* Question Input with Zen aesthetics */}
+      <div className="space-y-4">
         <Textarea
-          placeholder="Enter your high-friction question here..."
+          placeholder="Enter your question here..."
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
-          className="min-h-[80px] text-base font-inter border-2 border-mono-pure-black resize-none focus-visible:ring-0 p-3"
+          className="min-h-[120px] text-lg text-zen-body border border-zen-light bg-zen-paper resize-none focus-visible:ring-0 focus-visible:border-zen-medium p-6 rounded-md transition-all duration-300"
         />
 
-        {/* Answer Type and Character Count Row */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <span className="text-xs font-mono text-mono-pure-black uppercase tracking-wider">Answer Type:</span>
+        {/* Controls with asymmetric layout (Japanese principle) */}
+        <div className="flex items-center justify-between pt-2">
+          <div className="flex items-center space-x-6">
+            <span className="text-xs text-zen-mono text-zen-medium uppercase tracking-wider">Answer Type</span>
             <Select value={outputType} onValueChange={(value) => setOutputType(value as OutputType)}>
-              <SelectTrigger className="w-[140px] border-2 border-mono-pure-black bg-mono-off-white font-mono text-sm">
+              <SelectTrigger className="w-[160px] border border-zen-light bg-zen-paper text-zen-mono text-sm rounded-sm">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="border-2 border-mono-pure-black">
+              <SelectContent className="border border-zen-light bg-zen-paper shadow-zen-lg">
                 {OUTPUT_TYPE_CONFIGS.map((config) => (
-                  <SelectItem key={config.id} value={config.id} className="font-mono text-sm">
+                  <SelectItem key={config.id} value={config.id} className="text-zen-mono text-sm">
                     {config.label}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
-          <div className="text-xs font-mono text-mono-pure-black">
-            {question.length} characters
+          <div className="text-xs text-zen-mono text-zen-medium">
+            {question.length} chars
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 };

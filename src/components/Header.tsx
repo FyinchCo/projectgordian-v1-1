@@ -11,29 +11,31 @@ interface HeaderProps {
 
 export const Header = ({ customArchetypes, enhancedMode }: HeaderProps) => {
   return (
-    <header className="border-b-4 border-mono-pure-black bg-mono-pure-white px-6 py-8">
+    <header className="border-b border-zen-light bg-zen-paper px-8 py-12">
       <div className="max-w-6xl mx-auto flex items-center justify-between">
-        <div className="flex items-center space-x-6">
-          <KnotIcon className="text-mono-pure-black" size={48} animate />
-          <div>
-            <h1 className="text-4xl font-cormorant font-bold tracking-tight text-mono-pure-black uppercase">
+        <div className="flex items-center space-x-8">
+          <KnotIcon className="text-zen-ink" size={40} animate />
+          <div className="space-y-2">
+            <h1 className="text-3xl text-zen-heading text-zen-ink tracking-tight">
               PROJECT GORDIAN
             </h1>
-            <p className="text-sm text-mono-dark-gray font-mono tracking-widest uppercase mt-1">
-              AI's Recursive Distillation of a Knot
+            <div className="flex items-center space-x-4">
+              <p className="text-xs text-zen-mono text-zen-medium tracking-wider uppercase">
+                AI's Recursive Distillation of a Knot
+              </p>
               {customArchetypes && (
-                <span className="ml-4 px-2 py-1 bg-mono-pure-black text-mono-pure-white text-xs font-mono uppercase">
+                <span className="px-3 py-1 bg-zen-whisper text-zen-ink text-xs text-zen-mono uppercase tracking-wide rounded-sm">
                   Custom Config
                 </span>
               )}
-            </p>
+            </div>
           </div>
         </div>
         <Link to="/config">
           <Button 
-            variant="outline" 
+            variant="ghost" 
             size="sm" 
-            className="flex items-center space-x-2 border-2 border-mono-pure-black text-mono-pure-black hover:bg-mono-pure-black hover:text-mono-pure-white font-mono uppercase tracking-wide transition-all duration-200"
+            className="flex items-center space-x-2 text-zen-charcoal hover:text-zen-ink hover:bg-zen-whisper text-zen-mono uppercase tracking-wide transition-all duration-300 px-4 py-2 rounded-sm"
           >
             <Settings className="w-4 h-4" />
             <span>Configure</span>
