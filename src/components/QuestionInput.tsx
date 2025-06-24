@@ -3,9 +3,9 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Play, Zap, Brain } from "lucide-react";
-import { OutputTypeSelector } from "@/components/OutputTypeSelector";
-import { OutputType } from "@/types/outputTypes";
+import { OutputType, OUTPUT_TYPE_CONFIGS } from "@/types/outputTypes";
 
 interface QuestionInputProps {
   question: string;
@@ -54,12 +54,6 @@ export const QuestionInput = ({
         )}
       </div>
 
-      {/* Output Type Selector */}
-      <OutputTypeSelector 
-        selectedType={outputType}
-        onTypeChange={onOutputTypeChange}
-      />
-
       <Card className="p-8 shadow-lg border-2 border-gordian-beige bg-white">
         <div className="space-y-6">
           <Textarea
@@ -69,11 +63,12 @@ export const QuestionInput = ({
             className="min-h-[150px] text-lg font-inter border-0 shadow-none resize-none focus-visible:ring-0 p-0 placeholder:text-gordian-brown/50"
           />
           
-          <div className="flex justify-between items-center pt-4 border-t border-gordian-beige">
-            <div className="flex items-center space-x-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pt-4 border-t border-gordian-beige">
+            <div className="flex flex-wrap items-center gap-4">
               <div className="text-sm font-inter text-gordian-brown">
                 {question.length} characters
               </div>
+              
               {onToggleAssessment && (
                 <Button
                   onClick={onToggleAssessment}
@@ -85,7 +80,28 @@ export const QuestionInput = ({
                   <span>{showAssessment ? "Hide" : "Show"} AI Assessment</span>
                 </Button>
               )}
+
+              <div className="flex items-center space-x-2">
+                <span className="text-sm font-inter text-gordian-brown">Answer Type:</span>
+                <Select value={outputType} onValueChange={(value) => onOutputTypeChange(value as OutputType)}>
+                  <SelectTrigger className="w-[140px] h-8 border-gordian-beige bg-gordian-cream text-gordian-dark-brown font-inter text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white border-gordian-beige shadow-lg">
+                    {OUTPUT_TYPE_CONFIGS.map((config) => (
+                      <SelectItem 
+                        key={config.id} 
+                        value={config.id}
+                        className="font-inter text-gordian-dark-brown hover:bg-gordian-cream focus:bg-gordian-cream"
+                      >
+                        {config.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
+
             <Button 
               onClick={onStartGenius}
               disabled={!question.trim()}
