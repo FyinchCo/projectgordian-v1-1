@@ -1,10 +1,10 @@
+
 import { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { ProcessingSection } from "@/components/ProcessingSection";
 import { ResultsSection } from "@/components/ResultsSection";
 import { ProcessingLogic } from "@/components/ProcessingLogic";
-import { QuestionSection } from "@/components/QuestionSection";
-import { ControlsSection } from "@/components/ControlsSection";
+import { ConsolidatedGeniusInterface } from "@/components/ConsolidatedGeniusInterface";
 import { PasswordGate } from "@/components/PasswordGate";
 import { useToast } from "@/hooks/use-toast";
 import { useOutputType } from "@/hooks/useOutputType";
@@ -16,17 +16,15 @@ const Index = () => {
   const [currentArchetype, setCurrentArchetype] = useState("");
   const [currentLayer, setCurrentLayer] = useState(1);
   const [results, setResults] = useState(null);
-  const [processingDepth, setProcessingDepth] = useState([1]);
+  const [processingDepth, setProcessingDepth] = useState([5]);
   const [circuitType, setCircuitType] = useState("sequential");
   const [enhancedMode, setEnhancedMode] = useState(true);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [customArchetypes, setCustomArchetypes] = useState(null);
-  const [showAssessment, setShowAssessment] = useState(false);
   const [currentAssessment, setCurrentAssessment] = useState(null);
   const [chunkProgress, setChunkProgress] = useState({ current: 0, total: 0 });
   const { toast } = useToast();
 
-  // Add output type state
   const { outputType, setOutputType } = useOutputType('practical');
 
   // Check authentication status on mount
@@ -70,21 +68,6 @@ const Index = () => {
     setIsProcessing(false);
   };
 
-  const handleApplyRecommendations = (recommendations: any, fullAssessment: any) => {
-    console.log('Applying AI recommendations:', recommendations);
-    console.log('Full assessment data:', fullAssessment);
-    
-    setProcessingDepth([recommendations.processingDepth]);
-    setCircuitType(recommendations.circuitType);
-    setEnhancedMode(recommendations.enhancedMode);
-    setCurrentAssessment(fullAssessment);
-    
-    toast({
-      title: "AI Configuration Applied",
-      description: `Processing optimized: ${recommendations.processingDepth} layers, ${recommendations.circuitType} circuit, enhanced mode ${recommendations.enhancedMode ? 'ON' : 'OFF'}`,
-    });
-  };
-
   const handleExportInsight = () => {
     setIsExportModalOpen(true);
   };
@@ -92,11 +75,7 @@ const Index = () => {
   const handleReset = () => {
     setResults(null);
     setQuestion("");
-    setShowAssessment(false);
-  };
-
-  const toggleAssessment = () => {
-    setShowAssessment(!showAssessment);
+    setCurrentAssessment(null);
   };
 
   // Get the processing logic handler function
@@ -126,29 +105,22 @@ const Index = () => {
 
       <main className="max-w-5xl mx-auto px-6 py-16">
         {!isProcessing && !results && (
-          <div className="space-y-16">
-            <QuestionSection
-              question={question}
-              setQuestion={setQuestion}
-              onStartGenius={processingLogicComponent.handleStartGenius}
-              customArchetypes={customArchetypes}
-              enhancedMode={enhancedMode}
-              showAssessment={showAssessment}
-              onToggleAssessment={toggleAssessment}
-              onApplyRecommendations={handleApplyRecommendations}
-              outputType={outputType}
-              onOutputTypeChange={setOutputType}
-            />
-
-            <ControlsSection
-              processingDepth={processingDepth}
-              onProcessingDepthChange={setProcessingDepth}
-              circuitType={circuitType}
-              onCircuitTypeChange={setCircuitType}
-              enhancedMode={enhancedMode}
-              onEnhancedModeChange={setEnhancedMode}
-            />
-          </div>
+          <ConsolidatedGeniusInterface
+            question={question}
+            setQuestion={setQuestion}
+            outputType={outputType}
+            setOutputType={setOutputType}
+            processingDepth={processingDepth}
+            setProcessingDepth={setProcessingDepth}
+            circuitType={circuitType}
+            setCircuitType={setCircuitType}
+            enhancedMode={enhancedMode}
+            setEnhancedMode={setEnhancedMode}
+            customArchetypes={customArchetypes}
+            currentAssessment={currentAssessment}
+            setCurrentAssessment={setCurrentAssessment}
+            onStartGenius={processingLogicComponent.handleStartGenius}
+          />
         )}
 
         {isProcessing && (
