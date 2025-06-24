@@ -1,7 +1,7 @@
 
 import { ChunkResult, ProcessingResult } from './types';
 
-export const createProcessingTimeout = (chunkIndex: number, timeoutMs: number = 45000): Promise<never> => {
+export const createProcessingTimeout = (chunkIndex: number, timeoutMs: number = 60000): Promise<never> => {
   return new Promise<never>((_, reject) => {
     setTimeout(() => {
       reject(new Error(`CHUNK_TIMEOUT: Chunk ${chunkIndex + 1} timed out after ${timeoutMs / 1000} seconds`));
@@ -85,7 +85,7 @@ export const handleChunkError = (
   } else {
     const errorMessage = chunkError.message || 'Unknown error';
     if (errorMessage.includes('CHUNK_TIMEOUT')) {
-      throw new Error('PROCESSING_TIMEOUT: The genius machine is taking longer than expected. This may be due to system load.');
+      throw new Error('PROCESSING_TIMEOUT: The genius machine is taking longer than expected. Try reducing processing depth or try again later.');
     } else {
       throw new Error(`PROCESSING_ERROR: ${errorMessage}`);
     }

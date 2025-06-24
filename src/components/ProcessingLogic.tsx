@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useChunkedProcessor } from "@/components/processing/ChunkedProcessor";
@@ -74,59 +75,66 @@ export const ProcessingLogic = ({
       
       let finalResults;
       
-      // Use chunked processing for depths > 3, simple processing for 1-3
-      if (processingDepth[0] > 3) {
-        console.log('Using chunked processing for depth > 3:', processingDepth[0]);
+      // Use chunked processing for depths > 5, simple processing for 1-5
+      if (processingDepth[0] > 5) {
+        console.log('Using chunked processing for depth > 5:', processingDepth[0]);
         toast({
           title: "Deep Processing Mode",
           description: `Processing ${processingDepth[0]} layers in chunks for optimal performance.`,
           variant: "default",
         });
         
-        finalResults = await processChunkedLayers({
-          baseConfig,
-          totalDepth: processingDepth[0],
-          chunkSize: 2,
-          onChunkProgressChange,
-          onCurrentLayerChange
-        });
+        try {
+          finalResults = await processChunkedLayers({
+            baseConfig,
+            totalDepth: processingDepth[0],
+            chunkSize: 2,
+            onChunkProgressChange,
+            onCurrentLayerChange
+          });
+        } catch (chunkError: any) {
+          // Fallback to simple processing with reduced depth
+          console.log('Chunked processing failed, falling back to simple processing with depth 5');
+          toast({
+            title: "Switching to Simple Processing",
+            description: "Deep processing failed, using standard processing instead.",
+            variant: "default",
+          });
+          
+          const fallbackConfig = { ...baseConfig, processingDepth: 5 };
+          const result = await supabase.functions.invoke('genius-machine', {
+            body: fallbackConfig
+          });
+          
+          if (result.error) throw new Error(`FUNCTION_ERROR: ${result.error.message}`);
+          if (!result.data) throw new Error('NO_DATA: Empty response from processing service');
+          
+          finalResults = result.data;
+        }
       } else {
-        // Simple processing for depth 1-3 with reasonable timeout
-        console.log('Using simple processing for depth <= 3:', processingDepth[0]);
+        // Simple processing for depth 1-5 with longer timeout
+        console.log('Using simple processing for depth <= 5:', processingDepth[0]);
         const config = { ...baseConfig, processingDepth: processingDepth[0] };
         
         console.log('Calling genius-machine function with config:', JSON.stringify(config, null, 2));
         console.log('Function call initiated at:', new Date().toISOString());
         
-        // Reasonable timeout for simple processing - 30 seconds
+        // Longer timeout for simple processing - 45 seconds
         const timeoutPromise = new Promise<never>((_, reject) => {
           setTimeout(() => {
-            console.log('30 second timeout triggered at:', new Date().toISOString());
-            reject(new Error('SIMPLE_TIMEOUT: Function timeout after 30 seconds'));
-          }, 30000);
+            console.log('45 second timeout triggered at:', new Date().toISOString());
+            reject(new Error('SIMPLE_TIMEOUT: Function timeout after 45 seconds'));
+          }, 45000);
         });
-        
-        console.log('Creating function request promise...');
-        const startTime = Date.now();
         
         const requestPromise = supabase.functions.invoke('genius-machine', {
           body: config
         });
         
-        console.log('Racing function call against timeout...');
-        
         const result = await Promise.race([requestPromise, timeoutPromise]);
-        console.log('Function race completed, processing response...');
         
         if (result.error) {
-          console.error('Supabase function error details:', {
-            message: result.error.message,
-            code: result.error.code,
-            details: result.error.details,
-            hint: result.error.hint,
-            timestamp: new Date().toISOString()
-          });
-          
+          console.error('Supabase function error details:', result.error);
           throw new Error(`FUNCTION_ERROR: ${result.error.message || 'Unknown processing error'}`);
         }
         
@@ -135,21 +143,8 @@ export const ProcessingLogic = ({
           throw new Error('NO_DATA: Empty response from processing service');
         }
         
-        console.log('Processing successful, validating response structure:', {
-          hasInsight: !!result.data.insight,
-          hasLayers: !!result.data.layers,
-          layerCount: result.data.layers?.length || 0,
-          processingTime: Date.now() - startTime
-        });
-        
         finalResults = result.data;
       }
-      
-      console.log('Final results validation:', {
-        hasResults: !!finalResults,
-        resultKeys: finalResults ? Object.keys(finalResults) : [],
-        hasQuestionQuality: !!finalResults?.questionQuality
-      });
       
       // Record learning cycle
       if (finalResults.questionQuality) {
@@ -184,17 +179,9 @@ export const ProcessingLogic = ({
           );
           
           console.log('Learning data recorded successfully');
-          
-          toast({
-            title: "Learning Cycle Recorded",
-            description: "Results added to meta-learning system for future optimization.",
-            variant: "default",
-          });
         } catch (learningError) {
           console.error('Failed to record learning data:', learningError);
         }
-      } else {
-        console.log('No question quality metrics found, learning not recorded');
       }
       
       console.log('=== PROCESSING COMPLETE ===');
@@ -223,12 +210,7 @@ export const ProcessingLogic = ({
     } catch (error: any) {
       console.error('=== PROCESSING ERROR ANALYSIS ===');
       console.error('Error timestamp:', new Date().toISOString());
-      console.error('Error details:', {
-        name: error.name,
-        message: error.message,
-        stack: error.stack?.split('\n').slice(0, 5).join('\n'),
-        cause: error.cause
-      });
+      console.error('Error details:', error);
       
       // Simplified error handling
       let userTitle = "Processing Error";
@@ -238,7 +220,7 @@ export const ProcessingLogic = ({
       
       if (errorMessage.includes('TIMEOUT')) {
         userTitle = "Processing Taking Longer Than Expected";
-        userDescription = "The system is under heavy load. Try a simpler question or lower processing depth.";
+        userDescription = "The system is under heavy load. Try reducing processing depth or try again later.";
       } else if (errorMessage.includes('FUNCTION_ERROR')) {
         userTitle = "Processing Error";
         userDescription = "There was an error in the processing logic. Please try again.";
@@ -253,7 +235,6 @@ export const ProcessingLogic = ({
       onProcessingError();
     } finally {
       console.log('=== PROCESSING CLEANUP ===');
-      console.log('Cleanup timestamp:', new Date().toISOString());
       onCurrentArchetypeChange("");
       onCurrentLayerChange(1);
       onChunkProgressChange({ current: 0, total: 0 });
