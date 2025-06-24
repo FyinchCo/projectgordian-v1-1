@@ -27,7 +27,7 @@ const Index = () => {
 
   // Check authentication status on mount
   useEffect(() => {
-    const authStatus = localStorage.getItem("genius-machine-authenticated");
+    const authStatus = localStorage.getItem("project-gordian-authenticated");
     if (authStatus === "true") {
       setIsAuthenticated(true);
     }

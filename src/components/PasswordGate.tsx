@@ -15,7 +15,7 @@ export const PasswordGate = ({ onAuthenticated }: PasswordGateProps) => {
   const { toast } = useToast();
 
   // You'll need to set this to your desired password
-  const CORRECT_PASSWORD = "genius2024"; // Change this to your preferred password
+  const CORRECT_PASSWORD = "gordian2024"; // Change this to your preferred password
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,11 +24,11 @@ export const PasswordGate = ({ onAuthenticated }: PasswordGateProps) => {
     // Simple delay to prevent brute force attempts
     setTimeout(() => {
       if (password === CORRECT_PASSWORD) {
-        localStorage.setItem("genius-machine-authenticated", "true");
+        localStorage.setItem("project-gordian-authenticated", "true");
         onAuthenticated();
         toast({
           title: "Access Granted",
-          description: "Welcome to the Genius Machine!",
+          description: "Welcome to Project Gordian!",
         });
       } else {
         toast({
@@ -47,10 +47,10 @@ export const PasswordGate = ({ onAuthenticated }: PasswordGateProps) => {
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            Genius Machine
+            Project Gordian
           </h1>
           <p className="text-gray-600">
-            This is a private preview. Please enter the access password.
+            Untangling complex problems with AI intelligence. Please enter the access password.
           </p>
         </div>
 

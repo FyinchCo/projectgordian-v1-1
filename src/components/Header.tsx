@@ -15,7 +15,7 @@ export const Header = ({ customArchetypes, enhancedMode }: HeaderProps) => {
         <div className="flex items-center space-x-3">
           <Brain className="w-8 h-8" />
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">GENIUS MACHINE</h1>
+            <h1 className="text-2xl font-bold tracking-tight">PROJECT GORDIAN</h1>
             <p className="text-xs text-gray-500 uppercase tracking-wide">
               Multi-Agent Intelligence System
               {customArchetypes && (
