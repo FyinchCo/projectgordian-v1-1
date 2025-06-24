@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { ProcessingSection } from "@/components/ProcessingSection";
@@ -106,10 +107,10 @@ const Index = () => {
       return new Promise((resolve, reject) => {
         console.log('Running test for question:', testQuestion);
         
-        // Use the actual processing logic directly
+        // Use the actual processing logic directly - fix the processingDepth parameter
         const testConfig = {
           question: testQuestion,
-          processingDepth,
+          processingDepth: processingDepth[0], // Extract the number from the array
           circuitType,
           enhancedMode,
           customArchetypes,
