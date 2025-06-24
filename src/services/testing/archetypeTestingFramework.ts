@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 export interface ArchetypeTestConfiguration {
@@ -29,6 +28,8 @@ export interface TestQuestion {
   expectedOutcomes: string[];
   difficulty: 'easy' | 'medium' | 'hard' | 'expert';
   category: 'philosophical' | 'technical' | 'creative' | 'social' | 'business' | 'scientific';
+  archetypeTarget?: string; // Which archetype this question is designed to test
+  measuresQualities?: string[]; // What specific qualities this question measures
 }
 
 export interface TestResult {
@@ -356,6 +357,134 @@ export class ArchetypeTestingFramework {
     }
 
     return results;
+  }
+
+  // Enhanced testing with archetype-specific analysis
+  async runArchetypeOptimizationTest(
+    configurationIds: string[],
+    includeArchetypeSpecificQuestions: boolean = true,
+    onProgress?: (current: number, total: number, status: string) => void
+  ): Promise<{
+    results: TestResult[];
+    analysis: any;
+    recommendations: any;
+  }> {
+    let questionsToTest = this.testQuestions;
+    
+    if (includeArchetypeSpecificQuestions) {
+      // Import and add archetype-specific questions if not already present
+      const { allArchetypeSpecificQuestions } = await import('./archetypeSpecificQuestions');
+      allArchetypeSpecificQuestions.forEach(question => {
+        if (!this.testQuestions.find(q => q.id === question.id)) {
+          this.addTestQuestion(question);
+        }
+      });
+      questionsToTest = this.testQuestions;
+    }
+
+    // Run comprehensive tests
+    const results: TestResult[] = [];
+    const total = configurationIds.length * questionsToTest.length;
+    let current = 0;
+
+    for (const configId of configurationIds) {
+      onProgress?.(current, total, `Testing configuration: ${configId}`);
+      
+      for (const question of questionsToTest) {
+        try {
+          onProgress?.(current, total, `Testing: ${question.question.substring(0, 50)}...`);
+          
+          const result = await this.runTest(configId, question.id);
+          results.push(result);
+          current++;
+          
+          // Small delay to prevent API overwhelm
+          await new Promise(resolve => setTimeout(resolve, 1500));
+        } catch (error) {
+          console.error(`Test failed for ${configId} + ${question.id}:`, error);
+          current++;
+        }
+      }
+    }
+
+    // Analyze results using the new archetype analyzer
+    const { archetypeAnalyzer } = await import('./archetypeAnalyzer');
+    
+    const analysis = configurationIds.map(configId => ({
+      configurationId: configId,
+      profiles: archetypeAnalyzer.analyzeArchetypePerformance(configId, 
+        results.filter(r => r.configurationId === configId)
+      )
+    }));
+
+    const recommendations = configurationIds.map(configId => 
+      archetypeAnalyzer.generateOptimizationRecommendations(configId,
+        results.filter(r => r.configurationId === configId)
+      )
+    );
+
+    return { results, analysis, recommendations };
+  }
+
+  // Get archetype-specific performance data
+  getArchetypeSpecificInsights(configurationId: string): {
+    archetypeName: string;
+    targetedQuestions: number;
+    averagePerformance: number;
+    roleEffectiveness: string;
+    specificWeaknesses: string[];
+    optimizationSuggestions: string[];
+  }[] {
+    const configuration = this.configurations.find(c => c.id === configurationId);
+    if (!configuration) return [];
+
+    return configuration.archetypes.map(archetype => {
+      const targetedResults = this.testResults.filter(result => 
+        this.testQuestions.find(q => q.id === result.questionId)?.archetypeTarget === archetype.name
+      );
+
+      const averagePerformance = targetedResults.length > 0 
+        ? targetedResults.reduce((sum, r) => sum + r.qualityMetrics.overallScore, 0) / targetedResults.length
+        : 0;
+
+      let roleEffectiveness = 'Unknown';
+      if (averagePerformance >= 8) roleEffectiveness = 'Excellent';
+      else if (averagePerformance >= 7) roleEffectiveness = 'Good';
+      else if (averagePerformance >= 6) roleEffectiveness = 'Fair';
+      else roleEffectiveness = 'Needs Improvement';
+
+      const specificWeaknesses: string[] = [];
+      const optimizationSuggestions: string[] = [];
+
+      // Analyze weaknesses based on archetype role
+      if (targetedResults.length > 0) {
+        const avgNovelty = targetedResults.reduce((sum, r) => sum + r.qualityMetrics.noveltyScore, 0) / targetedResults.length;
+        const avgCoherence = targetedResults.reduce((sum, r) => sum + r.qualityMetrics.coherenceScore, 0) / targetedResults.length;
+        const avgInsight = targetedResults.reduce((sum, r) => sum + r.qualityMetrics.insightQuality, 0) / targetedResults.length;
+
+        if (archetype.name === 'The Visionary' && avgNovelty < 7) {
+          specificWeaknesses.push('Low novelty generation for visionary role');
+          optimizationSuggestions.push('Consider increasing imagination parameter');
+        }
+        if (archetype.name === 'The Skeptic' && avgCoherence < 7) {
+          specificWeaknesses.push('Insufficient analytical rigor');
+          optimizationSuggestions.push('Consider increasing skepticism parameter');
+        }
+        if (avgInsight < 6) {
+          specificWeaknesses.push('Below-average insight quality');
+          optimizationSuggestions.push('Review language style and emotional settings');
+        }
+      }
+
+      return {
+        archetypeName: archetype.name,
+        targetedQuestions: targetedResults.length,
+        averagePerformance: Math.round(averagePerformance * 10) / 10,
+        roleEffectiveness,
+        specificWeaknesses,
+        optimizationSuggestions
+      };
+    });
   }
 
   // Data Persistence
