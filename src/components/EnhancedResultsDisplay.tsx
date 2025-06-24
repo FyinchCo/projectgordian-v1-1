@@ -78,47 +78,51 @@ export const EnhancedResultsDisplay = ({ results, question, onReset, onExport }:
   // Record learning data when results are displayed
   useEffect(() => {
     if (results && results.questionQuality && question) {
-      console.log('EnhancedResultsDisplay: Recording processing results for meta-learning...');
-      console.log('Question:', question);
-      console.log('Results quality metrics:', results.questionQuality);
-      
-      // Create assessment object from results
-      const assessment = {
-        complexityScore: results.processingDepth || 5,
-        domainType: "General", // We'll improve this later
-        abstractionLevel: "Theoretical",
-        controversyPotential: results.tensionPoints || 5,
-        noveltyRequirement: results.noveltyScore || 5,
-        stakeholderComplexity: 5,
-        breakthroughPotential: results.emergenceDetected ? 8 : 5,
-        cognitiveComplexity: results.processingDepth || 5
-      };
-      
-      // Create configuration object from results
-      const configuration = {
-        processingDepth: results.processingDepth || 5,
-        circuitType: results.circuitType || 'sequential',
-        enhancedMode: results.enhancedMode !== false,
-        archetypeConfigurations: [],
-        tensionParameters: {}
-      };
-      
-      // Record the results for meta-learning
-      recordProcessingResults(
-        question,
-        assessment,
-        configuration,
-        {
-          insight: results.insight,
-          confidence: results.confidence,
-          tensionPoints: results.tensionPoints,
-          noveltyScore: results.noveltyScore || 5,
-          emergenceDetected: results.emergenceDetected || false
-        },
-        results.questionQuality
-      );
-      
-      console.log('EnhancedResultsDisplay: Learning data recorded successfully');
+      try {
+        console.log('EnhancedResultsDisplay: Recording processing results for meta-learning...');
+        console.log('Question:', question);
+        console.log('Results quality metrics:', results.questionQuality);
+        
+        // Create assessment object from results
+        const assessment = {
+          complexityScore: results.processingDepth || 5,
+          domainType: "General", // We'll improve this later
+          abstractionLevel: "Theoretical",
+          controversyPotential: results.tensionPoints || 5,
+          noveltyRequirement: results.noveltyScore || 5,
+          stakeholderComplexity: 5,
+          breakthroughPotential: results.emergenceDetected ? 8 : 5,
+          cognitiveComplexity: results.processingDepth || 5
+        };
+        
+        // Create configuration object from results
+        const configuration = {
+          processingDepth: results.processingDepth || 5,
+          circuitType: results.circuitType || 'sequential',
+          enhancedMode: results.enhancedMode !== false,
+          archetypeConfigurations: [],
+          tensionParameters: {}
+        };
+        
+        // Record the results for meta-learning
+        recordProcessingResults(
+          question,
+          assessment,
+          configuration,
+          {
+            insight: results.insight,
+            confidence: results.confidence,
+            tensionPoints: results.tensionPoints,
+            noveltyScore: results.noveltyScore || 5,
+            emergenceDetected: results.emergenceDetected || false
+          },
+          results.questionQuality
+        );
+        
+        console.log('EnhancedResultsDisplay: Learning data recorded successfully');
+      } catch (error) {
+        console.warn('EnhancedResultsDisplay: Failed to record learning data:', error);
+      }
     } else {
       console.log('EnhancedResultsDisplay: Missing required data for learning:', {
         hasResults: !!results,
@@ -127,6 +131,16 @@ export const EnhancedResultsDisplay = ({ results, question, onReset, onExport }:
       });
     }
   }, [results, question, recordProcessingResults]);
+
+  // Safe render with error boundaries
+  const renderSafeSection = (Component: React.ComponentType<any>, props: any, fallback?: React.ReactNode) => {
+    try {
+      return <Component {...props} />;
+    } catch (error) {
+      console.error('Error rendering section:', error);
+      return fallback || null;
+    }
+  };
 
   return (
     <div className="space-y-8">
@@ -167,38 +181,38 @@ export const EnhancedResultsDisplay = ({ results, question, onReset, onExport }:
       </Card>
 
       {/* Main Insight */}
-      <MainInsightDisplay 
-        insight={results.insight}
-        confidence={results.confidence}
-        tensionPoints={results.tensionPoints}
-        noveltyScore={results.noveltyScore}
-        emergenceDetected={results.emergenceDetected}
-        enhancedMode={results.enhancedMode}
-        circuitType={results.circuitType}
-        processingDepth={results.processingDepth}
-        logicTrailLength={results.logicTrail.length}
-      />
+      {renderSafeSection(MainInsightDisplay, {
+        insight: results.insight,
+        confidence: results.confidence,
+        tensionPoints: results.tensionPoints,
+        noveltyScore: results.noveltyScore,
+        emergenceDetected: results.emergenceDetected,
+        enhancedMode: results.enhancedMode,
+        circuitType: results.circuitType,
+        processingDepth: results.processingDepth,
+        logicTrailLength: results.logicTrail?.length || 0
+      })}
 
       {/* Question Quality Evaluation */}
-      {results.questionQuality && (
-        <QuestionQualitySection questionQuality={results.questionQuality} />
-      )}
+      {results.questionQuality && renderSafeSection(QuestionQualitySection, { 
+        questionQuality: results.questionQuality 
+      })}
 
       {/* Assumption Analysis */}
-      {results.assumptionAnalysis && (
-        <AssumptionAnalysisSection assumptionAnalysis={results.assumptionAnalysis} />
-      )}
+      {results.assumptionAnalysis && renderSafeSection(AssumptionAnalysisSection, { 
+        assumptionAnalysis: results.assumptionAnalysis 
+      })}
 
       {/* Tension Analysis */}
-      {results.finalTensionMetrics && (
-        <TensionAnalysisSection tensionMetrics={results.finalTensionMetrics} />
-      )}
+      {results.finalTensionMetrics && renderSafeSection(TensionAnalysisSection, { 
+        tensionMetrics: results.finalTensionMetrics 
+      })}
 
       {/* Processing Layers */}
-      <ProcessingLayersSection layers={results.layers} />
+      {renderSafeSection(ProcessingLayersSection, { layers: results.layers })}
 
       {/* Logic Trail */}
-      <LogicTrailSection logicTrail={results.logicTrail} />
+      {renderSafeSection(LogicTrailSection, { logicTrail: results.logicTrail })}
 
       {/* Actions */}
       <div className="flex justify-center space-x-4">

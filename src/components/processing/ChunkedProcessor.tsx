@@ -57,48 +57,57 @@ export const useChunkedProcessor = () => {
         
         const chunkStartTime = Date.now();
         
-        // Reasonable timeout - 45 seconds to allow function to complete
+        // Create timeout promise that rejects with never type
         const timeoutPromise = new Promise<never>((_, reject) => {
           setTimeout(() => {
             reject(new Error(`CHUNK_TIMEOUT: Chunk ${chunkIndex + 1} timed out after 45 seconds`));
           }, 45000);
         });
         
+        // Create request promise
         const requestPromise = supabase.functions.invoke('genius-machine', {
           body: chunkConfig
         });
         
+        // Race the promises and handle the result properly
         const result = await Promise.race([requestPromise, timeoutPromise]);
         const chunkDuration = Date.now() - chunkStartTime;
         
         console.log(`Chunk ${chunkIndex + 1} completed in ${chunkDuration}ms`);
         
-        if (result.error) {
-          console.error(`Chunk ${chunkIndex + 1} function error:`, result.error);
-          throw new Error(`FUNCTION_ERROR: ${result.error.message || 'Unknown function error'}`);
+        // Ensure result has the expected structure
+        if (!result || typeof result !== 'object') {
+          throw new Error(`INVALID_RESPONSE: Chunk ${chunkIndex + 1} returned invalid response`);
         }
         
-        if (!result.data) {
+        const { data, error } = result as { data?: any; error?: any };
+        
+        if (error) {
+          console.error(`Chunk ${chunkIndex + 1} function error:`, error);
+          throw new Error(`FUNCTION_ERROR: ${error.message || 'Unknown function error'}`);
+        }
+        
+        if (!data) {
           console.error(`Chunk ${chunkIndex + 1} returned no data`);
           throw new Error(`NO_DATA: Chunk ${chunkIndex + 1} returned empty response`);
         }
         
         console.log(`Chunk ${chunkIndex + 1} success:`, {
-          hasLayers: !!result.data.layers,
-          layerCount: result.data.layers?.length || 0,
-          hasInsight: !!result.data.insight
+          hasLayers: !!data.layers,
+          layerCount: data.layers?.length || 0,
+          hasInsight: !!data.insight
         });
         
         // Accumulate layers
-        if (result.data.layers) {
-          accumulatedLayers = [...accumulatedLayers, ...result.data.layers];
+        if (data.layers) {
+          accumulatedLayers = [...accumulatedLayers, ...data.layers];
           console.log(`Total accumulated layers: ${accumulatedLayers.length}`);
         }
         
         // Handle final vs intermediate chunks
         if (chunkIndex === chunks - 1) {
           const finalResults = {
-            ...result.data,
+            ...data,
             layers: accumulatedLayers,
             processingDepth: totalDepth,
             chunkProcessed: true
