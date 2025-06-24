@@ -1,18 +1,20 @@
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { TestConfigurationManager } from "./TestConfigurationManager";
 import { TestQuestionManager } from "./TestQuestionManager";
 import { TestRunner } from "./TestRunner";
 import { ResultsAnalyzer } from "./ResultsAnalyzer";
+import { InitializationControls } from "./InitializationControls";
+import { DebugInfoCard } from "./DebugInfoCard";
+import { StatsOverview } from "./StatsOverview";
+import { BaselineResults } from "./BaselineResults";
 import { archetypeTestingFramework } from "@/services/testing/archetypeTestingFramework";
 import { initializeDefaultTestData } from "@/services/testing/defaultTestConfigurations";
-import { FlaskConical, Target, BarChart3, Settings, Zap } from "lucide-react";
+import { FlaskConical } from "lucide-react";
 
 export const ArchetypeTestingInterface = () => {
   const [activeTab, setActiveTab] = useState("overview");
@@ -109,111 +111,24 @@ export const ArchetypeTestingInterface = () => {
             Scientific optimization of archetype configurations for breakthrough insights
           </p>
         </div>
-        <div className="flex space-x-2">
-          {!isInitialized && (
-            <Button onClick={initializeFramework} className="bg-blue-600 hover:bg-blue-700">
-              Initialize Framework
-            </Button>
-          )}
-          {isInitialized && (
-            <Button 
-              onClick={runBaselineTest} 
-              disabled={isRunningBaseline}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              {isRunningBaseline ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Running Baseline Test...
-                </>
-              ) : (
-                <>
-                  <Zap className="w-4 h-4 mr-2" />
-                  Run Baseline Test
-                </>
-              )}
-            </Button>
-          )}
-          <Button variant="outline" onClick={resetFramework}>
-            Reset All Data
-          </Button>
-        </div>
+        <InitializationControls
+          isInitialized={isInitialized}
+          isRunningBaseline={isRunningBaseline}
+          onInitialize={initializeFramework}
+          onRunBaseline={runBaselineTest}
+          onReset={resetFramework}
+        />
       </div>
 
-      {/* Debug Information */}
-      <Card className="border-blue-200 bg-blue-50">
-        <CardHeader>
-          <CardTitle className="text-blue-800">Debug Information</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-sm text-blue-700 space-y-1">
-            <div>Framework Initialized: {isInitialized ? 'Yes' : 'No'}</div>
-            <div>Configurations: {stats.configurations}</div>
-            <div>Questions: {stats.questions}</div>
-            <div>Results: {stats.results}</div>
-            <div>Running Test: {isRunningBaseline ? 'Yes' : 'No'}</div>
-          </div>
-        </CardContent>
-      </Card>
+      <DebugInfoCard 
+        isInitialized={isInitialized}
+        isRunningBaseline={isRunningBaseline}
+        stats={stats}
+      />
 
-      {/* Baseline Results Display */}
-      {baselineResults && (
-        <Card className="border-green-200 bg-green-50">
-          <CardHeader>
-            <CardTitle className="text-green-800">Baseline Test Results</CardTitle>
-            <CardDescription className="text-green-700">
-              Performance analysis of current default archetype configuration
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <pre className="whitespace-pre-wrap text-sm text-green-800 font-mono">
-              {baselineResults}
-            </pre>
-          </CardContent>
-        </Card>
-      )}
+      <BaselineResults baselineResults={baselineResults} />
 
-      {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Configurations</CardTitle>
-            <Settings className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.configurations}</div>
-            <p className="text-xs text-muted-foreground">
-              Test configurations available
-            </p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Test Questions</CardTitle>
-            <Target className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.questions}</div>
-            <p className="text-xs text-muted-foregrade">
-              Benchmark questions ready
-            </p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Test Results</CardTitle>
-            <BarChart3 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.results}</div>
-            <p className="text-xs text-muted-foreground">
-              Completed test runs
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      <StatsOverview stats={stats} />
 
       {/* Main Interface */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
