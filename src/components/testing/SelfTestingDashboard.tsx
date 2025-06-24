@@ -1,4 +1,3 @@
-
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,7 +15,7 @@ import {
 import { useSelfTesting } from "@/hooks/useSelfTesting";
 
 interface SelfTestingDashboardProps {
-  onRunFullTest: (processFunction: (question: string) => Promise<any>) => void;
+  onRunFullTest: () => Promise<void>;
   isVisible: boolean;
 }
 
@@ -35,21 +34,9 @@ export const SelfTestingDashboard = ({ onRunFullTest, isVisible }: SelfTestingDa
   const recentTests = testResults.slice(-10);
   const insights = getPerformanceInsights();
 
-  const handleRunFullTest = () => {
-    // Create a dummy processing function for testing
-    const dummyProcessFunction = async (question: string) => {
-      console.log('Running test with question:', question);
-      // Return a mock result structure
-      return {
-        insight: "Test insight generated",
-        confidence: 0.8,
-        tensionPoints: 5,
-        noveltyScore: 7,
-        emergenceDetected: true
-      };
-    };
-    
-    onRunFullTest(dummyProcessFunction);
+  const handleRunFullTest = async () => {
+    console.log('Dashboard: Starting full test suite...');
+    await onRunFullTest();
   };
 
   return (

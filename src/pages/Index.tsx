@@ -97,11 +97,50 @@ const Index = () => {
     onChunkProgressChange: setChunkProgress
   });
 
-  const handleRunFullTestSuite = async (testProcessFunction: (question: string) => Promise<any>) => {
-    console.log('Starting full test suite with processing function...');
+  const handleRunFullTestSuite = async () => {
+    console.log('Starting full test suite with real processing function...');
+    
+    // Create a processing function that uses our actual ProcessingLogic
+    const actualProcessFunction = async (testQuestion: string) => {
+      return new Promise((resolve, reject) => {
+        console.log('Running test for question:', testQuestion);
+        
+        // Create a temporary processing logic instance for this test
+        const testProcessingLogic = ProcessingLogic({
+          question: testQuestion,
+          processingDepth,
+          circuitType,
+          enhancedMode,
+          customArchetypes,
+          currentAssessment,
+          onProcessingStart: () => {
+            console.log('Test processing started for:', testQuestion);
+          },
+          onProcessingComplete: (results: any) => {
+            console.log('Test processing completed for:', testQuestion, results);
+            resolve(results);
+          },
+          onProcessingError: (error: any) => {
+            console.error('Test processing failed for:', testQuestion, error);
+            reject(new Error('Processing failed'));
+          },
+          onCurrentArchetypeChange: () => {},
+          onCurrentLayerChange: () => {},
+          onChunkProgressChange: () => {}
+        });
+        
+        // Execute the test
+        try {
+          testProcessingLogic.handleStartGenius();
+        } catch (error) {
+          console.error('Error starting test processing:', error);
+          reject(error);
+        }
+      });
+    };
     
     try {
-      await runFullTestSuite(testProcessFunction);
+      await runFullTestSuite(actualProcessFunction);
     } catch (error) {
       console.error('Test suite failed:', error);
       toast({
