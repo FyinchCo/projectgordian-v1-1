@@ -100,41 +100,8 @@ const Index = () => {
   const handleRunFullTestSuite = async (testProcessFunction: (question: string) => Promise<any>) => {
     console.log('Starting full test suite with processing function...');
     
-    // Create a processing function that uses our actual ProcessingLogic
-    const actualProcessFunction = async (testQuestion: string) => {
-      return new Promise((resolve, reject) => {
-        // Create a temporary processing logic instance for this test
-        const testProcessingLogic = ProcessingLogic({
-          question: testQuestion,
-          processingDepth,
-          circuitType,
-          enhancedMode,
-          customArchetypes,
-          currentAssessment,
-          onProcessingStart: () => {}, // Silent for testing
-          onProcessingComplete: (results: any) => {
-            resolve(results);
-          },
-          onProcessingError: () => {
-            reject(new Error('Processing failed'));
-          },
-          onCurrentArchetypeChange: () => {},
-          onCurrentLayerChange: () => {},
-          onChunkProgressChange: () => {}
-        });
-        
-        // Execute the test
-        try {
-          testProcessingLogic.handleStartGenius();
-        } catch (error) {
-          reject(error);
-        }
-      });
-    };
-    
-    // Use the runFullTestSuite method from useSelfTesting hook
     try {
-      await runFullTestSuite(actualProcessFunction);
+      await runFullTestSuite(testProcessFunction);
     } catch (error) {
       console.error('Test suite failed:', error);
       toast({
