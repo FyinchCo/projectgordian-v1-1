@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 import { ProcessingSection } from "@/components/ProcessingSection";
 import { ResultsSection } from "@/components/ResultsSection";
 import { ProcessingLogic } from "@/components/ProcessingLogic";
@@ -12,6 +13,7 @@ const ProcessingPage = () => {
   const { toast } = useToast();
   
   const [question, setQuestion] = useState("");
+  const [outputType, setOutputType] = useState('practical');
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentArchetype, setCurrentArchetype] = useState("");
   const [currentLayer, setCurrentLayer] = useState(1);
@@ -23,21 +25,29 @@ const ProcessingPage = () => {
   const [customArchetypes, setCustomArchetypes] = useState(null);
   const [currentAssessment, setCurrentAssessment] = useState(null);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [showProcessingModes, setShowProcessingModes] = useState(false);
+  const [selectedProcessingMode, setSelectedProcessingMode] = useState("standard");
+
+  const processingModes = [
+    { id: "standard", label: "Standard Analysis", description: "Quick, high-quality insights" },
+    { id: "deep", label: "Deep Synthesis", description: "Genius-level attempts for complex problems" },
+    { id: "experimental", label: "Experimental Depth", description: "Maximum cognitive processing" }
+  ];
 
   useEffect(() => {
     if (location.state) {
       setQuestion(location.state.question || "");
+      setOutputType(location.state.outputType || 'practical');
       setProcessingDepth([location.state.processingDepth || 5]);
       setCircuitType(location.state.circuitType || "sequential");
       setEnhancedMode(location.state.enhancedMode ?? true);
       setCurrentAssessment(location.state.assessment || null);
       
-      // Auto-start processing if we have a question
+      // Show processing mode selection first, don't auto-start
       if (location.state.question) {
-        handleProcessingStart();
+        setShowProcessingModes(true);
       }
     } else {
-      // If no state, redirect to entry point
       navigate("/");
     }
   }, [location.state, navigate]);
@@ -64,6 +74,7 @@ const ProcessingPage = () => {
   const handleProcessingStart = () => {
     setIsProcessing(true);
     setResults(null);
+    setShowProcessingModes(false);
   };
 
   const handleProcessingComplete = (finalResults: any) => {
@@ -81,6 +92,10 @@ const ProcessingPage = () => {
 
   const handleReset = () => {
     navigate("/");
+  };
+
+  const handleStartWithMode = () => {
+    handleProcessingStart();
   };
 
   // Get the processing logic handler function
@@ -118,6 +133,46 @@ const ProcessingPage = () => {
   return (
     <div className="min-h-screen bg-mono-off-white">
       <main className="max-w-5xl mx-auto px-6 py-16">
+        {showProcessingModes && (
+          <div className="space-y-12">
+            <button
+              onClick={() => navigate("/question-input", { state: { outputType } })}
+              className="text-mono-medium-gray hover:text-mono-pure-black font-inter transition-colors"
+            >
+              ← Back to Question
+            </button>
+
+            <h1 className="text-3xl font-cormorant font-bold text-mono-pure-black">
+              Choose Processing Depth
+            </h1>
+
+            <div className="space-y-6">
+              {processingModes.map((mode) => (
+                <button
+                  key={mode.id}
+                  onClick={() => setSelectedProcessingMode(mode.id)}
+                  className={`block w-full text-left p-6 transition-colors ${
+                    selectedProcessingMode === mode.id 
+                      ? 'bg-mono-pure-black text-mono-pure-white' 
+                      : 'bg-mono-light-gray text-mono-pure-black hover:bg-mono-medium-gray hover:text-mono-pure-white'
+                  }`}
+                >
+                  <div className="font-inter font-medium text-xl">{mode.label}</div>
+                  <div className="text-sm mt-2 opacity-80">{mode.description}</div>
+                </button>
+              ))}
+            </div>
+
+            <Button
+              onClick={handleStartWithMode}
+              size="lg"
+              className="w-full bg-mono-pure-black text-mono-pure-white hover:bg-mono-charcoal font-inter font-medium text-lg py-6"
+            >
+              → Start Genius Machine
+            </Button>
+          </div>
+        )}
+
         {isProcessing && (
           <ProcessingSection
             currentArchetype={currentArchetype}
