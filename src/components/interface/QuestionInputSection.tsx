@@ -32,7 +32,7 @@ export const QuestionInputSection = ({
       </div>
 
       {/* Question Input with Zen aesthetics */}
-      <div className="space-y-4">
+      <div className="space-y-6">
         <Textarea
           placeholder="Enter your question here..."
           value={question}
@@ -40,39 +40,40 @@ export const QuestionInputSection = ({
           className="min-h-[120px] text-lg text-zen-body border border-zen-light bg-zen-paper resize-none focus-visible:ring-0 focus-visible:border-zen-medium p-6 rounded-md transition-all duration-300"
         />
 
-        {/* Controls with asymmetric layout (Japanese principle) */}
-        <div className="flex items-center justify-between pt-2">
-          <div className="flex items-center space-x-6">
-            <span className="text-xs text-zen-mono text-zen-medium uppercase tracking-wider">Answer Type</span>
-            <Select value={outputType} onValueChange={(value) => setOutputType(value as OutputType)}>
-              <SelectTrigger className="w-[160px] border border-zen-light bg-zen-paper text-zen-mono text-sm rounded-sm">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="border border-zen-light bg-zen-paper shadow-zen-lg">
-                {OUTPUT_TYPE_CONFIGS.map((config) => (
-                  <SelectItem key={config.id} value={config.id} className="text-zen-mono text-sm">
-                    {config.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        {/* Clean Control Row */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-2">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-zen-mono text-zen-medium uppercase tracking-wider whitespace-nowrap">Answer Type</span>
+              <Select value={outputType} onValueChange={(value) => setOutputType(value as OutputType)}>
+                <SelectTrigger className="w-[140px] border border-zen-light bg-zen-paper text-zen-mono text-sm rounded-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="border border-zen-light bg-zen-paper shadow-zen-lg">
+                  {OUTPUT_TYPE_CONFIGS.map((config) => (
+                    <SelectItem key={config.id} value={config.id} className="text-zen-mono text-sm">
+                      {config.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <Link to="/config">
+              <Button 
+                variant="outline"
+                size="sm"
+                className="border border-zen-light hover:border-zen-medium bg-zen-paper hover:bg-zen-whisper text-zen-charcoal hover:text-zen-ink flex items-center gap-2 text-zen-mono text-xs uppercase tracking-wide transition-all duration-300 px-4 py-2 rounded-sm"
+              >
+                <Settings className="w-4 h-4" />
+                <span>Configure</span>
+              </Button>
+            </Link>
           </div>
+
           <div className="text-xs text-zen-mono text-zen-medium">
             {question.length} chars
           </div>
-        </div>
-
-        {/* AI Configuration Button */}
-        <div className="flex justify-center pt-4">
-          <Link to="/config">
-            <Button 
-              size="lg"
-              className="bg-zen-ink hover:bg-zen-charcoal text-zen-paper flex items-center space-x-3 text-zen-mono uppercase tracking-wide transition-all duration-300 px-8 py-4 rounded-md shadow-zen-lg"
-            >
-              <Settings className="w-5 h-5" />
-              <span>AI Configuration</span>
-            </Button>
-          </Link>
         </div>
       </div>
     </div>
