@@ -55,7 +55,7 @@ export const QuestionInput = ({
       </div>
 
       <div className="border-4 border-mono-pure-black bg-mono-pure-white shadow-2xl">
-        <div className="p-8 space-y-8">
+        <div className="p-4 space-y-6">
           <Textarea
             placeholder="Enter your deep, complex question here..."
             value={question}
@@ -63,9 +63,9 @@ export const QuestionInput = ({
             className="min-h-[180px] text-xl font-inter border-0 shadow-none resize-none focus-visible:ring-0 p-0 placeholder:text-mono-medium-gray bg-transparent"
           />
           
-          <div className="border-t-2 border-mono-pure-black pt-6">
-            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
-              <div className="flex flex-wrap items-center gap-6">
+          <div className="border-t-2 border-mono-pure-black pt-4">
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+              <div className="flex flex-wrap items-center gap-4">
                 <div className="text-sm font-mono text-mono-pure-black uppercase tracking-wider">
                   {question.length} characters
                 </div>
