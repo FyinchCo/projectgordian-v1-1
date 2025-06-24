@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import Config from "./pages/Config";
 import LearningAnalytics from "./pages/LearningAnalytics";
 import InsightsHistory from "./pages/InsightsHistory";
+import ArchetypeTesting from "./pages/ArchetypeTesting";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -23,6 +24,7 @@ const App = () => (
           <Route path="/config" element={<Config />} />
           <Route path="/learning-analytics" element={<LearningAnalytics />} />
           <Route path="/insights-history" element={<InsightsHistory />} />
+          <Route path="/testing" element={<ArchetypeTesting />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
