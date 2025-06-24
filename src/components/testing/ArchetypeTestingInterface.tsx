@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,11 +11,13 @@ import { TestRunner } from "./TestRunner";
 import { ResultsAnalyzer } from "./ResultsAnalyzer";
 import { archetypeTestingFramework } from "@/services/testing/archetypeTestingFramework";
 import { initializeDefaultTestData } from "@/services/testing/defaultTestConfigurations";
-import { FlaskConical, Target, BarChart3, Settings } from "lucide-react";
+import { FlaskConical, Target, BarChart3, Settings, Zap } from "lucide-react";
 
 export const ArchetypeTestingInterface = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const [isInitialized, setIsInitialized] = useState(false);
+  const [isRunningBaseline, setIsRunningBaseline] = useState(false);
+  const [baselineResults, setBaselineResults] = useState<string>("");
   const { toast } = useToast();
 
   const initializeFramework = () => {
@@ -36,9 +37,43 @@ export const ArchetypeTestingInterface = () => {
     }
   };
 
+  const runBaselineTest = async () => {
+    if (!isInitialized) {
+      toast({
+        title: "Initialize First",
+        description: "Please initialize the framework before running tests.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsRunningBaseline(true);
+    setBaselineResults("");
+
+    try {
+      const results = await archetypeTestingFramework.runBaselineOptimizationTest();
+      setBaselineResults(results.summary);
+      
+      toast({
+        title: "Baseline Test Complete",
+        description: `Analyzed ${results.results.length} test cases. Check results below.`,
+      });
+    } catch (error) {
+      console.error('Baseline test failed:', error);
+      toast({
+        title: "Baseline Test Failed", 
+        description: "Check console for details. Some tests may have failed.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsRunningBaseline(false);
+    }
+  };
+
   const resetFramework = () => {
     archetypeTestingFramework.clearAllData();
     setIsInitialized(false);
+    setBaselineResults("");
     toast({
       title: "Framework Reset",
       description: "All test data has been cleared.",
@@ -66,11 +101,47 @@ export const ArchetypeTestingInterface = () => {
               Initialize Framework
             </Button>
           )}
+          {isInitialized && (
+            <Button 
+              onClick={runBaselineTest} 
+              disabled={isRunningBaseline}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {isRunningBaseline ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Running Baseline Test...
+                </>
+              ) : (
+                <>
+                  <Zap className="w-4 h-4 mr-2" />
+                  Run Baseline Test
+                </>
+              )}
+            </Button>
+          )}
           <Button variant="outline" onClick={resetFramework}>
             Reset All Data
           </Button>
         </div>
       </div>
+
+      {/* Baseline Results Display */}
+      {baselineResults && (
+        <Card className="border-green-200 bg-green-50">
+          <CardHeader>
+            <CardTitle className="text-green-800">Baseline Test Results</CardTitle>
+            <CardDescription className="text-green-700">
+              Performance analysis of current default archetype configuration
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <pre className="whitespace-pre-wrap text-sm text-green-800 font-mono">
+              {baselineResults}
+            </pre>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

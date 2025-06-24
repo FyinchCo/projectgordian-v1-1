@@ -487,6 +487,91 @@ export class ArchetypeTestingFramework {
     });
   }
 
+  // New method to run automated baseline test
+  async runBaselineOptimizationTest(): Promise<{
+    results: TestResult[];
+    analysis: any;
+    recommendations: any;
+    summary: string;
+  }> {
+    console.log('Starting baseline optimization test...');
+    
+    // Ensure we have the current default configuration
+    const currentConfig = this.configurations.find(c => c.id === 'current-default');
+    if (!currentConfig) {
+      throw new Error('Current default configuration not found. Please initialize the framework first.');
+    }
+
+    // Run comprehensive test with archetype-specific questions
+    const testResult = await this.runArchetypeOptimizationTest(
+      ['current-default'], 
+      true, // Include archetype-specific questions
+      (current, total, status) => {
+        console.log(`Progress: ${current}/${total} - ${status}`);
+      }
+    );
+
+    // Generate summary insights
+    const summary = this.generateBaselineSummary(testResult);
+    
+    console.log('Baseline test completed:', summary);
+    
+    return {
+      ...testResult,
+      summary
+    };
+  }
+
+  private generateBaselineSummary(testResult: any): string {
+    const { results, analysis, recommendations } = testResult;
+    
+    if (results.length === 0) {
+      return 'No test results generated. Check for errors in test execution.';
+    }
+
+    const avgOverallScore = results.reduce((sum: number, r: TestResult) => sum + r.qualityMetrics.overallScore, 0) / results.length;
+    const emergenceRate = results.filter((r: TestResult) => r.results.emergenceDetected).length / results.length;
+    const avgNovelty = results.reduce((sum: number, r: TestResult) => sum + r.qualityMetrics.noveltyScore, 0) / results.length;
+    const avgCoherence = results.reduce((sum: number, r: TestResult) => sum + r.qualityMetrics.coherenceScore, 0) / results.length;
+
+    let summary = `BASELINE PERFORMANCE ANALYSIS:\n\n`;
+    summary += `Overall Quality: ${avgOverallScore.toFixed(1)}/10 `;
+    if (avgOverallScore >= 8) summary += '(Excellent)\n';
+    else if (avgOverallScore >= 7) summary += '(Good)\n';
+    else if (avgOverallScore >= 6) summary += '(Fair)\n';
+    else summary += '(Needs Improvement)\n';
+
+    summary += `Emergence Rate: ${(emergenceRate * 100).toFixed(1)}% `;
+    if (emergenceRate >= 0.3) summary += '(High breakthrough potential)\n';
+    else if (emergenceRate >= 0.2) summary += '(Moderate breakthrough potential)\n';
+    else summary += '(Low breakthrough potential)\n';
+
+    summary += `Novelty Score: ${avgNovelty.toFixed(1)}/10\n`;
+    summary += `Coherence Score: ${avgCoherence.toFixed(1)}/10\n`;
+    summary += `Total Tests: ${results.length}\n\n`;
+
+    // Archetype-specific insights
+    if (analysis && analysis.length > 0) {
+      summary += `ARCHETYPE PERFORMANCE:\n`;
+      const profiles = analysis[0].profiles || [];
+      profiles.forEach((profile: any) => {
+        summary += `• ${profile.archetypeName}: ${profile.overallOptimization}/10 (${profile.roleEffectiveness}/10 role effectiveness)\n`;
+      });
+    }
+
+    // Key recommendations
+    if (recommendations && recommendations.length > 0 && recommendations[0].archetypeAdjustments) {
+      summary += `\nKEY OPTIMIZATION OPPORTUNITIES:\n`;
+      recommendations[0].archetypeAdjustments.forEach((adj: any) => {
+        if (adj.recommendedSettings.reasoning) {
+          summary += `• ${adj.archetypeName}: ${adj.recommendedSettings.reasoning}\n`;
+        }
+      });
+    }
+
+    return summary;
+  }
+
   // Data Persistence
   private saveData(): void {
     localStorage.setItem('archetype-testing-framework', JSON.stringify({
