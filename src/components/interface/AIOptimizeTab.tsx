@@ -18,7 +18,7 @@ export const AIOptimizeTab = ({
   return (
     <div className="text-center space-y-3">
       <p className="text-mono-dark-gray font-inter text-sm">
-        Use the "Optimize All Settings" button above to automatically configure all system parameters based on your question.
+        Use the "Optimize All Settings" button above to automatically configure archetype personalities, tension parameters, and compression settings based on your question. Processing depth remains your manual choice.
       </p>
 
       {currentAssessment && (
@@ -32,12 +32,8 @@ export const AIOptimizeTab = ({
               <span className="font-mono uppercase">Complexity:</span>
               <Badge variant="outline" className="text-xs">{currentAssessment.complexityScore}/10</Badge>
             </div>
-            <div className="flex justify-between items-center">
-              <span className="font-mono uppercase">Recommended Depth:</span>
-              <Badge className="text-xs">{currentAssessment.recommendations.processingDepth} layers</Badge>
-            </div>
             <div className="text-xs text-mono-dark-gray mt-2">
-              All archetype personalities, tension parameters, and compression settings optimized
+              Archetype personalities, tension parameters, and compression settings optimized. Processing depth kept as your selection.
             </div>
           </div>
         </div>

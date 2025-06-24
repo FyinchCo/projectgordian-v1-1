@@ -80,8 +80,7 @@ export const ConsolidatedGeniusInterface = ({
     );
 
     if (result) {
-      // Also apply the main interface settings
-      setProcessingDepth([result.recommendations.processingDepth]);
+      // Apply only circuit type and enhanced mode - NOT processing depth
       setCircuitType(result.recommendations.circuitType);
       setEnhancedMode(result.recommendations.enhancedMode);
       setCurrentAssessment(result);
@@ -108,7 +107,7 @@ export const ConsolidatedGeniusInterface = ({
                 <div>
                   <h3 className="font-semibold text-purple-800 text-sm">AI Configuration Optimizer</h3>
                   <p className="text-xs text-purple-700">
-                    Automatically optimize all archetype personalities, tension detection, and compression settings
+                    Automatically optimize archetype personalities, tension detection, and compression settings (layers remain your choice)
                   </p>
                 </div>
               </div>
