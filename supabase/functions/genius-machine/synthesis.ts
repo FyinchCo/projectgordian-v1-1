@@ -1,5 +1,6 @@
 
 import { ArchetypeResponse, TensionMetrics, SynthesisResult, LayerResult } from './types.ts';
+import { evaluateQuestionQuality, QuestionQualityMetrics } from './question-quality.ts';
 
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 
@@ -106,7 +107,7 @@ export async function synthesizeInsight(
   previousLayers?: LayerResult[], 
   layerNumber?: number, 
   tensionMetrics?: TensionMetrics
-): Promise<SynthesisResult> {
+): Promise<SynthesisResult & { questionQuality?: QuestionQualityMetrics }> {
   // Add tension tags to responses
   const taggedResponses = await addTensionTags(archetypeResponses);
   const allResponses = taggedResponses.map(r => `${r.archetype}: ${r.contribution}`).join('\n\n');
@@ -163,10 +164,12 @@ Focus on breakthrough moments where contradictions resolve into paradigm-shiftin
   });
 
   const data = await response.json();
+  let synthesisResult: SynthesisResult;
+  
   try {
-    return JSON.parse(data.choices[0].message.content);
+    synthesisResult = JSON.parse(data.choices[0].message.content);
   } catch {
-    return {
+    synthesisResult = {
       insight: data.choices[0].message.content,
       confidence: 0.75,
       tensionPoints: 2,
@@ -174,4 +177,20 @@ Focus on breakthrough moments where contradictions resolve into paradigm-shiftin
       emergenceDetected: false
     };
   }
+
+  // Evaluate question quality only for final synthesis (no previous layers or layer 1)
+  let questionQuality: QuestionQualityMetrics | undefined;
+  if (!previousLayers || !layerNumber || layerNumber === 1) {
+    questionQuality = await evaluateQuestionQuality(
+      question,
+      synthesisResult,
+      taggedResponses,
+      tensionMetrics
+    );
+  }
+
+  return {
+    ...synthesisResult,
+    questionQuality
+  };
 }

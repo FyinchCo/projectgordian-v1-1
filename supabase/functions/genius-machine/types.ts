@@ -1,4 +1,3 @@
-
 export interface ArchetypeResponse {
   archetype: string;
   contribution: string;
@@ -16,6 +15,7 @@ export interface SynthesisResult {
   tensionPoints: number;
   noveltyScore: number;
   emergenceDetected: boolean;
+  questionQuality?: QuestionQualityMetrics;
 }
 
 export interface AssumptionAnalysis {
@@ -39,6 +39,16 @@ export interface LayerResult {
   assumptionChallenge?: AssumptionChallenge;
   tensionMetrics?: TensionMetrics;
   enhancedMode: boolean;
+}
+
+export interface QuestionQualityMetrics {
+  geniusYield: number;
+  constraintBalance: number;
+  metaPotential: number;
+  effortVsEmergence: number;
+  overallScore: number;
+  feedback: string;
+  recommendations: string[];
 }
 
 export interface Archetype {
