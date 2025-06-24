@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { metaLearningEngine } from "@/services/metaLearningEngine";
+import { metaLearningEngine } from "@/services/learning/metaLearningEngine";
 import { useToast } from "./use-toast";
 
 export const useMetaLearning = () => {
