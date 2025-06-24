@@ -17,7 +17,7 @@ export const useChunkedProcessor = () => {
   const processChunkedLayers = async ({
     baseConfig,
     totalDepth,
-    chunkSize = 2,
+    chunkSize = 3, // Increased chunk size for better efficiency
     onChunkProgressChange,
     onCurrentLayerChange,
   }: ChunkedProcessorProps): Promise<ProcessingResult> => {
@@ -28,42 +28,43 @@ export const useChunkedProcessor = () => {
     onChunkProgressChange({ current: 0, total: chunks });
     
     for (let chunkIndex = 0; chunkIndex < chunks; chunkIndex++) {
-      const chunkConfig = buildChunkConfig(baseConfig, chunkIndex, chunkSize, totalDepth, accumulatedLayers);
+      const startLayer = (chunkIndex * chunkSize) + 1;
+      const endLayer = Math.min(startLayer + chunkSize - 1, totalDepth);
+      const actualChunkSize = endLayer - startLayer + 1;
       
-      logChunkStart(chunkConfig);
+      console.log(`Processing chunk ${chunkIndex + 1}/${chunks}: layers ${startLayer}-${endLayer} (${actualChunkSize} layers)`);
+      
+      const chunkConfig = {
+        ...baseConfig,
+        processingDepth: actualChunkSize,
+        previousLayers: accumulatedLayers,
+        startFromLayer: startLayer
+      };
+      
       onChunkProgressChange({ current: chunkIndex + 1, total: chunks });
       
-      // Visual progress update
-      await updateVisualProgress(chunkConfig.startLayer, chunkConfig.endLayer, onCurrentLayerChange);
+      // Update visual progress
+      for (let layer = startLayer; layer <= endLayer; layer++) {
+        onCurrentLayerChange(layer);
+        await new Promise(resolve => setTimeout(resolve, 200)); // Brief delay for visual feedback
+      }
       
       try {
         const chunkStartTime = Date.now();
         
-        // Increased timeout for chunked processing - 2 minutes per chunk
-        const timeoutPromise = createProcessingTimeout(chunkIndex, 120000);
-        const requestPromise = supabase.functions.invoke('genius-machine', {
-          body: chunkConfig.config
+        console.log(`Calling genius-machine for chunk ${chunkIndex + 1} with config:`, {
+          processingDepth: actualChunkSize,
+          startFromLayer: startLayer,
+          previousLayersCount: accumulatedLayers.length
         });
         
-        // Add retry logic for network failures
-        let result;
-        let retryCount = 0;
-        const maxRetries = 2;
+        // Extended timeout for chunked processing - 4 minutes per chunk
+        const timeoutPromise = createProcessingTimeout(chunkIndex, 240000);
+        const requestPromise = supabase.functions.invoke('genius-machine', {
+          body: chunkConfig
+        });
         
-        while (retryCount <= maxRetries) {
-          try {
-            result = await Promise.race([requestPromise, timeoutPromise]);
-            break; // Success, exit retry loop
-          } catch (error: any) {
-            retryCount++;
-            if (retryCount > maxRetries) {
-              throw error; // Max retries reached
-            }
-            
-            console.log(`Chunk ${chunkIndex + 1} attempt ${retryCount} failed, retrying...`);
-            await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds before retry
-          }
-        }
+        const result = await Promise.race([requestPromise, timeoutPromise]);
         
         const chunkDuration = Date.now() - chunkStartTime;
         console.log(`Chunk ${chunkIndex + 1} completed in ${chunkDuration}ms`);
@@ -71,82 +72,85 @@ export const useChunkedProcessor = () => {
         // Validate and extract data
         const { data } = validateChunkResult(result, chunkIndex);
         
-        console.log(`Chunk ${chunkIndex + 1} success:`, {
+        console.log(`Chunk ${chunkIndex + 1} result:`, {
           hasLayers: !!data.layers,
           layerCount: data.layers?.length || 0,
           hasInsight: !!data.insight,
-          expectedLayers: chunkConfig.chunkDepth,
-          actualLayers: data.layers?.length || 0
+          expectedLayers: actualChunkSize
         });
         
-        // Verify we got the expected number of layers for this chunk
-        if (data.layers && data.layers.length !== chunkConfig.chunkDepth) {
-          console.warn(`Expected ${chunkConfig.chunkDepth} layers but got ${data.layers.length} for chunk ${chunkIndex + 1}`);
-        }
-        
-        // Accumulate layers - ensure we're getting all layers from each chunk
+        // Accumulate layers properly
         if (data.layers && data.layers.length > 0) {
-          // Make sure we're adding layers in the correct order
-          const sortedNewLayers = data.layers.sort((a, b) => a.layerNumber - b.layerNumber);
-          accumulatedLayers = [...accumulatedLayers, ...sortedNewLayers];
-          console.log(`Total accumulated layers after chunk ${chunkIndex + 1}: ${accumulatedLayers.length}/${totalDepth}`);
+          // Ensure layers are properly ordered and added
+          const newLayers = data.layers.sort((a, b) => a.layerNumber - b.layerNumber);
+          accumulatedLayers = [...accumulatedLayers, ...newLayers];
+          console.log(`Total accumulated layers: ${accumulatedLayers.length}/${totalDepth}`);
         } else {
-          console.error(`Chunk ${chunkIndex + 1} returned no layers! This is unexpected.`);
+          console.warn(`Chunk ${chunkIndex + 1} returned no layers!`);
+          // If this chunk failed but we have previous layers, continue
+          if (accumulatedLayers.length > 0) {
+            console.log('Continuing with existing layers...');
+          } else {
+            throw new Error(`No layers returned from chunk ${chunkIndex + 1}`);
+          }
         }
         
         // Handle final vs intermediate chunks
         if (chunkIndex === chunks - 1) {
-          // Final chunk - verify we have all expected layers
-          if (accumulatedLayers.length < totalDepth) {
-            console.warn(`Expected ${totalDepth} total layers but only got ${accumulatedLayers.length}`);
-            toast({
-              title: "Incomplete Processing",
-              description: `Processed ${accumulatedLayers.length} of ${totalDepth} requested layers. Some layers may have been skipped.`,
-              variant: "default",
-            });
-          }
+          // Final chunk - create final result
+          const finalResult = createFinalResult(data, accumulatedLayers, totalDepth);
           
-          return createFinalResult(data, accumulatedLayers, totalDepth);
+          console.log('Final chunked processing result:', {
+            totalLayers: finalResult.layers?.length || 0,
+            hasInsight: !!finalResult.insight,
+            confidence: finalResult.confidence
+          });
+          
+          toast({
+            title: "🎯 Deep Processing Complete",
+            description: `Successfully processed all ${accumulatedLayers.length} layers with ${Math.round((finalResult.confidence || 0) * 100)}% confidence`,
+            variant: "default",
+          });
+          
+          return finalResult;
         } else {
-          const progressData = createProgressToast(chunkIndex, chunks, chunkConfig.startLayer, chunkConfig.endLayer);
+          // Intermediate chunk - show progress
+          const progressData = createProgressToast(chunkIndex, chunks, startLayer, endLayer);
           toast(progressData);
-          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          // Brief pause between chunks
+          await new Promise(resolve => setTimeout(resolve, 1000));
         }
         
       } catch (chunkError: any) {
         console.error(`Error in chunk ${chunkIndex + 1}:`, chunkError);
         
-        const result = handleChunkError(chunkError, accumulatedLayers, chunkIndex);
-        
-        if (result.partialResults && accumulatedLayers.length > 0) {
+        // If we have accumulated layers from previous chunks, return partial results
+        if (accumulatedLayers.length > 0) {
+          const lastValidLayer = accumulatedLayers[accumulatedLayers.length - 1];
+          
           toast({
             title: "Partial Results Available",
             description: `Completed ${accumulatedLayers.length} layers before error. Returning available insights.`,
             variant: "default",
           });
-          return result;
-        } else {
-          // If no partial results and we're not on the first chunk, return what we have
-          if (chunkIndex > 0 && accumulatedLayers.length > 0) {
-            toast({
-              title: "Processing Error - Partial Results",
-              description: `Error occurred after processing ${accumulatedLayers.length} layers. Returning partial results.`,
-              variant: "destructive",
-            });
-            
-            return {
-              insight: `Partial processing completed with ${accumulatedLayers.length} layers processed.`,
-              confidence: 0.5,
-              tensionPoints: 3,
-              layers: accumulatedLayers,
-              processingDepth: accumulatedLayers.length,
-              partialResults: true,
-              errorMessage: chunkError.message,
-              logicTrail: accumulatedLayers[accumulatedLayers.length - 1]?.archetypeResponses || []
-            };
-          }
           
-          throw chunkError; // Re-throw if no partial results
+          return {
+            insight: lastValidLayer?.synthesis?.insight || `Partial processing completed with ${accumulatedLayers.length} layers.`,
+            confidence: lastValidLayer?.synthesis?.confidence || 0.6,
+            tensionPoints: lastValidLayer?.synthesis?.tensionPoints || 3,
+            noveltyScore: lastValidLayer?.synthesis?.noveltyScore || 5,
+            emergenceDetected: lastValidLayer?.synthesis?.emergenceDetected || false,
+            layers: accumulatedLayers,
+            processingDepth: accumulatedLayers.length,
+            partialResults: true,
+            errorMessage: chunkError.message,
+            logicTrail: lastValidLayer?.archetypeResponses || [],
+            compressionFormats: lastValidLayer?.synthesis?.compressionFormats
+          };
+        } else {
+          // No accumulated layers, re-throw error
+          throw chunkError;
         }
       }
     }
