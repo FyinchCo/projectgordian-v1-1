@@ -13,6 +13,14 @@ export const buildChunkConfig = (
   const chunkDepth = endLayer - startLayer + 1;
   const totalChunks = Math.ceil(totalDepth / chunkSize);
 
+  console.log(`Building chunk config ${chunkIndex + 1}/${totalChunks}:`, {
+    startLayer,
+    endLayer,
+    chunkDepth,
+    totalDepth,
+    previousLayers: accumulatedLayers.length
+  });
+
   const chunkConfig = {
     ...baseConfig,
     processingDepth: chunkDepth,
