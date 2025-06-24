@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { RotateCcw, Download, Brain, TrendingUp } from "lucide-react";
@@ -48,6 +47,11 @@ interface EnhancedResultsDisplayProps {
     };
     processingDepth?: number;
     circuitType?: string;
+    compressionFormats?: {
+      ultraConcise: string;
+      medium: string;
+      comprehensive: string;
+    };
     layers?: Array<{
       layerNumber: number;
       circuitType: string;
