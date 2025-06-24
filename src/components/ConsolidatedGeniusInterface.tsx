@@ -12,6 +12,7 @@ import { useQuestionAssessment } from "@/hooks/useQuestionAssessment";
 import { useAIConfigOptimization } from "@/hooks/useAIConfigOptimization";
 import { QuestionInputSection } from "./interface/QuestionInputSection";
 import { OptimizationReasoningCard } from "./OptimizationReasoningCard";
+
 interface ConsolidatedGeniusInterfaceProps {
   question: string;
   setQuestion: (question: string) => void;
@@ -28,6 +29,7 @@ interface ConsolidatedGeniusInterfaceProps {
   setCurrentAssessment: (assessment: any) => void;
   onStartGenius: () => void;
 }
+
 export const ConsolidatedGeniusInterface = ({
   question,
   setQuestion,
@@ -48,16 +50,19 @@ export const ConsolidatedGeniusInterface = ({
     optimizationReasoning,
     clearOptimizationReasoning
   } = useAIConfigOptimization();
+
   const getDepthLabel = (depth: number) => {
     if (depth <= 5) return "Quick Analysis";
     if (depth <= 10) return "Deep Analysis";
     return "Ultra-Deep Analysis";
   };
+
   const getDepthDescription = (depth: number) => {
     if (depth <= 5) return "Fast processing, good for straightforward questions";
     if (depth <= 10) return "Thorough analysis, recommended for complex problems";
     return "Maximum depth, for the most challenging questions";
   };
+
   return <div className="space-zen-lg max-w-4xl mx-auto">
       {/* Optimization Reasoning Display - Only show if exists from config page */}
       {optimizationReasoning && <OptimizationReasoningCard reasoning={optimizationReasoning.reasoning} domainType={optimizationReasoning.domainType} onDismiss={clearOptimizationReasoning} />}
@@ -147,10 +152,17 @@ export const ConsolidatedGeniusInterface = ({
 
           {/* Launch Button */}
           <div className="pt-8 border-t border-zen-light">
-            <Button onClick={onStartGenius} disabled={!question.trim()} size="lg" className="w-full text-zen-paper flex items-center justify-center space-x-3 text-zen-mono uppercase tracking-wide border-0 px-8 py-6 shadow-zen-lg transition-all duration-300 animate-zen-scale font-light bg-zinc-900 hover:bg-zinc-800 rounded-lg">
-              <Play className="w-5 h-5" />
-              <span>Start Genius Machine</span>
-              <Zap className="w-5 h-5" />
+            <Button 
+              onClick={onStartGenius} 
+              disabled={!question.trim()} 
+              size="lg" 
+              className="w-full bg-zen-ink hover:bg-zen-charcoal text-zen-paper border-0 px-8 py-6 rounded-lg shadow-zen-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <div className="flex items-center justify-center space-x-3 text-zen-mono uppercase tracking-wide font-light">
+                <Play className="w-5 h-5" />
+                <span>Start Genius Machine</span>
+                <Zap className="w-5 h-5" />
+              </div>
             </Button>
           </div>
         </div>
