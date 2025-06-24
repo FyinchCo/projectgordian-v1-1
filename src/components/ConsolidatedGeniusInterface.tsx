@@ -90,13 +90,13 @@ export const ConsolidatedGeniusInterface = ({
   return (
     <div className="space-y-8">
       {/* Main Question Input */}
-      <Card className="border-4 border-mono-pure-black bg-mono-pure-white shadow-2xl">
-        <div className="p-6 space-y-6">
-          <div className="text-center space-y-4">
-            <h1 className="text-4xl font-cormorant font-bold tracking-tight text-mono-pure-black uppercase">
+      <Card className="border-2 border-mono-pure-black bg-mono-pure-white shadow-lg">
+        <div className="p-4 space-y-4">
+          <div className="text-center space-y-2">
+            <h1 className="text-2xl font-cormorant font-bold tracking-tight text-mono-pure-black uppercase">
               THE GENIUS MACHINE
             </h1>
-            <p className="text-lg font-inter text-mono-dark-gray">
+            <p className="text-sm font-inter text-mono-dark-gray">
               AI's Recursive Distillation of Complex Questions
             </p>
           </div>
@@ -105,20 +105,20 @@ export const ConsolidatedGeniusInterface = ({
             placeholder="Enter your high-friction question here..."
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
-            className="min-h-[120px] text-lg font-inter border-2 border-mono-pure-black resize-none focus-visible:ring-0 p-4"
+            className="min-h-[80px] text-base font-inter border-2 border-mono-pure-black resize-none focus-visible:ring-0 p-3"
           />
 
           {/* Answer Type Selection */}
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <span className="text-sm font-mono text-mono-pure-black uppercase tracking-wider">Answer Type:</span>
+            <div className="flex items-center space-x-2">
+              <span className="text-xs font-mono text-mono-pure-black uppercase tracking-wider">Answer Type:</span>
               <Select value={outputType} onValueChange={(value) => setOutputType(value as OutputType)}>
-                <SelectTrigger className="w-[180px] border-2 border-mono-pure-black bg-mono-off-white font-mono">
+                <SelectTrigger className="w-[140px] border-2 border-mono-pure-black bg-mono-off-white font-mono text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="border-2 border-mono-pure-black">
                   {OUTPUT_TYPE_CONFIGS.map((config) => (
-                    <SelectItem key={config.id} value={config.id} className="font-mono">
+                    <SelectItem key={config.id} value={config.id} className="font-mono text-sm">
                       {config.label}
                     </SelectItem>
                   ))}
@@ -126,7 +126,7 @@ export const ConsolidatedGeniusInterface = ({
               </Select>
             </div>
 
-            <div className="text-sm font-mono text-mono-pure-black">
+            <div className="text-xs font-mono text-mono-pure-black">
               {question.length} characters
             </div>
           </div>
@@ -135,59 +135,59 @@ export const ConsolidatedGeniusInterface = ({
 
       {/* Configuration Interface */}
       <Card className="border-2 border-mono-pure-black bg-mono-pure-white">
-        <div className="p-6">
+        <div className="p-4">
           <Tabs value={configMode} onValueChange={(value) => setConfigMode(value as "ai" | "manual")}>
-            <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="ai" className="flex items-center space-x-2">
-                <Brain className="w-4 h-4" />
+            <TabsList className="grid w-full grid-cols-2 mb-4">
+              <TabsTrigger value="ai" className="flex items-center space-x-2 text-sm">
+                <Brain className="w-3 h-3" />
                 <span>AI Optimize</span>
               </TabsTrigger>
-              <TabsTrigger value="manual" className="flex items-center space-x-2">
-                <Settings className="w-4 h-4" />
+              <TabsTrigger value="manual" className="flex items-center space-x-2 text-sm">
+                <Settings className="w-3 h-3" />
                 <span>Manual Setup</span>
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="ai" className="space-y-4">
-              <div className="text-center space-y-4">
-                <p className="text-mono-dark-gray font-inter">
+            <TabsContent value="ai" className="space-y-3">
+              <div className="text-center space-y-3">
+                <p className="text-mono-dark-gray font-inter text-sm">
                   Let AI analyze your question and configure optimal processing parameters
                 </p>
                 
                 <Button
                   onClick={handleAIOptimize}
                   disabled={!question.trim() || isAssessing}
-                  className="bg-mono-pure-black text-mono-pure-white hover:bg-mono-charcoal font-mono uppercase tracking-wide"
+                  className="bg-mono-pure-black text-mono-pure-white hover:bg-mono-charcoal font-mono uppercase tracking-wide text-sm"
                 >
                   {isAssessing ? (
                     <>
-                      <Brain className="w-4 h-4 mr-2 animate-pulse" />
+                      <Brain className="w-3 h-3 mr-2 animate-pulse" />
                       Analyzing...
                     </>
                   ) : (
                     <>
-                      <Target className="w-4 h-4 mr-2" />
+                      <Target className="w-3 h-3 mr-2" />
                       Optimize Configuration
                     </>
                   )}
                 </Button>
 
                 {currentAssessment && (
-                  <div className="mt-4 p-4 bg-mono-light-gray border-2 border-mono-pure-black">
-                    <div className="text-sm space-y-2">
+                  <div className="mt-3 p-3 bg-mono-light-gray border-2 border-mono-pure-black">
+                    <div className="text-xs space-y-1">
                       <div className="flex justify-between items-center">
                         <span className="font-mono uppercase">Domain:</span>
-                        <Badge>{currentAssessment.domainType}</Badge>
+                        <Badge className="text-xs">{currentAssessment.domainType}</Badge>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="font-mono uppercase">Complexity:</span>
-                        <Badge variant="outline">{currentAssessment.complexityScore}/10</Badge>
+                        <Badge variant="outline" className="text-xs">{currentAssessment.complexityScore}/10</Badge>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="font-mono uppercase">Recommended Depth:</span>
-                        <Badge>{currentAssessment.recommendations.processingDepth} layers</Badge>
+                        <Badge className="text-xs">{currentAssessment.recommendations.processingDepth} layers</Badge>
                       </div>
-                      <div className="text-xs text-mono-dark-gray mt-2">
+                      <div className="text-xs text-mono-dark-gray mt-1">
                         All 5 archetypes active with dynamic emphasis tuning
                       </div>
                     </div>
@@ -196,12 +196,12 @@ export const ConsolidatedGeniusInterface = ({
               </div>
             </TabsContent>
 
-            <TabsContent value="manual" className="space-y-6">
+            <TabsContent value="manual" className="space-y-4">
               {/* Processing Depth */}
-              <div className="space-y-3">
+              <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label className="font-mono uppercase tracking-wide">Processing Depth</Label>
-                  <Badge variant="outline" className="font-mono">
+                  <Label className="font-mono uppercase tracking-wide text-sm">Processing Depth</Label>
+                  <Badge variant="outline" className="font-mono text-xs">
                     {processingDepth[0]} layers - {getDepthLabel(processingDepth[0])}
                   </Badge>
                 </div>
@@ -218,21 +218,21 @@ export const ConsolidatedGeniusInterface = ({
                   <span>10 (Balanced)</span>
                   <span>20 (Maximum)</span>
                 </div>
-                <p className="text-sm text-mono-dark-gray font-inter">
+                <p className="text-xs text-mono-dark-gray font-inter">
                   {getDepthDescription(processingDepth[0])}
                 </p>
               </div>
 
               {/* Circuit Type */}
-              <div className="space-y-3">
-                <Label className="font-mono uppercase tracking-wide">Circuit Type</Label>
+              <div className="space-y-2">
+                <Label className="font-mono uppercase tracking-wide text-sm">Circuit Type</Label>
                 <Select value={circuitType} onValueChange={setCircuitType}>
-                  <SelectTrigger className="border-2 border-mono-pure-black">
+                  <SelectTrigger className="border-2 border-mono-pure-black text-sm">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="sequential">Sequential - Archetypes build on each other</SelectItem>
-                    <SelectItem value="parallel">Parallel - All archetypes think simultaneously</SelectItem>
+                    <SelectItem value="sequential" className="text-sm">Sequential - Archetypes build on each other</SelectItem>
+                    <SelectItem value="parallel" className="text-sm">Parallel - All archetypes think simultaneously</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -240,8 +240,8 @@ export const ConsolidatedGeniusInterface = ({
               {/* Enhanced Mode */}
               <div className="flex items-center justify-between">
                 <div>
-                  <Label className="font-mono uppercase tracking-wide">Enhanced Mode</Label>
-                  <p className="text-sm text-mono-dark-gray">Assumption analysis and dialectical tension</p>
+                  <Label className="font-mono uppercase tracking-wide text-sm">Enhanced Mode</Label>
+                  <p className="text-xs text-mono-dark-gray">Assumption analysis and dialectical tension</p>
                 </div>
                 <Switch
                   checked={enhancedMode}
@@ -251,11 +251,11 @@ export const ConsolidatedGeniusInterface = ({
 
               {/* Archetype Status */}
               {customArchetypes && (
-                <div className="space-y-2">
-                  <Label className="font-mono uppercase tracking-wide">Custom Archetypes</Label>
+                <div className="space-y-1">
+                  <Label className="font-mono uppercase tracking-wide text-sm">Custom Archetypes</Label>
                   <div className="flex items-center space-x-2">
-                    <Users className="w-4 h-4" />
-                    <span className="text-sm text-mono-dark-gray">
+                    <Users className="w-3 h-3" />
+                    <span className="text-xs text-mono-dark-gray">
                       {customArchetypes.length} custom archetypes loaded
                     </span>
                   </div>
@@ -272,42 +272,42 @@ export const ConsolidatedGeniusInterface = ({
           onClick={onStartGenius}
           disabled={!question.trim()}
           size="lg"
-          className="bg-mono-pure-black text-mono-pure-white hover:bg-mono-charcoal flex items-center space-x-3 font-mono font-bold text-lg uppercase tracking-wide border-2 border-mono-pure-black px-12 py-6"
+          className="bg-mono-pure-black text-mono-pure-white hover:bg-mono-charcoal flex items-center space-x-2 font-mono font-bold uppercase tracking-wide border-2 border-mono-pure-black px-8 py-4"
         >
-          <Play className="w-6 h-6" />
+          <Play className="w-5 h-5" />
           <span>START GENIUS MACHINE</span>
-          <Zap className="w-6 h-6" />
+          <Zap className="w-5 h-5" />
         </Button>
       </div>
 
       {/* Info Cards */}
-      <div className="grid md:grid-cols-3 gap-6 mt-12">
-        <Card className="border-2 border-mono-pure-black bg-mono-pure-white p-6 text-center">
-          <Cpu className="w-8 h-8 mx-auto mb-4 text-mono-pure-black" />
-          <h3 className="font-cormorant font-bold text-lg mb-2 text-mono-pure-black uppercase">
+      <div className="grid md:grid-cols-3 gap-4 mt-8">
+        <Card className="border-2 border-mono-pure-black bg-mono-pure-white p-4 text-center">
+          <Cpu className="w-6 h-6 mx-auto mb-2 text-mono-pure-black" />
+          <h3 className="font-cormorant font-bold text-base mb-1 text-mono-pure-black uppercase">
             Dynamic Archetypes
           </h3>
-          <p className="text-sm font-inter text-mono-dark-gray">
+          <p className="text-xs font-inter text-mono-dark-gray">
             AI-tuned personality parameters for optimal perspective diversity
           </p>
         </Card>
         
-        <Card className="border-2 border-mono-pure-black bg-mono-pure-white p-6 text-center">
-          <Layers className="w-8 h-8 mx-auto mb-4 text-mono-pure-black" />
-          <h3 className="font-cormorant font-bold text-lg mb-2 text-mono-pure-black uppercase">
+        <Card className="border-2 border-mono-pure-black bg-mono-pure-white p-4 text-center">
+          <Layers className="w-6 h-6 mx-auto mb-2 text-mono-pure-black" />
+          <h3 className="font-cormorant font-bold text-base mb-1 text-mono-pure-black uppercase">
             Deep Processing
           </h3>
-          <p className="text-sm font-inter text-mono-dark-gray">
+          <p className="text-xs font-inter text-mono-dark-gray">
             5-20 layers of recursive analysis with real-time visualization
           </p>
         </Card>
         
-        <Card className="border-2 border-mono-pure-black bg-mono-pure-white p-6 text-center">
-          <Target className="w-8 h-8 mx-auto mb-4 text-mono-pure-black" />
-          <h3 className="font-cormorant font-bold text-lg mb-2 text-mono-pure-black uppercase">
+        <Card className="border-2 border-mono-pure-black bg-mono-pure-white p-4 text-center">
+          <Target className="w-6 h-6 mx-auto mb-2 text-mono-pure-black" />
+          <h3 className="font-cormorant font-bold text-base mb-1 text-mono-pure-black uppercase">
             Refined Output
           </h3>
-          <p className="text-sm font-inter text-mono-dark-gray">
+          <p className="text-xs font-inter text-mono-dark-gray">
             Compressed insights tailored to your chosen answer format
           </p>
         </Card>
