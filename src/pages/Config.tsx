@@ -51,12 +51,6 @@ const Config = () => {
     }
   }, []);
 
-  // Load optimization reasoning if available from the shared hook
-  useEffect(() => {
-    // The optimization reasoning is already managed by the hook
-    // and will be displayed automatically when available
-  }, []);
-
   const updateTensionSettings = (field: string, value: number[]) => {
     setTensionSettings(prev => ({ ...prev, [field]: value }));
   };
@@ -135,53 +129,57 @@ const Config = () => {
       </header>
 
       <main className="max-w-6xl mx-auto px-6 py-8 space-zen">
-        {/* Optimization Reasoning Display */}
+        {/* Optimization Reasoning Display - Shows if optimization was done from main page */}
         {optimizationReasoning && (
-          <OptimizationReasoningCard
-            reasoning={optimizationReasoning.reasoning}
-            domainType={optimizationReasoning.domainType}
-            onDismiss={clearOptimizationReasoning}
-          />
+          <div className="mb-6">
+            <OptimizationReasoningCard
+              reasoning={optimizationReasoning.reasoning}
+              domainType={optimizationReasoning.domainType}
+              onDismiss={clearOptimizationReasoning}
+            />
+          </div>
         )}
 
-        {/* AI Optimization Section */}
-        <div className="p-6 bg-zen-whisper rounded-md border border-zen-light">
-          <div className="space-y-4">
-            <div className="flex items-center space-x-2">
-              <Brain className="w-5 h-5 text-zen-charcoal" />
-              <h3 className="text-zen-mono text-sm uppercase tracking-wide text-zen-ink">AI Configuration Optimizer</h3>
+        {/* AI Optimization Section - Only show if no existing optimization */}
+        {!optimizationReasoning && (
+          <div className="p-6 bg-zen-whisper rounded-md border border-zen-light mb-8">
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <Brain className="w-5 h-5 text-zen-charcoal" />
+                <h3 className="text-zen-mono text-sm uppercase tracking-wide text-zen-ink">AI Configuration Optimizer</h3>
+              </div>
+              <p className="text-sm text-zen-body text-zen-charcoal leading-relaxed">
+                Enter a question to automatically optimize all archetype personalities, tension detection, and compression settings for the highest quality analysis.
+              </p>
+              
+              <Textarea
+                placeholder="Enter your question here to optimize configuration settings..."
+                value={question}
+                onChange={(e) => setQuestion(e.target.value)}
+                rows={3}
+                className="w-full border-zen-light focus:border-zen-medium bg-zen-paper"
+              />
+              
+              <Button
+                onClick={handleAIOptimization}
+                disabled={!question.trim() || isAssessing}
+                className="bg-zen-ink hover:bg-zen-charcoal text-zen-paper text-zen-mono uppercase tracking-wide"
+              >
+                {isAssessing ? (
+                  <>
+                    <Brain className="w-4 h-4 mr-2 animate-pulse" />
+                    Optimizing & Applying...
+                  </>
+                ) : (
+                  <>
+                    <Brain className="w-4 h-4 mr-2" />
+                    Optimize All Settings
+                  </>
+                )}
+              </Button>
             </div>
-            <p className="text-sm text-zen-body text-zen-charcoal leading-relaxed">
-              Enter a question to automatically optimize all archetype personalities, tension detection, and compression settings for the highest quality analysis.
-            </p>
-            
-            <Textarea
-              placeholder="Enter your question here to optimize configuration settings..."
-              value={question}
-              onChange={(e) => setQuestion(e.target.value)}
-              rows={3}
-              className="w-full border-zen-light focus:border-zen-medium bg-zen-paper"
-            />
-            
-            <Button
-              onClick={handleAIOptimization}
-              disabled={!question.trim() || isAssessing}
-              className="bg-zen-ink hover:bg-zen-charcoal text-zen-paper text-zen-mono uppercase tracking-wide"
-            >
-              {isAssessing ? (
-                <>
-                  <Brain className="w-4 h-4 mr-2 animate-pulse" />
-                  Optimizing & Applying...
-                </>
-              ) : (
-                <>
-                  <Brain className="w-4 h-4 mr-2" />
-                  Optimize All Settings
-                </>
-              )}
-            </Button>
           </div>
-        </div>
+        )}
 
         <Tabs defaultValue="archetypes" className="space-y-8">
           <TabsList className="grid w-full grid-cols-3 bg-zen-whisper border border-zen-light">

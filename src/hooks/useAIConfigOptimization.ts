@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuestionAssessment } from "./useQuestionAssessment";
 import { useToast } from "./use-toast";
 
@@ -10,6 +10,14 @@ export const useAIConfigOptimization = () => {
     reasoning: string;
     domainType: string;
   } | null>(null);
+
+  // Load optimization reasoning from localStorage on mount
+  useEffect(() => {
+    const savedReasoning = localStorage.getItem('genius-machine-optimization-reasoning');
+    if (savedReasoning) {
+      setOptimizationReasoning(JSON.parse(savedReasoning));
+    }
+  }, []);
 
   const optimizeAndApplyConfiguration = async (
     question: string,
@@ -55,11 +63,13 @@ export const useAIConfigOptimization = () => {
         updateCompressionSettings('includeFullTranscript', false);
       }
 
-      // Store the reasoning for display
-      setOptimizationReasoning({
+      // Store the reasoning for display and persist to localStorage
+      const reasoningData = {
         reasoning: result.recommendations.reasoning,
         domainType: result.domainType
-      });
+      };
+      setOptimizationReasoning(reasoningData);
+      localStorage.setItem('genius-machine-optimization-reasoning', JSON.stringify(reasoningData));
 
       toast({
         title: "Configuration Optimized",
@@ -73,6 +83,7 @@ export const useAIConfigOptimization = () => {
 
   const clearOptimizationReasoning = () => {
     setOptimizationReasoning(null);
+    localStorage.removeItem('genius-machine-optimization-reasoning');
   };
 
   return {
