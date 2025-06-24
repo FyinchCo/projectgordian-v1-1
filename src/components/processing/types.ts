@@ -27,6 +27,8 @@ export interface ProcessingResult {
   insight?: string;
   confidence?: number;
   tensionPoints?: number;
+  noveltyScore?: number;
+  emergenceDetected?: boolean;
   layers?: any[];
   processingDepth?: number;
   chunkProcessed?: boolean;
@@ -36,4 +38,10 @@ export interface ProcessingResult {
     archetype: string;
     contribution: string;
   }>;
+  circuitType?: string;
+  enhancedMode?: boolean;
+  assumptionAnalysis?: any;
+  assumptionChallenge?: any;
+  finalTensionMetrics?: any;
+  compressionFormats?: any;
 }
