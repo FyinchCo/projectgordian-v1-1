@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Config from "./pages/Config";
 import LearningAnalytics from "./pages/LearningAnalytics";
+import InsightsHistory from "./pages/InsightsHistory";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -21,6 +22,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/config" element={<Config />} />
           <Route path="/learning-analytics" element={<LearningAnalytics />} />
+          <Route path="/insights-history" element={<InsightsHistory />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

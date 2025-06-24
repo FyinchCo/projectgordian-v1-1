@@ -1,5 +1,6 @@
-
-import { KnotIcon } from "./KnotIcon";
+import { Brain, Settings, TrendingUp, History } from "lucide-react";
+import { Link } from "react-router-dom";
+import { KnotIcon } from "@/components/KnotIcon";
 
 interface HeaderProps {
   customArchetypes: any;
