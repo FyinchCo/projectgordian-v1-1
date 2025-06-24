@@ -34,7 +34,7 @@ export const useChunkedProcessor = () => {
       console.log(`Processing chunk ${chunkIndex + 1}/${chunks}: layers ${startLayer}-${endLayer} (depth: ${chunkDepth})`);
       onChunkProgressChange({ current: chunkIndex + 1, total: chunks });
       
-      // Visual progress update with shorter delays
+      // Visual progress update
       for (let layer = startLayer; layer <= endLayer; layer++) {
         onCurrentLayerChange(layer);
         await new Promise(resolve => setTimeout(resolve, 200));
@@ -57,35 +57,22 @@ export const useChunkedProcessor = () => {
         
         const chunkStartTime = Date.now();
         
-        // Create timeout promise that properly rejects
+        // Reasonable timeout - 45 seconds to allow function to complete
         const timeoutPromise = new Promise<never>((_, reject) => {
           setTimeout(() => {
-            reject(new Error(`CHUNK_TIMEOUT: Chunk ${chunkIndex + 1} timed out after 10 seconds`));
-          }, 10000); // Reduced to 10 seconds for faster feedback
+            reject(new Error(`CHUNK_TIMEOUT: Chunk ${chunkIndex + 1} timed out after 45 seconds`));
+          }, 45000);
         });
         
-        // Create the actual request promise
         const requestPromise = supabase.functions.invoke('genius-machine', {
           body: chunkConfig
-        }).then(response => {
-          console.log(`Chunk ${chunkIndex + 1} raw response:`, {
-            hasData: !!response.data,
-            hasError: !!response.error,
-            errorDetails: response.error
-          });
-          return response;
-        }).catch(invokeError => {
-          console.error(`Chunk ${chunkIndex + 1} invoke error:`, invokeError);
-          throw new Error(`INVOKE_ERROR: ${invokeError.message}`);
         });
         
-        // Race the promises
         const result = await Promise.race([requestPromise, timeoutPromise]);
         const chunkDuration = Date.now() - chunkStartTime;
         
         console.log(`Chunk ${chunkIndex + 1} completed in ${chunkDuration}ms`);
         
-        // Check for Supabase function errors
         if (result.error) {
           console.error(`Chunk ${chunkIndex + 1} function error:`, result.error);
           throw new Error(`FUNCTION_ERROR: ${result.error.message || 'Unknown function error'}`);
@@ -110,7 +97,6 @@ export const useChunkedProcessor = () => {
         
         // Handle final vs intermediate chunks
         if (chunkIndex === chunks - 1) {
-          // Final chunk - return complete results
           const finalResults = {
             ...result.data,
             layers: accumulatedLayers,
@@ -126,14 +112,12 @@ export const useChunkedProcessor = () => {
           
           return finalResults;
         } else {
-          // Intermediate chunk - show progress and continue
           toast({
             title: `Progress: ${chunkIndex + 1}/${chunks} Complete`,
             description: `Processed layers ${startLayer}-${endLayer}. Continuing with next chunk...`,
             variant: "default",
           });
           
-          // Small delay between chunks
           await new Promise(resolve => setTimeout(resolve, 500));
         }
         
@@ -166,16 +150,11 @@ export const useChunkedProcessor = () => {
             errorMessage: `Processing stopped at layer ${accumulatedLayers.length}: ${chunkError.message}`
           };
         } else {
-          // No progress made, re-throw the error with more context
           const errorMessage = chunkError.message || 'Unknown error';
           if (errorMessage.includes('CHUNK_TIMEOUT')) {
-            throw new Error('PROCESSING_TIMEOUT: The genius machine is taking too long to respond. Try reducing processing depth to 1-3 layers.');
-          } else if (errorMessage.includes('INVOKE_ERROR')) {
-            throw new Error('SERVICE_UNAVAILABLE: The processing service is currently unavailable. Please try again in a moment.');
-          } else if (errorMessage.includes('FUNCTION_ERROR')) {
-            throw new Error('PROCESSING_ERROR: There was an error in the processing logic. Try a simpler question or reduce depth.');
+            throw new Error('PROCESSING_TIMEOUT: The genius machine is taking longer than expected. This may be due to system load.');
           } else {
-            throw new Error(`UNEXPECTED_ERROR: ${errorMessage}`);
+            throw new Error(`PROCESSING_ERROR: ${errorMessage}`);
           }
         }
       }

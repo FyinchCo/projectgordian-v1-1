@@ -74,12 +74,12 @@ export const ProcessingLogic = ({
       
       let finalResults;
       
-      // Force chunked processing for all depths > 2 to improve reliability
-      if (processingDepth[0] > 2) {
-        console.log('Using chunked processing for depth > 2:', processingDepth[0]);
+      // Use chunked processing for depths > 3, simple processing for 1-3
+      if (processingDepth[0] > 3) {
+        console.log('Using chunked processing for depth > 3:', processingDepth[0]);
         toast({
-          title: "Smart Processing Mode",
-          description: `Using chunked processing for ${processingDepth[0]} layers to ensure reliability.`,
+          title: "Deep Processing Mode",
+          description: `Processing ${processingDepth[0]} layers in chunks for optimal performance.`,
           variant: "default",
         });
         
@@ -91,19 +91,19 @@ export const ProcessingLogic = ({
           onCurrentLayerChange
         });
       } else {
-        // Simple processing for depth 1-2 with aggressive timeout
-        console.log('Using simple processing for depth <= 2:', processingDepth[0]);
+        // Simple processing for depth 1-3 with reasonable timeout
+        console.log('Using simple processing for depth <= 3:', processingDepth[0]);
         const config = { ...baseConfig, processingDepth: processingDepth[0] };
         
         console.log('Calling genius-machine function with config:', JSON.stringify(config, null, 2));
         console.log('Function call initiated at:', new Date().toISOString());
         
-        // Very aggressive timeout for simple processing - 8 seconds max
+        // Reasonable timeout for simple processing - 30 seconds
         const timeoutPromise = new Promise<never>((_, reject) => {
           setTimeout(() => {
-            console.log('8 second timeout triggered at:', new Date().toISOString());
-            reject(new Error('SIMPLE_TIMEOUT: Function timeout after 8 seconds'));
-          }, 8000);
+            console.log('30 second timeout triggered at:', new Date().toISOString());
+            reject(new Error('SIMPLE_TIMEOUT: Function timeout after 30 seconds'));
+          }, 30000);
         });
         
         console.log('Creating function request promise...');
@@ -111,27 +111,6 @@ export const ProcessingLogic = ({
         
         const requestPromise = supabase.functions.invoke('genius-machine', {
           body: config
-        }).then(result => {
-          const endTime = Date.now();
-          const duration = endTime - startTime;
-          console.log(`Function completed in ${duration}ms at:`, new Date().toISOString());
-          console.log('Raw result received:', {
-            hasData: !!result.data,
-            hasError: !!result.error,
-            dataKeys: result.data ? Object.keys(result.data) : [],
-            errorMessage: result.error?.message
-          });
-          return result;
-        }).catch(invokeError => {
-          const endTime = Date.now();
-          const duration = endTime - startTime;
-          console.error(`Function failed after ${duration}ms:`, {
-            errorName: invokeError.name,
-            errorMessage: invokeError.message,
-            errorType: typeof invokeError,
-            timestamp: new Date().toISOString()
-          });
-          throw new Error(`INVOKE_FAILED: ${invokeError.message}`);
         });
         
         console.log('Racing function call against timeout...');
@@ -224,13 +203,13 @@ export const ProcessingLogic = ({
       if (finalResults.partialResults) {
         toast({
           title: "Partial Results Generated",
-          description: `Generated insights from ${finalResults.processingDepth} layers. Consider using 1-2 layers for fastest results.`,
+          description: `Generated insights from ${finalResults.processingDepth} layers.`,
           variant: "default",
         });
       } else if (finalResults.chunkProcessed) {
         toast({
-          title: "High-Depth Processing Complete",
-          description: `Successfully processed all ${finalResults.processingDepth} layers using chunked processing.`,
+          title: "Deep Processing Complete",
+          description: `Successfully processed all ${finalResults.processingDepth} layers.`,
           variant: "default",
         });
       } else {
@@ -251,30 +230,18 @@ export const ProcessingLogic = ({
         cause: error.cause
       });
       
-      // Enhanced error categorization for user feedback
+      // Simplified error handling
       let userTitle = "Processing Error";
-      let userDescription = "An unexpected error occurred. Please try again.";
+      let userDescription = "There was an issue with processing. Please try again.";
       
       const errorMessage = error?.message || '';
       
-      if (errorMessage.includes('PROCESSING_TIMEOUT') || errorMessage.includes('SIMPLE_TIMEOUT')) {
-        userTitle = "Processing Timeout";
-        userDescription = "The genius machine is taking too long to respond. Try using depth 1-2 for fastest results, or wait a moment if the system is under load.";
-      } else if (errorMessage.includes('SERVICE_UNAVAILABLE')) {
-        userTitle = "Service Temporarily Unavailable";
-        userDescription = "The processing service is currently down. Please wait 30 seconds and try again.";
-      } else if (errorMessage.includes('PROCESSING_ERROR')) {
-        userTitle = "Processing Logic Error";
-        userDescription = "There was an error in the processing logic. Try a simpler question or reduce the processing depth to 1-2 layers.";
-      } else if (errorMessage.includes('NO_DATA')) {
-        userTitle = "Empty Response";
-        userDescription = "The service returned an empty response. This may indicate a temporary service issue. Please try again.";
+      if (errorMessage.includes('TIMEOUT')) {
+        userTitle = "Processing Taking Longer Than Expected";
+        userDescription = "The system is under heavy load. Try a simpler question or lower processing depth.";
       } else if (errorMessage.includes('FUNCTION_ERROR')) {
-        userTitle = "Function Error";
-        userDescription = "There was an error in the backend processing. Try reducing complexity or processing depth.";
-      } else if (errorMessage.includes('INVOKE_FAILED')) {
-        userTitle = "Connection Error";
-        userDescription = "Could not connect to the processing service. Check your internet connection and try again.";
+        userTitle = "Processing Error";
+        userDescription = "There was an error in the processing logic. Please try again.";
       }
       
       toast({
