@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -56,12 +57,6 @@ export const ConsolidatedGeniusInterface = ({
 
   const learningInsights = getLearningInsights();
 
-  // Debug logging
-  useEffect(() => {
-    console.log('ConsolidatedGeniusInterface: Learning insights:', learningInsights);
-    console.log('ConsolidatedGeniusInterface: Is system learning?', learningInsights?.isSystemLearning);
-  }, [learningInsights]);
-
   const getDepthLabel = (depth: number) => {
     if (depth <= 5) return "Quick Analysis";
     if (depth <= 10) return "Deep Analysis";
@@ -75,17 +70,6 @@ export const ConsolidatedGeniusInterface = ({
   };
 
   return <div className="space-zen-lg max-w-4xl mx-auto">
-      {/* Debug Info - Temporary for troubleshooting */}
-      <Card className="p-3 mb-4 bg-yellow-50 border border-yellow-200">
-        <div className="text-xs">
-          <strong>Debug Info:</strong><br/>
-          Learning Insights Available: {learningInsights ? 'Yes' : 'No'}<br/>
-          Is System Learning: {learningInsights?.isSystemLearning ? 'Yes' : 'No'}<br/>
-          Total Experience: {learningInsights?.totalExperience || 0}<br/>
-          System Maturity: {learningInsights?.maturityLevel ? Math.round(learningInsights.maturityLevel * 100) + '%' : '0%'}
-        </div>
-      </Card>
-
       {/* Meta-Learning Status - Enhanced with collapsible dashboard */}
       {learningInsights?.isSystemLearning && (
         <Collapsible open={showLearningDashboard} onOpenChange={setShowLearningDashboard}>
@@ -131,7 +115,7 @@ export const ConsolidatedGeniusInterface = ({
         </Collapsible>
       )}
 
-      {/* Show learning system even when no data exists - for debugging */}
+      {/* Show learning system even when no data exists */}
       {!learningInsights?.isSystemLearning && (
         <Card className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 mb-6">
           <div className="flex items-center space-x-3">
