@@ -1,6 +1,9 @@
 
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Settings } from "lucide-react";
+import { Link } from "react-router-dom";
 import { OutputType, OUTPUT_TYPE_CONFIGS } from "@/types/outputTypes";
 
 interface QuestionInputSectionProps {
@@ -57,6 +60,19 @@ export const QuestionInputSection = ({
           <div className="text-xs text-zen-mono text-zen-medium">
             {question.length} chars
           </div>
+        </div>
+
+        {/* AI Configuration Button */}
+        <div className="flex justify-center pt-4">
+          <Link to="/config">
+            <Button 
+              size="lg"
+              className="bg-zen-ink hover:bg-zen-charcoal text-zen-paper flex items-center space-x-3 text-zen-mono uppercase tracking-wide transition-all duration-300 px-8 py-4 rounded-md shadow-zen-lg"
+            >
+              <Settings className="w-5 h-5" />
+              <span>AI Configuration</span>
+            </Button>
+          </Link>
         </div>
       </div>
     </div>

@@ -1,7 +1,4 @@
 
-import { Settings } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
 import { KnotIcon } from "./KnotIcon";
 
 interface HeaderProps {
@@ -31,15 +28,6 @@ export const Header = ({ customArchetypes, enhancedMode }: HeaderProps) => {
             </div>
           </div>
         </div>
-        <Link to="/config">
-          <Button 
-            size="lg"
-            className="bg-zen-ink hover:bg-zen-charcoal text-zen-paper flex items-center space-x-3 text-zen-mono uppercase tracking-wide transition-all duration-300 px-6 py-3 rounded-md shadow-zen-lg"
-          >
-            <Settings className="w-5 h-5" />
-            <span>AI Configuration</span>
-          </Button>
-        </Link>
       </div>
     </header>
   );
