@@ -16,7 +16,7 @@ export const useChunkedProcessor = () => {
   const processChunkedLayers = async ({
     baseConfig,
     totalDepth,
-    chunkSize = 2, // Even smaller default chunks
+    chunkSize = 2,
     onChunkProgressChange,
     onCurrentLayerChange,
   }: ChunkedProcessorProps) => {
@@ -37,7 +37,7 @@ export const useChunkedProcessor = () => {
       // Visual progress update with shorter delays
       for (let layer = startLayer; layer <= endLayer; layer++) {
         onCurrentLayerChange(layer);
-        await new Promise(resolve => setTimeout(resolve, 200)); // Faster visual updates
+        await new Promise(resolve => setTimeout(resolve, 200));
       }
       
       const chunkConfig = {
@@ -57,41 +57,54 @@ export const useChunkedProcessor = () => {
         
         const chunkStartTime = Date.now();
         
-        // Very aggressive timeout for chunks - 15 seconds max
-        const chunkTimeout = new Promise<never>((_, reject) => {
+        // Create timeout promise that properly rejects
+        const timeoutPromise = new Promise<never>((_, reject) => {
           setTimeout(() => {
-            reject(new Error(`CHUNK_TIMEOUT: Chunk ${chunkIndex + 1} timed out after 15 seconds`));
-          }, 15000);
+            reject(new Error(`CHUNK_TIMEOUT: Chunk ${chunkIndex + 1} timed out after 10 seconds`));
+          }, 10000); // Reduced to 10 seconds for faster feedback
         });
         
-        const chunkRequest = supabase.functions.invoke('genius-machine', {
+        // Create the actual request promise
+        const requestPromise = supabase.functions.invoke('genius-machine', {
           body: chunkConfig
+        }).then(response => {
+          console.log(`Chunk ${chunkIndex + 1} raw response:`, {
+            hasData: !!response.data,
+            hasError: !!response.error,
+            errorDetails: response.error
+          });
+          return response;
+        }).catch(invokeError => {
+          console.error(`Chunk ${chunkIndex + 1} invoke error:`, invokeError);
+          throw new Error(`INVOKE_ERROR: ${invokeError.message}`);
         });
         
-        const result = await Promise.race([chunkRequest, chunkTimeout]);
-        const { data, error } = result as { data: any; error: any };
-        
+        // Race the promises
+        const result = await Promise.race([requestPromise, timeoutPromise]);
         const chunkDuration = Date.now() - chunkStartTime;
+        
         console.log(`Chunk ${chunkIndex + 1} completed in ${chunkDuration}ms`);
         
-        if (error) {
-          console.error(`Chunk ${chunkIndex + 1} error:`, error);
-          throw new Error(`Chunk processing failed: ${error.message}`);
+        // Check for Supabase function errors
+        if (result.error) {
+          console.error(`Chunk ${chunkIndex + 1} function error:`, result.error);
+          throw new Error(`FUNCTION_ERROR: ${result.error.message || 'Unknown function error'}`);
         }
         
-        if (!data) {
-          throw new Error(`Chunk ${chunkIndex + 1} returned no data`);
+        if (!result.data) {
+          console.error(`Chunk ${chunkIndex + 1} returned no data`);
+          throw new Error(`NO_DATA: Chunk ${chunkIndex + 1} returned empty response`);
         }
         
-        console.log(`Chunk ${chunkIndex + 1} results:`, {
-          hasLayers: !!data.layers,
-          layerCount: data.layers?.length || 0,
-          hasInsight: !!data.insight
+        console.log(`Chunk ${chunkIndex + 1} success:`, {
+          hasLayers: !!result.data.layers,
+          layerCount: result.data.layers?.length || 0,
+          hasInsight: !!result.data.insight
         });
         
         // Accumulate layers
-        if (data.layers) {
-          accumulatedLayers = [...accumulatedLayers, ...data.layers];
+        if (result.data.layers) {
+          accumulatedLayers = [...accumulatedLayers, ...result.data.layers];
           console.log(`Total accumulated layers: ${accumulatedLayers.length}`);
         }
         
@@ -99,7 +112,7 @@ export const useChunkedProcessor = () => {
         if (chunkIndex === chunks - 1) {
           // Final chunk - return complete results
           const finalResults = {
-            ...data,
+            ...result.data,
             layers: accumulatedLayers,
             processingDepth: totalDepth,
             chunkProcessed: true
@@ -120,13 +133,14 @@ export const useChunkedProcessor = () => {
             variant: "default",
           });
           
-          // Small delay between chunks to prevent overwhelming the service
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          // Small delay between chunks
+          await new Promise(resolve => setTimeout(resolve, 500));
         }
         
-      } catch (chunkError) {
+      } catch (chunkError: any) {
         console.error(`Chunk ${chunkIndex + 1} failed:`, {
           error: chunkError.message,
+          errorType: chunkError.name,
           accumulatedLayers: accumulatedLayers.length,
           timestamp: new Date().toISOString()
         });
@@ -152,8 +166,17 @@ export const useChunkedProcessor = () => {
             errorMessage: `Processing stopped at layer ${accumulatedLayers.length}: ${chunkError.message}`
           };
         } else {
-          // No progress made, re-throw the error
-          throw chunkError;
+          // No progress made, re-throw the error with more context
+          const errorMessage = chunkError.message || 'Unknown error';
+          if (errorMessage.includes('CHUNK_TIMEOUT')) {
+            throw new Error('PROCESSING_TIMEOUT: The genius machine is taking too long to respond. Try reducing processing depth to 1-3 layers.');
+          } else if (errorMessage.includes('INVOKE_ERROR')) {
+            throw new Error('SERVICE_UNAVAILABLE: The processing service is currently unavailable. Please try again in a moment.');
+          } else if (errorMessage.includes('FUNCTION_ERROR')) {
+            throw new Error('PROCESSING_ERROR: There was an error in the processing logic. Try a simpler question or reduce depth.');
+          } else {
+            throw new Error(`UNEXPECTED_ERROR: ${errorMessage}`);
+          }
         }
       }
     }
