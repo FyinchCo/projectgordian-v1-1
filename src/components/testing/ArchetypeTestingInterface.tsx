@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,13 +23,16 @@ export const ArchetypeTestingInterface = () => {
 
   const initializeFramework = () => {
     try {
+      console.log('Initializing archetype testing framework...');
       initializeDefaultTestData();
       setIsInitialized(true);
+      console.log('Framework initialized successfully');
       toast({
         title: "Framework Initialized",
         description: "Default configurations and benchmark questions have been loaded.",
       });
     } catch (error) {
+      console.error('Framework initialization failed:', error);
       toast({
         title: "Initialization Failed",
         description: "Failed to initialize the testing framework.",
@@ -47,11 +51,13 @@ export const ArchetypeTestingInterface = () => {
       return;
     }
 
+    console.log('Starting baseline test...');
     setIsRunningBaseline(true);
     setBaselineResults("");
 
     try {
       const results = await archetypeTestingFramework.runBaselineOptimizationTest();
+      console.log('Baseline test completed:', results);
       setBaselineResults(results.summary);
       
       toast({
@@ -71,6 +77,7 @@ export const ArchetypeTestingInterface = () => {
   };
 
   const resetFramework = () => {
+    console.log('Resetting framework...');
     archetypeTestingFramework.clearAllData();
     setIsInitialized(false);
     setBaselineResults("");
@@ -80,11 +87,18 @@ export const ArchetypeTestingInterface = () => {
     });
   };
 
-  const stats = {
-    configurations: archetypeTestingFramework.getConfigurations().length,
-    questions: archetypeTestingFramework.getTestQuestions().length,
-    results: archetypeTestingFramework.getTestResults().length
-  };
+  // Get stats with error handling
+  let stats = { configurations: 0, questions: 0, results: 0 };
+  try {
+    stats = {
+      configurations: archetypeTestingFramework.getConfigurations().length,
+      questions: archetypeTestingFramework.getTestQuestions().length,
+      results: archetypeTestingFramework.getTestResults().length
+    };
+    console.log('Current framework stats:', stats);
+  } catch (error) {
+    console.error('Error getting framework stats:', error);
+  }
 
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-6">
@@ -126,6 +140,22 @@ export const ArchetypeTestingInterface = () => {
         </div>
       </div>
 
+      {/* Debug Information */}
+      <Card className="border-blue-200 bg-blue-50">
+        <CardHeader>
+          <CardTitle className="text-blue-800">Debug Information</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-sm text-blue-700 space-y-1">
+            <div>Framework Initialized: {isInitialized ? 'Yes' : 'No'}</div>
+            <div>Configurations: {stats.configurations}</div>
+            <div>Questions: {stats.questions}</div>
+            <div>Results: {stats.results}</div>
+            <div>Running Test: {isRunningBaseline ? 'Yes' : 'No'}</div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Baseline Results Display */}
       {baselineResults && (
         <Card className="border-green-200 bg-green-50">
@@ -165,7 +195,7 @@ export const ArchetypeTestingInterface = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.questions}</div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foregrade">
               Benchmark questions ready
             </p>
           </CardContent>
@@ -235,27 +265,33 @@ export const ArchetypeTestingInterface = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {archetypeTestingFramework.getConfigurations().map(config => {
-                  const performance = archetypeTestingFramework.getConfigurationPerformance(config.id);
-                  return (
-                    <div key={config.id} className="flex items-center justify-between p-3 border rounded mb-2">
-                      <div>
-                        <h4 className="font-medium">{config.name}</h4>
-                        <p className="text-sm text-gray-600">{config.description}</p>
+                {stats.configurations === 0 ? (
+                  <p className="text-gray-500 text-center py-4">
+                    No configurations loaded. Click "Initialize Framework" to load default configurations.
+                  </p>
+                ) : (
+                  archetypeTestingFramework.getConfigurations().map(config => {
+                    const performance = archetypeTestingFramework.getConfigurationPerformance(config.id);
+                    return (
+                      <div key={config.id} className="flex items-center justify-between p-3 border rounded mb-2">
+                        <div>
+                          <h4 className="font-medium">{config.name}</h4>
+                          <p className="text-sm text-gray-600">{config.description}</p>
+                        </div>
+                        <div className="text-right">
+                          <Badge variant={performance.testCount > 0 ? "default" : "secondary"}>
+                            {performance.testCount} tests
+                          </Badge>
+                          {performance.testCount > 0 && (
+                            <div className="text-sm text-gray-500 mt-1">
+                              Avg: {performance.averageScore.toFixed(1)}/10
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <Badge variant={performance.testCount > 0 ? "default" : "secondary"}>
-                          {performance.testCount} tests
-                        </Badge>
-                        {performance.testCount > 0 && (
-                          <div className="text-sm text-gray-500 mt-1">
-                            Avg: {performance.averageScore.toFixed(1)}/10
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })
+                )}
               </CardContent>
             </Card>
           </div>
