@@ -95,32 +95,16 @@ const Index = () => {
     onChunkProgressChange: setChunkProgress
   });
 
-  const handleRunFullTestSuite = async (processFunction: (question: string) => Promise<any>) => {
-    console.log('Starting full test suite with actual processing function...');
+  const handleRunFullTestSuite = async (testProcessFunction: (question: string) => Promise<any>) => {
+    console.log('Starting full test suite with processing function...');
     
-    // Use the actual processing function from ProcessingLogic
+    // Create a processing function that uses our actual ProcessingLogic
     const actualProcessFunction = async (testQuestion: string) => {
       return new Promise((resolve, reject) => {
-        // Temporarily set the question for processing
+        // Store original values
         const originalQuestion = question;
-        setQuestion(testQuestion);
         
-        // Set up completion handler
-        const originalOnComplete = handleProcessingComplete;
-        const testOnComplete = (results: any) => {
-          setQuestion(originalQuestion); // Restore original question
-          resolve(results);
-          // Don't call original handler to avoid UI state changes during testing
-        };
-        
-        // Set up error handler
-        const originalOnError = handleProcessingError;
-        const testOnError = () => {
-          setQuestion(originalQuestion); // Restore original question
-          reject(new Error('Processing failed'));
-        };
-        
-        // Create temporary processing logic for testing
+        // Create a temporary processing logic instance for this test
         const testProcessingLogic = ProcessingLogic({
           question: testQuestion,
           processingDepth,
@@ -128,15 +112,19 @@ const Index = () => {
           enhancedMode,
           customArchetypes,
           currentAssessment,
-          onProcessingStart: () => {}, // Don't change UI state during testing
-          onProcessingComplete: testOnComplete,
-          onProcessingError: testOnError,
+          onProcessingStart: () => {}, // Silent for testing
+          onProcessingComplete: (results: any) => {
+            resolve(results);
+          },
+          onProcessingError: () => {
+            reject(new Error('Processing failed'));
+          },
           onCurrentArchetypeChange: () => {},
           onCurrentLayerChange: () => {},
           onChunkProgressChange: () => {}
         });
         
-        // Start the processing
+        // Execute the test
         try {
           testProcessingLogic.handleStartGenius();
         } catch (error) {
@@ -145,12 +133,17 @@ const Index = () => {
       });
     };
     
-    // Call the runFullTestSuite from useSelfTesting hook with our processing function
-    // The processFunction parameter should actually be the runFullTestSuite method
-    if (processFunction) {
-      return await processFunction(actualProcessFunction);
+    // Call the test function with our processing function
+    try {
+      await testProcessFunction(actualProcessFunction);
+    } catch (error) {
+      console.error('Test suite failed:', error);
+      toast({
+        title: "Test Suite Error",
+        description: "Failed to run the test suite. Check console for details.",
+        variant: "destructive",
+      });
     }
-    return Promise.resolve();
   };
 
   // Show password gate if not authenticated
