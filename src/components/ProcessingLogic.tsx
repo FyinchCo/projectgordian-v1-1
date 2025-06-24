@@ -44,6 +44,7 @@ export const ProcessingLogic = ({
     }
     
     console.log('=== PROCESSING START ===');
+    console.log('Timestamp:', new Date().toISOString());
     onProcessingStart();
     onCurrentLayerChange(1);
     onChunkProgressChange({ current: 0, total: 0 });
@@ -74,103 +75,128 @@ export const ProcessingLogic = ({
       
       let finalResults;
       
-      // Use chunked processing for high depths
-      if (processingDepth[0] >= 8) {
-        console.log('Using chunked processing for depth:', processingDepth[0]);
+      // Always use lower timeout thresholds and force chunked processing for depths > 3
+      if (processingDepth[0] > 3) {
+        console.log('Forcing chunked processing for depth > 3:', processingDepth[0]);
         toast({
-          title: "High-Depth Processing",
-          description: `Processing ${processingDepth[0]} layers in chunks to avoid timeouts. This may take a few minutes.`,
+          title: "Smart Processing Mode",
+          description: `Using chunked processing for ${processingDepth[0]} layers to ensure reliability.`,
           variant: "default",
         });
         
         finalResults = await processChunkedLayers({
           baseConfig,
           totalDepth: processingDepth[0],
-          chunkSize: 4,
+          chunkSize: 2, // Even smaller chunks
           onChunkProgressChange,
           onCurrentLayerChange
         });
       } else {
-        // Regular processing for lower depths with enhanced timeout and error handling
-        console.log('Using regular processing for depth:', processingDepth[0]);
+        // Very conservative processing for low depths with aggressive timeouts
+        console.log('Using conservative processing for depth <= 3:', processingDepth[0]);
         const config = { ...baseConfig, processingDepth: processingDepth[0] };
         
         console.log('Calling genius-machine function with config:', JSON.stringify(config, null, 2));
+        console.log('Function call initiated at:', new Date().toISOString());
         
-        // Create multiple timeout promises for better debugging
+        // Much more aggressive timeout for debugging
         const timeouts = {
+          15: new Promise((_, reject) => {
+            setTimeout(() => {
+              console.log('15 second timeout triggered at:', new Date().toISOString());
+              reject(new Error('TIMEOUT_15_SEC: Function cold start timeout'));
+            }, 15000);
+          }),
           30: new Promise((_, reject) => {
-            setTimeout(() => reject(new Error('Request timeout after 30 seconds - function may be cold starting')), 30000);
+            setTimeout(() => {
+              console.log('30 second timeout triggered at:', new Date().toISOString());
+              reject(new Error('TIMEOUT_30_SEC: Function execution timeout'));
+            }, 30000);
           }),
-          60: new Promise((_, reject) => {
-            setTimeout(() => reject(new Error('Request timeout after 60 seconds - function execution timeout')), 60000);
-          }),
-          90: new Promise((_, reject) => {
-            setTimeout(() => reject(new Error('Request timeout after 90 seconds - severe processing issue')), 90000);
+          45: new Promise((_, reject) => {
+            setTimeout(() => {
+              console.log('45 second timeout triggered at:', new Date().toISOString());
+              reject(new Error('TIMEOUT_45_SEC: Service overload timeout'));
+            }, 45000);
           })
         };
         
-        console.log('Invoking supabase function with enhanced error tracking...');
-        console.log('Function endpoint check - attempting to call genius-machine...');
+        console.log('Creating function request promise...');
+        const startTime = Date.now();
         
         const requestPromise = supabase.functions.invoke('genius-machine', {
           body: config
         }).then(result => {
-          console.log('Function invocation completed. Raw result:', result);
-          console.log('Result data:', result.data);
-          console.log('Result error:', result.error);
+          const endTime = Date.now();
+          const duration = endTime - startTime;
+          console.log(`Function completed in ${duration}ms at:`, new Date().toISOString());
+          console.log('Raw result received:', {
+            hasData: !!result.data,
+            hasError: !!result.error,
+            dataKeys: result.data ? Object.keys(result.data) : [],
+            errorMessage: result.error?.message
+          });
           return result;
         }).catch(invokeError => {
-          console.error('Function invocation failed with error:', invokeError);
-          console.error('Error type:', typeof invokeError);
-          console.error('Error message:', invokeError.message);
-          console.error('Error stack:', invokeError.stack);
+          const endTime = Date.now();
+          const duration = endTime - startTime;
+          console.error(`Function failed after ${duration}ms:`, {
+            errorName: invokeError.name,
+            errorMessage: invokeError.message,
+            errorType: typeof invokeError,
+            timestamp: new Date().toISOString()
+          });
           throw invokeError;
         });
         
-        console.log('Waiting for genius-machine response with timeout protection...');
+        console.log('Racing function call against timeouts...');
         
-        // Race between request and timeouts
+        // Race with very aggressive timeouts
         const result = await Promise.race([
           requestPromise,
+          timeouts[15],
           timeouts[30],
-          timeouts[60],
-          timeouts[90]
+          timeouts[45]
         ]);
         
-        console.log('Received response from function call');
+        console.log('Function race completed, processing response...');
         const { data, error } = result as any;
         
         if (error) {
-          console.error('Supabase function returned error:', error);
-          console.error('Error details:', JSON.stringify(error, null, 2));
-          console.error('Error message:', error.message);
-          console.error('Error code:', error.code);
-          console.error('Error details object:', error.details);
+          console.error('Supabase function error details:', {
+            message: error.message,
+            code: error.code,
+            details: error.details,
+            hint: error.hint,
+            timestamp: new Date().toISOString()
+          });
           
-          // More specific error messages
-          if (error.message?.includes('timeout')) {
-            throw new Error('Function timed out - try reducing processing depth to 2-3 layers');
-          } else if (error.message?.includes('502') || error.message?.includes('Bad Gateway')) {
-            throw new Error('Service temporarily unavailable - please try again in a moment');
-          } else if (error.message?.includes('401') || error.message?.includes('unauthorized')) {
-            throw new Error('Authentication error - please refresh the page and try again');
+          // Enhanced error categorization
+          const errorMsg = error.message?.toLowerCase() || '';
+          
+          if (errorMsg.includes('timeout') || errorMsg.includes('TIMEOUT_')) {
+            throw new Error('CATEGORIZED_TIMEOUT: Function processing timeout - try depth 1-2 for fastest results');
+          } else if (errorMsg.includes('502') || errorMsg.includes('bad gateway')) {
+            throw new Error('CATEGORIZED_SERVICE: Service temporarily down - please wait 30 seconds and retry');
+          } else if (errorMsg.includes('401') || errorMsg.includes('unauthorized')) {
+            throw new Error('CATEGORIZED_AUTH: Authentication expired - refresh page and try again');
+          } else if (errorMsg.includes('500') || errorMsg.includes('internal')) {
+            throw new Error('CATEGORIZED_INTERNAL: Internal service error - try again in a moment');
           } else {
-            throw new Error(`Processing failed: ${error.message || 'Unknown error'}`);
+            throw new Error(`CATEGORIZED_UNKNOWN: ${error.message || 'Unknown processing error'}`);
           }
         }
         
         if (!data) {
-          console.error('No data returned from function - this should not happen');
-          throw new Error('No data returned from processing function - service may be down');
+          console.error('No data in response - service may be malfunctioning');
+          throw new Error('CATEGORIZED_NO_DATA: Empty response from processing service');
         }
         
-        console.log('Processing completed successfully. Result structure:', {
+        console.log('Processing successful, validating response structure:', {
           hasInsight: !!data.insight,
           hasLayers: !!data.layers,
           layerCount: data.layers?.length || 0,
-          hasConfidence: typeof data.confidence === 'number',
-          hasTensionPoints: typeof data.tensionPoints === 'number'
+          processingTime: Date.now() - startTime
         });
         
         finalResults = data;
@@ -252,48 +278,49 @@ export const ProcessingLogic = ({
       }
       
     } catch (error) {
-      console.error('=== PROCESSING ERROR ===');
-      console.error('Error processing question:', error);
-      console.error('Error name:', error.name);
-      console.error('Error message:', error.message);
-      console.error('Error stack:', error.stack);
-      console.error('Error cause:', error.cause);
+      console.error('=== PROCESSING ERROR ANALYSIS ===');
+      console.error('Error timestamp:', new Date().toISOString());
+      console.error('Error details:', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack?.split('\n').slice(0, 5).join('\n'), // First 5 lines only
+        cause: error.cause
+      });
       
-      const isTimeout = error?.message?.includes('timeout') || 
-                       error?.message?.includes('Load failed') || 
-                       error?.message?.includes('Request timeout') ||
-                       error?.message?.includes('cold starting');
+      // Enhanced error categorization for user feedback
+      const errorMessage = error?.message || '';
+      let userTitle = "Processing Error";
+      let userDescription = "An unexpected error occurred. Please try again.";
       
-      const isServiceDown = error?.message?.includes('502') || 
-                           error?.message?.includes('Bad Gateway') ||
-                           error?.message?.includes('service may be down');
-      
-      const isAuth = error?.message?.includes('401') || 
-                     error?.message?.includes('unauthorized');
-      
-      let errorTitle = "Processing Error";
-      let errorDescription = `Failed to process: ${error.message || 'Unknown error'}. Please try again.`;
-      
-      if (isTimeout) {
-        errorTitle = "Processing Timeout";
-        errorDescription = `Processing timed out. Try reducing depth to 2-3 layers, or the system may be experiencing high load. If using depth 5+, wait a moment and try again.`;
-      } else if (isServiceDown) {
-        errorTitle = "Service Unavailable";
-        errorDescription = "Processing service is temporarily unavailable. Please wait a moment and try again.";
-      } else if (isAuth) {
-        errorTitle = "Authentication Error";
-        errorDescription = "Authentication issue detected. Please refresh the page and try again.";
+      if (errorMessage.includes('TIMEOUT_')) {
+        userTitle = "Processing Timeout";
+        const timeoutType = errorMessage.includes('15_SEC') ? '15 seconds' : 
+                           errorMessage.includes('30_SEC') ? '30 seconds' : '45 seconds';
+        userDescription = `Processing timed out after ${timeoutType}. Try depth 1-2 for fastest results, or wait a moment if the system is under load.`;
+      } else if (errorMessage.includes('CATEGORIZED_SERVICE')) {
+        userTitle = "Service Temporarily Down";
+        userDescription = "The processing service is temporarily unavailable. Please wait 30 seconds and try again.";
+      } else if (errorMessage.includes('CATEGORIZED_AUTH')) {
+        userTitle = "Session Expired";
+        userDescription = "Your session has expired. Please refresh the page and try again.";
+      } else if (errorMessage.includes('CATEGORIZED_')) {
+        // Extract the user-friendly message
+        const colonIndex = errorMessage.indexOf(':');
+        if (colonIndex > -1) {
+          userDescription = errorMessage.substring(colonIndex + 1).trim();
+        }
       }
       
       toast({
-        title: errorTitle,
-        description: errorDescription,
+        title: userTitle,
+        description: userDescription,
         variant: "destructive",
       });
       
       onProcessingError();
     } finally {
       console.log('=== PROCESSING CLEANUP ===');
+      console.log('Cleanup timestamp:', new Date().toISOString());
       onCurrentArchetypeChange("");
       onCurrentLayerChange(1);
       onChunkProgressChange({ current: 0, total: 0 });
