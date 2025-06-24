@@ -1,61 +1,59 @@
 
-import { useToast } from "@/hooks/use-toast";
-
-export const createProcessingTimeout = (chunkIndex: number) => {
+export const createProcessingTimeout = (chunkIndex: number, timeoutMs: number = 90000) => {
   return new Promise<never>((_, reject) => {
     setTimeout(() => {
-      console.log(`Chunk ${chunkIndex + 1} timeout triggered at:`, new Date().toISOString());
-      reject(new Error(`CHUNK_TIMEOUT: Chunk ${chunkIndex + 1} timeout after 60 seconds`));
-    }, 60000);
+      console.log(`Chunk ${chunkIndex + 1} timeout triggered after ${timeoutMs}ms at:`, new Date().toISOString());
+      reject(new Error(`CHUNK_TIMEOUT: Chunk ${chunkIndex + 1} timed out after ${timeoutMs / 1000} seconds`));
+    }, timeoutMs);
   });
 };
 
 export const validateChunkResult = (result: any, chunkIndex: number) => {
+  if (!result) {
+    throw new Error(`CHUNK_RESULT_MISSING: Chunk ${chunkIndex + 1} returned no result`);
+  }
+  
   if (result.error) {
-    console.error(`Chunk ${chunkIndex + 1} function error:`, result.error);
-    throw new Error(`FUNCTION_ERROR: ${result.error.message || 'Edge Function returned a non-2xx status code'}`);
+    console.error(`Chunk ${chunkIndex + 1} Supabase error:`, result.error);
+    throw new Error(`SUPABASE_ERROR: ${result.error.message || 'Unknown Supabase error'}`);
   }
-
+  
   if (!result.data) {
-    console.error(`Chunk ${chunkIndex + 1} - No data in response`);
-    throw new Error(`NO_DATA: Empty response from chunk ${chunkIndex + 1}`);
+    console.error(`Chunk ${chunkIndex + 1} no data in response:`, result);
+    throw new Error(`NO_DATA: Chunk ${chunkIndex + 1} response contains no data`);
   }
-
+  
   return result;
 };
 
 export const createFinalResult = (data: any, accumulatedLayers: any[], totalDepth: number) => {
   console.log('Creating final result with:', {
     hasData: !!data,
-    accumulatedLayers: accumulatedLayers.length,
+    accumulatedLayersCount: accumulatedLayers.length,
     totalDepth,
-    hasCompressionFormats: !!data.compressionFormats
+    dataKeys: data ? Object.keys(data) : []
   });
-
+  
   return {
     ...data,
     layers: accumulatedLayers,
     processingDepth: accumulatedLayers.length,
     chunkProcessed: true,
-    compressionFormats: data.compressionFormats || (accumulatedLayers.length > 0 ? accumulatedLayers[accumulatedLayers.length - 1].synthesis?.compressionFormats : undefined)
+    partialResults: accumulatedLayers.length < totalDepth
   };
 };
 
 export const handleChunkError = (chunkError: any, accumulatedLayers: any[], chunkIndex: number) => {
-  console.error(`Chunk ${chunkIndex + 1} failed:`, {
+  console.error(`Chunk ${chunkIndex + 1} error details:`, {
     error: chunkError.message,
     errorType: chunkError.constructor.name,
     accumulatedLayers: accumulatedLayers.length,
     timestamp: new Date().toISOString()
   });
-
-  const hasPartialResults = accumulatedLayers.length > 0;
   
-  if (hasPartialResults) {
-    console.log(`Returning partial results: ${accumulatedLayers.length} layers processed`);
-    
+  // If we have some layers, return partial results
+  if (accumulatedLayers.length > 0) {
     const lastLayer = accumulatedLayers[accumulatedLayers.length - 1];
-    
     return {
       insight: lastLayer.synthesis?.insight || `Partial processing completed with ${accumulatedLayers.length} layers processed.`,
       confidence: lastLayer.synthesis?.confidence || 0.5,
@@ -66,9 +64,10 @@ export const handleChunkError = (chunkError: any, accumulatedLayers: any[], chun
       processingDepth: accumulatedLayers.length,
       partialResults: true,
       errorMessage: chunkError.message,
-      compressionFormats: lastLayer.synthesis?.compressionFormats
+      logicTrail: lastLayer.archetypeResponses || []
     };
   }
-
+  
+  // No partial results available
   throw chunkError;
 };

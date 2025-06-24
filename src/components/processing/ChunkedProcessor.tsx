@@ -39,16 +39,33 @@ export const useChunkedProcessor = () => {
       try {
         const chunkStartTime = Date.now();
         
-        // Create timeout and request promises
-        const timeoutPromise = createProcessingTimeout(chunkIndex);
+        // Increased timeout for chunked processing - 2 minutes per chunk
+        const timeoutPromise = createProcessingTimeout(chunkIndex, 120000);
         const requestPromise = supabase.functions.invoke('genius-machine', {
           body: chunkConfig.config
         });
         
-        // Race the promises
-        const result = await Promise.race([requestPromise, timeoutPromise]);
-        const chunkDuration = Date.now() - chunkStartTime;
+        // Add retry logic for network failures
+        let result;
+        let retryCount = 0;
+        const maxRetries = 2;
         
+        while (retryCount <= maxRetries) {
+          try {
+            result = await Promise.race([requestPromise, timeoutPromise]);
+            break; // Success, exit retry loop
+          } catch (error: any) {
+            retryCount++;
+            if (retryCount > maxRetries) {
+              throw error; // Max retries reached
+            }
+            
+            console.log(`Chunk ${chunkIndex + 1} attempt ${retryCount} failed, retrying...`);
+            await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds before retry
+          }
+        }
+        
+        const chunkDuration = Date.now() - chunkStartTime;
         console.log(`Chunk ${chunkIndex + 1} completed in ${chunkDuration}ms`);
         
         // Validate and extract data
@@ -124,7 +141,8 @@ export const useChunkedProcessor = () => {
               layers: accumulatedLayers,
               processingDepth: accumulatedLayers.length,
               partialResults: true,
-              errorMessage: chunkError.message
+              errorMessage: chunkError.message,
+              logicTrail: accumulatedLayers[accumulatedLayers.length - 1]?.archetypeResponses || []
             };
           }
           
