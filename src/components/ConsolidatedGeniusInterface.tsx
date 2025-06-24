@@ -147,7 +147,7 @@ export const ConsolidatedGeniusInterface = ({
 
           {/* Launch Button */}
           <div className="pt-8 border-t border-zen-light">
-            <Button onClick={onStartGenius} disabled={!question.trim()} size="lg" className="w-full bg-zen-ink text-zen-paper hover:bg-zen-charcoal flex items-center justify-center space-x-3 text-zen-mono uppercase tracking-wide border-0 px-8 py-6 rounded-md shadow-zen-lg transition-all duration-300 animate-zen-scale font-light">
+            <Button onClick={onStartGenius} disabled={!question.trim()} size="lg" className="w-full text-zen-paper flex items-center justify-center space-x-3 text-zen-mono uppercase tracking-wide border-0 px-8 py-6 shadow-zen-lg transition-all duration-300 animate-zen-scale font-light bg-zinc-900 hover:bg-zinc-800 rounded-lg">
               <Play className="w-5 h-5" />
               <span>Start Genius Machine</span>
               <Zap className="w-5 h-5" />
