@@ -108,6 +108,27 @@ export class MetaLearningEngine {
     results: any,
     qualityMetrics: any
   ): void {
+    // Calculate configuration effectiveness (how well it performed vs baseline)
+    const baseline = 5; // Average expected quality
+    const configurationEffectiveness = (qualityMetrics.overallScore - baseline) / 5;
+    
+    // Generate learning tags for pattern recognition
+    const learningTags: string[] = [];
+    
+    // Quality-based tags
+    if (qualityMetrics.overallScore >= 8) learningTags.push('high-quality');
+    if (qualityMetrics.overallScore <= 4) learningTags.push('low-quality');
+    if (results.emergenceDetected) learningTags.push('emergent');
+    if (results.noveltyScore >= 8) learningTags.push('novel');
+    
+    // Configuration tags
+    if (configuration.enhancedMode) learningTags.push('enhanced');
+    if (configuration.processingDepth >= 10) learningTags.push('deep-processing');
+    
+    // Domain tags
+    learningTags.push(`domain-${assessment.domainType.toLowerCase()}`);
+    learningTags.push(`complexity-${assessment.complexityScore}`);
+    
     this.database.addLearningRecord({
       question,
       domainType: assessment.domainType,
@@ -121,7 +142,9 @@ export class MetaLearningEngine {
         emergenceDetected: results.emergenceDetected || false,
         processingTime: Date.now() // Simplified for now
       },
-      qualityMetrics
+      qualityMetrics,
+      configurationEffectiveness,
+      learningTags
     });
     
     console.log('Learning cycle recorded for future optimization');
