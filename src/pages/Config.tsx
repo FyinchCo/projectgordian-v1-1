@@ -51,6 +51,12 @@ const Config = () => {
     }
   }, []);
 
+  // Load optimization reasoning if available from the shared hook
+  useEffect(() => {
+    // The optimization reasoning is already managed by the hook
+    // and will be displayed automatically when available
+  }, []);
+
   const updateTensionSettings = (field: string, value: number[]) => {
     setTensionSettings(prev => ({ ...prev, [field]: value }));
   };
@@ -87,6 +93,7 @@ const Config = () => {
     localStorage.removeItem('genius-machine-archetypes');
     localStorage.removeItem('genius-machine-tension');
     localStorage.removeItem('genius-machine-compression');
+    clearOptimizationReasoning(); // Clear the reasoning when resetting
     window.location.reload();
   };
 

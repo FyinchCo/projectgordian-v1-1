@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -11,6 +10,7 @@ import { Play, Zap, Brain, Users } from "lucide-react";
 import { OutputType } from "@/types/outputTypes";
 import { useQuestionAssessment } from "@/hooks/useQuestionAssessment";
 import { useAIConfigOptimization } from "@/hooks/useAIConfigOptimization";
+import { useArchetypes } from "@/hooks/useArchetypes";
 import { useToast } from "@/hooks/use-toast";
 import { QuestionInputSection } from "./interface/QuestionInputSection";
 
@@ -48,6 +48,7 @@ export const ConsolidatedGeniusInterface = ({
   onStartGenius
 }: ConsolidatedGeniusInterfaceProps) => {
   const { assessQuestion, isAssessing } = useQuestionAssessment();
+  const { updateArchetype } = useArchetypes();
   const { optimizeAndApplyConfiguration, isAssessing: isOptimizing } = useAIConfigOptimization();
   const { toast } = useToast();
 
@@ -61,24 +62,24 @@ export const ConsolidatedGeniusInterface = ({
       return;
     }
 
-    // Mock update functions for the comprehensive optimization
-    const mockUpdateArchetype = (id: number, field: string, value: any) => {
-      console.log(`Updated archetype ${id}, field ${field}:`, value);
+    // Real update functions that actually save to localStorage
+    const updateTensionSettings = (field: string, value: number[]) => {
+      const currentTension = JSON.parse(localStorage.getItem('genius-machine-tension') || '{"contradictionThreshold":[5],"recursionDepth":[3],"archetypeOverlap":[2]}');
+      currentTension[field] = value;
+      localStorage.setItem('genius-machine-tension', JSON.stringify(currentTension));
     };
 
-    const mockUpdateTensionSettings = (field: string, value: number[]) => {
-      console.log(`Updated tension setting ${field}:`, value);
-    };
-
-    const mockUpdateCompressionSettings = (field: string, value: any) => {
-      console.log(`Updated compression setting ${field}:`, value);
+    const updateCompressionSettings = (field: string, value: any) => {
+      const currentCompression = JSON.parse(localStorage.getItem('genius-machine-compression') || '{"style":"insight-summary","length":"medium","includeTrail":true,"includeFullTranscript":false,"customInstructions":""}');
+      currentCompression[field] = value;
+      localStorage.setItem('genius-machine-compression', JSON.stringify(currentCompression));
     };
 
     const result = await optimizeAndApplyConfiguration(
       question,
-      mockUpdateArchetype,
-      mockUpdateTensionSettings,
-      mockUpdateCompressionSettings
+      updateArchetype,
+      updateTensionSettings,
+      updateCompressionSettings
     );
 
     if (result) {
@@ -86,6 +87,13 @@ export const ConsolidatedGeniusInterface = ({
       setCircuitType(result.recommendations.circuitType);
       setEnhancedMode(result.recommendations.enhancedMode);
       setCurrentAssessment(result);
+      
+      // Show success message with link to config page
+      toast({
+        title: "Configuration Optimized",
+        description: "All settings updated. Visit the Configuration page to see detailed reasoning.",
+        variant: "default",
+      });
     }
   };
 
@@ -159,7 +167,7 @@ export const ConsolidatedGeniusInterface = ({
                   <Badge variant="outline" className="text-xs border-zen-medium text-zen-charcoal">{currentAssessment.complexityScore}/10</Badge>
                 </div>
                 <div className="text-xs text-zen-body text-zen-medium mt-3 leading-relaxed">
-                  Configuration optimized for maximum insight generation.
+                  Configuration optimized for maximum insight generation. Visit the Configuration page for detailed reasoning.
                 </div>
               </div>
             </div>
