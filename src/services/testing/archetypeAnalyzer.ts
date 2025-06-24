@@ -1,5 +1,4 @@
-
-import { TestResult, ArchetypeTestConfiguration } from './archetypeTestingFramework';
+import { TestResult, ArchetypeTestConfiguration, archetypeTestingFramework } from './archetypeTestingFramework';
 
 export interface ArchetypePerformanceProfile {
   archetypeName: string;
@@ -293,9 +292,8 @@ export class ArchetypeAnalyzer {
   }
 
   private getConfiguration(configurationId: string): ArchetypeTestConfiguration | null {
-    // This would get the configuration from the framework
-    const framework = require('./archetypeTestingFramework').archetypeTestingFramework;
-    return framework.getConfigurations().find((c: any) => c.id === configurationId) || null;
+    // Use the imported framework instance instead of require()
+    return archetypeTestingFramework.getConfigurations().find((c: any) => c.id === configurationId) || null;
   }
 }
 
