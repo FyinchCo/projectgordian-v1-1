@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { ProcessingSection } from "@/components/ProcessingSection";
@@ -96,8 +97,57 @@ const Index = () => {
   });
 
   const handleRunFullTestSuite = async (processFunction: (question: string) => Promise<any>) => {
-    // Implementation would call processingLogicComponent.handleStartGenius for each test
-    console.log('Running full test suite...');
+    console.log('Starting full test suite with actual processing function...');
+    
+    // Use the actual processing function from ProcessingLogic
+    const actualProcessFunction = async (testQuestion: string) => {
+      return new Promise((resolve, reject) => {
+        // Temporarily set the question for processing
+        const originalQuestion = question;
+        setQuestion(testQuestion);
+        
+        // Set up completion handler
+        const originalOnComplete = handleProcessingComplete;
+        const testOnComplete = (results: any) => {
+          setQuestion(originalQuestion); // Restore original question
+          resolve(results);
+          // Don't call original handler to avoid UI state changes during testing
+        };
+        
+        // Set up error handler
+        const originalOnError = handleProcessingError;
+        const testOnError = () => {
+          setQuestion(originalQuestion); // Restore original question
+          reject(new Error('Processing failed'));
+        };
+        
+        // Create temporary processing logic for testing
+        const testProcessingLogic = ProcessingLogic({
+          question: testQuestion,
+          processingDepth,
+          circuitType,
+          enhancedMode,
+          customArchetypes,
+          currentAssessment,
+          onProcessingStart: () => {}, // Don't change UI state during testing
+          onProcessingComplete: testOnComplete,
+          onProcessingError: testOnError,
+          onCurrentArchetypeChange: () => {},
+          onCurrentLayerChange: () => {},
+          onChunkProgressChange: () => {}
+        });
+        
+        // Start the processing
+        try {
+          testProcessingLogic.handleStartGenius();
+        } catch (error) {
+          reject(error);
+        }
+      });
+    };
+    
+    // Call the provided process function (which should be the useSelfTesting hook's runFullTestSuite)
+    return processFunction ? processFunction(actualProcessFunction) : Promise.resolve();
   };
 
   // Show password gate if not authenticated
