@@ -2,6 +2,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { processLayer } from './layer-processor.ts';
+import { evaluateQuestionQuality } from './question-quality.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -75,6 +76,22 @@ serve(async (req) => {
 
     const finalSynthesis = safeGetSynthesis(finalLayer);
     
+    // Evaluate question quality using the final synthesis and archetype responses
+    let questionQuality = null;
+    try {
+      console.log('Evaluating question quality...');
+      questionQuality = await evaluateQuestionQuality(
+        question,
+        finalLayer.synthesis,
+        finalLayer.archetypeResponses || [],
+        finalLayer.tensionMetrics
+      );
+      console.log('Question quality evaluation completed:', questionQuality);
+    } catch (qualityError) {
+      console.error('Question quality evaluation failed:', qualityError);
+      // Continue without quality metrics rather than failing completely
+    }
+    
     const results = {
       insight: finalSynthesis.insight,
       confidence: finalSynthesis.confidence,
@@ -88,6 +105,7 @@ serve(async (req) => {
       assumptionChallenge: layers[0]?.assumptionChallenge,
       finalTensionMetrics: finalLayer?.tensionMetrics,
       compressionFormats: finalSynthesis.compressionFormats,
+      questionQuality, // Now properly included
       layers: layers.map(layer => {
         const layerSynthesis = safeGetSynthesis(layer);
         return {
@@ -106,7 +124,7 @@ serve(async (req) => {
       logicTrail: finalLayer?.archetypeResponses || []
     };
 
-    console.log(`Successfully processed ${layers.length} layers`);
+    console.log(`Successfully processed ${layers.length} layers with question quality assessment`);
 
     return new Response(JSON.stringify(results), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
