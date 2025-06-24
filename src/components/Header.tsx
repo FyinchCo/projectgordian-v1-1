@@ -26,11 +26,6 @@ export const Header = ({ customArchetypes, enhancedMode }: HeaderProps) => {
                   Custom Config
                 </span>
               )}
-              {enhancedMode && (
-                <span className="ml-2 px-2 py-1 bg-mono-charcoal text-mono-pure-white text-xs font-mono uppercase">
-                  Enhanced Mode
-                </span>
-              )}
             </p>
           </div>
         </div>
