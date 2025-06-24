@@ -1,63 +1,66 @@
 
-import { Brain, Settings, TrendingUp, History } from "lucide-react";
-import { Link } from "react-router-dom";
-import { KnotIcon } from "@/components/KnotIcon";
+import { Brain, Settings, TestTube } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
-interface HeaderProps {
-  customArchetypes: any;
-  enhancedMode: boolean;
+interface Archetype {
+  name: string;
+  description: string;
+  languageStyle: string;
+  imagination: number[];
+  skepticism: number[];
+  aggression: number[];
+  emotionality: number[];
+  constraint: string;
 }
 
-export const Header = ({ customArchetypes, enhancedMode }: HeaderProps) => {
+interface HeaderProps {
+  customArchetypes?: Archetype[] | null;
+  enhancedMode: boolean;
+  onToggleSelfTesting?: () => void;
+  showSelfTestingToggle?: boolean;
+}
+
+export const Header = ({ 
+  customArchetypes, 
+  enhancedMode,
+  onToggleSelfTesting,
+  showSelfTestingToggle = false
+}: HeaderProps) => {
   return (
-    <header className="border-b border-zen-light bg-zen-paper px-8 py-12">
-      <div className="max-w-6xl mx-auto flex items-center justify-between">
-        <div className="flex items-center space-x-8">
-          <Link to="/">
-            <KnotIcon className="text-zen-ink" size={40} animate />
-          </Link>
-          <div className="space-y-2">
-            <Link to="/">
-              <h1 className="text-3xl text-zen-heading text-zen-ink tracking-tight hover:text-zen-medium transition-colors">
-                PROJECT GORDIAN
-              </h1>
-            </Link>
-            <div className="flex items-center space-x-4">
-              <p className="text-xs text-zen-mono text-zen-medium tracking-wider uppercase">
-                AI's Recursive Distillation of a Knot
+    <header className="border-b border-zen-border bg-white/80 backdrop-blur-sm sticky top-0 z-50">
+      <div className="px-zen-lg py-zen-md max-w-7xl mx-auto">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <Brain className="w-8 h-8 text-zen-primary" />
+            <div>
+              <h1 className="text-xl font-bold text-zen-text">Project Gordian</h1>
+              <p className="text-xs text-zen-muted">
+                Enhanced AI Dialectical Processing Engine
+                {customArchetypes && ` • ${customArchetypes.length} Custom Archetypes`}
+                {enhancedMode && ' • Enhanced Mode Active'}
               </p>
-              {customArchetypes && (
-                <span className="px-3 py-1 bg-zen-whisper text-zen-ink text-xs text-zen-mono uppercase tracking-wide rounded-sm">
-                  Custom Config
-                </span>
-              )}
+            </div>
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            {showSelfTestingToggle && onToggleSelfTesting && (
+              <Button
+                onClick={onToggleSelfTesting}
+                variant="outline"
+                size="sm"
+                className="flex items-center space-x-2"
+              >
+                <TestTube className="w-4 h-4" />
+                <span>Self-Testing</span>
+              </Button>
+            )}
+            
+            <div className="flex items-center space-x-2">
+              <Settings className="w-4 h-4 text-zen-muted" />
+              <span className="text-xs text-zen-muted">v2.1.0</span>
             </div>
           </div>
         </div>
-        
-        <nav className="flex items-center space-x-6">
-          <Link 
-            to="/insights-history" 
-            className="flex items-center space-x-2 text-zen-medium hover:text-zen-ink transition-colors"
-          >
-            <History className="w-5 h-5" />
-            <span className="text-sm font-medium">History</span>
-          </Link>
-          <Link 
-            to="/config" 
-            className="flex items-center space-x-2 text-zen-medium hover:text-zen-ink transition-colors"
-          >
-            <Settings className="w-5 h-5" />
-            <span className="text-sm font-medium">Config</span>
-          </Link>
-          <Link 
-            to="/learning-analytics" 
-            className="flex items-center space-x-2 text-zen-medium hover:text-zen-ink transition-colors"
-          >
-            <TrendingUp className="w-5 h-5" />
-            <span className="text-sm font-medium">Analytics</span>
-          </Link>
-        </nav>
       </div>
     </header>
   );

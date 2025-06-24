@@ -1,4 +1,3 @@
-
 import { MainInsightDisplay } from "@/components/results/MainInsightDisplay";
 import { QuestionQualitySection } from "@/components/results/QuestionQualitySection";
 import { AssumptionAnalysisSection } from "@/components/results/AssumptionAnalysisSection";
@@ -9,7 +8,9 @@ import { LearningSystemStatus } from "@/components/results/LearningSystemStatus"
 import { QuestionContext } from "@/components/results/QuestionContext";
 import { ActionButtons } from "@/components/results/ActionButtons";
 import { useMetaLearning } from "@/hooks/useMetaLearning";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { AutoQualityIndicator } from "./testing/AutoQualityIndicator";
+import { useSelfTesting } from "@/hooks/useSelfTesting";
 
 interface QuestionQualityMetrics {
   geniusYield: number;
@@ -78,6 +79,8 @@ interface EnhancedResultsDisplayProps {
 
 export const EnhancedResultsDisplay = ({ results, question, onReset, onExport }: EnhancedResultsDisplayProps) => {
   const { recordProcessingResults } = useMetaLearning();
+  const { runAutomaticQualityCheck: selfTestQualityCheck } = useSelfTesting();
+  const [qualityTestResult, setQualityTestResult] = useState<any>(null);
 
   // Record learning data when results are displayed
   useEffect(() => {
@@ -123,6 +126,12 @@ export const EnhancedResultsDisplay = ({ results, question, onReset, onExport }:
           results.questionQuality
         );
         
+        // Run automatic quality check with self-testing system
+        const testResult = selfTestQualityCheck(results, question);
+        if (testResult) {
+          setQualityTestResult(testResult);
+        }
+        
         console.log('EnhancedResultsDisplay: Learning data recorded successfully');
       } catch (error) {
         console.warn('EnhancedResultsDisplay: Failed to record learning data:', error);
@@ -134,7 +143,7 @@ export const EnhancedResultsDisplay = ({ results, question, onReset, onExport }:
         hasQuestion: !!question
       });
     }
-  }, [results, question, recordProcessingResults]);
+  }, [results, question, recordProcessingResults, selfTestQualityCheck]);
 
   // Safe render with error boundaries
   const renderSafeSection = (Component: React.ComponentType<any>, props: any, fallback?: React.ReactNode) => {
@@ -151,6 +160,14 @@ export const EnhancedResultsDisplay = ({ results, question, onReset, onExport }:
 
   return (
     <div className="space-y-8">
+      {/* Auto-Quality Assessment */}
+      {qualityTestResult && (
+        <AutoQualityIndicator 
+          testResult={qualityTestResult}
+          isVisible={true}
+        />
+      )}
+
       {/* Learning System Status */}
       <LearningSystemStatus questionQuality={results.questionQuality} />
 

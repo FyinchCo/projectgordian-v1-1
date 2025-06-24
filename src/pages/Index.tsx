@@ -7,6 +7,7 @@ import { ConsolidatedGeniusInterface } from "@/components/ConsolidatedGeniusInte
 import { PasswordGate } from "@/components/PasswordGate";
 import { useToast } from "@/hooks/use-toast";
 import { useOutputType } from "@/hooks/useOutputType";
+import { SelfTestingDashboard } from "@/components/testing/SelfTestingDashboard";
 
 const Index = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -23,6 +24,7 @@ const Index = () => {
   const [currentAssessment, setCurrentAssessment] = useState(null);
   const [chunkProgress, setChunkProgress] = useState({ current: 0, total: 0 });
   const { toast } = useToast();
+  const [showSelfTestingDashboard, setShowSelfTestingDashboard] = useState(false);
 
   const { outputType, setOutputType } = useOutputType('practical');
 
@@ -93,6 +95,11 @@ const Index = () => {
     onChunkProgressChange: setChunkProgress
   });
 
+  const handleRunFullTestSuite = async (processFunction: (question: string) => Promise<any>) => {
+    // Implementation would call processingLogicComponent.handleStartGenius for each test
+    console.log('Running full test suite...');
+  };
+
   // Show password gate if not authenticated
   if (!isAuthenticated) {
     return <PasswordGate onAuthenticated={() => setIsAuthenticated(true)} />;
@@ -100,10 +107,21 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-zen-paper">
-      <Header customArchetypes={customArchetypes} enhancedMode={enhancedMode} />
+      <Header 
+        customArchetypes={customArchetypes} 
+        enhancedMode={enhancedMode}
+        onToggleSelfTesting={() => setShowSelfTestingDashboard(!showSelfTestingDashboard)}
+        showSelfTestingToggle={true}
+      />
 
       <main className="px-zen-lg py-zen-xl max-w-7xl mx-auto">
-        {!isProcessing && !results && (
+        {/* Self-Testing Dashboard */}
+        <SelfTestingDashboard
+          onRunFullTest={handleRunFullTestSuite}
+          isVisible={showSelfTestingDashboard}
+        />
+
+        {!isProcessing && !results && !showSelfTestingDashboard && (
           <ConsolidatedGeniusInterface
             question={question}
             setQuestion={setQuestion}
@@ -122,7 +140,7 @@ const Index = () => {
           />
         )}
 
-        {isProcessing && (
+        {isProcessing && !showSelfTestingDashboard && (
           <ProcessingSection
             currentArchetype={currentArchetype}
             question={question}
@@ -133,7 +151,7 @@ const Index = () => {
           />
         )}
 
-        {results && (
+        {results && !showSelfTestingDashboard && (
           <ResultsSection
             results={results}
             question={question}
