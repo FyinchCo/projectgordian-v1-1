@@ -1,5 +1,5 @@
 
-export type OutputType = 'practical' | 'theoretical' | 'philosophical';
+export type OutputType = 'practical' | 'theoretical' | 'philosophical' | 'abstract';
 
 export interface OutputTypeConfig {
   id: OutputType;
@@ -26,5 +26,11 @@ export const OUTPUT_TYPE_CONFIGS: OutputTypeConfig[] = [
     label: 'Philosophical', 
     description: 'Make me think differently',
     shortDescription: 'Deep insights that challenge assumptions and worldview'
+  },
+  {
+    id: 'abstract',
+    label: 'Abstract',
+    description: 'Explore the unknown connections',
+    shortDescription: 'Emergent insights from unexpected pattern recognition'
   }
 ];
