@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -13,7 +12,6 @@ import { useQuestionAssessment } from "@/hooks/useQuestionAssessment";
 import { useAIConfigOptimization } from "@/hooks/useAIConfigOptimization";
 import { useToast } from "@/hooks/use-toast";
 import { QuestionInputSection } from "./interface/QuestionInputSection";
-import { InfoCards } from "./interface/InfoCards";
 
 interface ConsolidatedGeniusInterfaceProps {
   question: string;
@@ -254,8 +252,6 @@ export const ConsolidatedGeniusInterface = ({
           </div>
         </div>
       </Card>
-
-      <InfoCards />
     </div>
   );
 };
