@@ -32,4 +32,8 @@ export interface ProcessingResult {
   chunkProcessed?: boolean;
   partialResults?: boolean;
   errorMessage?: string;
+  logicTrail?: Array<{
+    archetype: string;
+    contribution: string;
+  }>;
 }
