@@ -1,7 +1,7 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useChunkedProcessor } from "@/components/processing/ChunkedProcessor";
+import { useEnhancedAIConfigOptimization } from "@/hooks/useEnhancedAIConfigOptimization";
 
 interface ProcessingLogicProps {
   question: string;
@@ -34,6 +34,7 @@ export const ProcessingLogic = ({
 }: ProcessingLogicProps) => {
   const { toast } = useToast();
   const { processChunkedLayers } = useChunkedProcessor();
+  const { recordProcessingResults } = useEnhancedAIConfigOptimization();
 
   const handleStartGenius = async () => {
     if (!question.trim()) return;
@@ -98,6 +99,33 @@ export const ProcessingLogic = ({
       }
       
       console.log('Processing completed:', finalResults);
+      
+      // Record learning cycle - CRITICAL INTEGRATION POINT
+      if (currentAssessment && finalResults.questionQuality) {
+        console.log('Recording learning cycle for meta-learning system...');
+        
+        const configuration = {
+          processingDepth: processingDepth[0],
+          circuitType,
+          enhancedMode,
+          archetypeConfigurations: currentAssessment.archetypeConfigurations || [],
+          tensionParameters: currentAssessment.tensionParameters || {}
+        };
+        
+        recordProcessingResults(
+          question,
+          configuration,
+          finalResults,
+          finalResults.questionQuality
+        );
+        
+        toast({
+          title: "Learning Cycle Recorded",
+          description: "Results added to meta-learning system for future optimization.",
+          variant: "default",
+        });
+      }
+      
       onProcessingComplete(finalResults);
       
       if (finalResults.partialResults) {

@@ -1,13 +1,14 @@
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { RotateCcw, Download } from "lucide-react";
+import { RotateCcw, Download, Brain, TrendingUp } from "lucide-react";
 import { MainInsightDisplay } from "@/components/results/MainInsightDisplay";
 import { QuestionQualitySection } from "@/components/results/QuestionQualitySection";
 import { AssumptionAnalysisSection } from "@/components/results/AssumptionAnalysisSection";
 import { TensionAnalysisSection } from "@/components/results/TensionAnalysisSection";
 import { ProcessingLayersSection } from "@/components/results/ProcessingLayersSection";
 import { LogicTrailSection } from "@/components/results/LogicTrailSection";
+import { Badge } from "@/components/ui/badge";
 
 interface QuestionQualityMetrics {
   geniusYield: number;
@@ -72,6 +73,30 @@ interface EnhancedResultsDisplayProps {
 export const EnhancedResultsDisplay = ({ results, question, onReset, onExport }: EnhancedResultsDisplayProps) => {
   return (
     <div className="space-y-8">
+      {/* Learning System Status - Show if question quality is available */}
+      {results.questionQuality && (
+        <Card className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <Brain className="w-5 h-5 text-green-600" />
+              <div>
+                <h3 className="text-sm font-semibold text-green-800">Learning Cycle Completed</h3>
+                <p className="text-xs text-green-600">
+                  Quality score: {results.questionQuality.overallScore}/10 | 
+                  Results recorded for future optimization
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <TrendingUp className="w-4 h-4 text-green-600" />
+              <Badge variant="outline" className="border-green-300 text-green-700">
+                System Learning
+              </Badge>
+            </div>
+          </div>
+        </Card>
+      )}
+
       {/* Question Context */}
       <Card className="p-6 bg-gray-50">
         <h3 className="font-bold text-sm uppercase tracking-wide text-gray-500 mb-2">ORIGINAL QUESTION</h3>

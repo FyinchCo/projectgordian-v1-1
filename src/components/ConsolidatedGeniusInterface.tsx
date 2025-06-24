@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -6,11 +7,13 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Play, Zap, Users, Brain } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Play, Zap, Users, Brain, ChevronDown, ChevronUp } from "lucide-react";
 import { OutputType } from "@/types/outputTypes";
 import { useEnhancedAIConfigOptimization } from "@/hooks/useEnhancedAIConfigOptimization";
 import { QuestionInputSection } from "./interface/QuestionInputSection";
 import { OptimizationReasoningCard } from "./OptimizationReasoningCard";
+import { LearningDashboard } from "./LearningDashboard";
 
 interface ConsolidatedGeniusInterfaceProps {
   question: string;
@@ -45,6 +48,7 @@ export const ConsolidatedGeniusInterface = ({
   setCurrentAssessment,
   onStartGenius
 }: ConsolidatedGeniusInterfaceProps) => {
+  const [showLearningDashboard, setShowLearningDashboard] = useState(false);
   const {
     optimizationReasoning,
     clearOptimizationReasoning,
@@ -66,34 +70,49 @@ export const ConsolidatedGeniusInterface = ({
   };
 
   return <div className="space-zen-lg max-w-4xl mx-auto">
-      {/* Meta-Learning Status - Show if system is learning */}
+      {/* Meta-Learning Status - Enhanced with collapsible dashboard */}
       {learningInsights?.isSystemLearning && (
-        <Card className="p-4 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 mb-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <Brain className="w-5 h-5 text-purple-600" />
-              <div>
-                <h3 className="text-sm font-semibold text-purple-800">Meta-Learning System Active</h3>
+        <Collapsible open={showLearningDashboard} onOpenChange={setShowLearningDashboard}>
+          <Card className="p-4 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 mb-6">
+            <CollapsibleTrigger className="w-full">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <Brain className="w-5 h-5 text-purple-600" />
+                  <div className="text-left">
+                    <h3 className="text-sm font-semibold text-purple-800">Meta-Learning System Active</h3>
+                    <p className="text-xs text-purple-600">
+                      System maturity: {Math.round(learningInsights.maturityLevel * 100)}% | 
+                      Total experience: {learningInsights.totalExperience} questions | 
+                      Quality trend: {learningInsights.qualityTrend}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Badge variant="outline" className="border-purple-300 text-purple-700">
+                    Learning Enabled
+                  </Badge>
+                  {showLearningDashboard ? (
+                    <ChevronUp className="w-4 h-4 text-purple-600" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4 text-purple-600" />
+                  )}
+                </div>
+              </div>
+            </CollapsibleTrigger>
+            
+            <CollapsibleContent className="pt-4">
+              <LearningDashboard />
+            </CollapsibleContent>
+            
+            {!showLearningDashboard && learningInsights.bestPerformingDomains.length > 0 && (
+              <div className="mt-3 pt-3 border-t border-purple-200">
                 <p className="text-xs text-purple-600">
-                  System maturity: {Math.round(learningInsights.maturityLevel * 100)}% | 
-                  Total experience: {learningInsights.totalExperience} questions | 
-                  Quality trend: {learningInsights.qualityTrend}
+                  <strong>Best performance:</strong> {learningInsights.bestPerformingDomains.map(d => `${d.domain} (${Math.round(d.averageQuality * 10) / 10}/10)`).join(', ')}
                 </p>
               </div>
-            </div>
-            <Badge variant="outline" className="border-purple-300 text-purple-700">
-              Learning Enabled
-            </Badge>
-          </div>
-          
-          {learningInsights.bestPerformingDomains.length > 0 && (
-            <div className="mt-3 pt-3 border-t border-purple-200">
-              <p className="text-xs text-purple-600">
-                <strong>Best performance:</strong> {learningInsights.bestPerformingDomains.map(d => `${d.domain} (${Math.round(d.averageQuality * 10) / 10}/10)`).join(', ')}
-              </p>
-            </div>
-          )}
-        </Card>
+            )}
+          </Card>
+        </Collapsible>
       )}
 
       {/* Optimization Reasoning Display - Enhanced with meta-learning info */}
@@ -161,7 +180,6 @@ export const ConsolidatedGeniusInterface = ({
           <div className="pt-6 space-zen border-t border-zen-light">
             <h3 className="text-zen-mono text-sm uppercase tracking-wide text-zen-ink mb-6">Processing Configuration</h3>
             
-            {/* Processing Depth */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <Label className="text-zen-mono text-sm uppercase tracking-wide text-zen-charcoal">Processing Depth</Label>
@@ -180,7 +198,6 @@ export const ConsolidatedGeniusInterface = ({
               </p>
             </div>
 
-            {/* Circuit Type and Enhanced Mode */}
             <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mt-8">
               <div className="md:col-span-3 space-y-3">
                 <Label className="text-zen-mono text-sm uppercase tracking-wide text-zen-charcoal">Circuit Type</Label>
@@ -206,7 +223,6 @@ export const ConsolidatedGeniusInterface = ({
               </div>
             </div>
 
-            {/* Archetype Status */}
             {customArchetypes && (
               <div className="space-y-2 mt-6">
                 <Label className="text-zen-mono text-sm uppercase tracking-wide text-zen-charcoal">Custom Archetypes</Label>
@@ -219,7 +235,6 @@ export const ConsolidatedGeniusInterface = ({
               </div>
             )}
 
-            {/* Learning System Status */}
             {learningInsights?.isSystemLearning && (
               <div className="space-y-2 mt-6">
                 <Label className="text-zen-mono text-sm uppercase tracking-wide text-zen-charcoal">Learning System</Label>
