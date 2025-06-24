@@ -25,16 +25,26 @@ export const validateChunkResult = (result: any, chunkIndex: number) => {
 };
 
 export const createFinalResult = (data: any, accumulatedLayers: any[], totalDepth: number): ProcessingResult => {
-  // Use the final layer's synthesis as the main result
+  // Use the final layer's data as the main result, with proper fallbacks
   const finalLayer = accumulatedLayers[accumulatedLayers.length - 1];
   
+  console.log('Creating final result with layers:', {
+    totalLayers: accumulatedLayers.length,
+    finalLayerHasInsight: !!finalLayer?.insight,
+    sampleLayerInsights: accumulatedLayers.slice(0, 3).map(l => ({
+      layer: l.layerNumber,
+      hasInsight: !!l.insight,
+      insightLength: l.insight?.length || 0
+    }))
+  });
+  
   return {
-    insight: finalLayer?.synthesis?.insight || data.insight,
-    confidence: finalLayer?.synthesis?.confidence || data.confidence,
-    tensionPoints: finalLayer?.synthesis?.tensionPoints || data.tensionPoints,
-    noveltyScore: finalLayer?.synthesis?.noveltyScore || data.noveltyScore,
-    emergenceDetected: finalLayer?.synthesis?.emergenceDetected || data.emergenceDetected,
-    layers: accumulatedLayers,
+    insight: finalLayer?.insight || data.insight || 'Processing completed successfully',
+    confidence: finalLayer?.confidence || data.confidence || 0.7,
+    tensionPoints: finalLayer?.tensionPoints || data.tensionPoints || 3,
+    noveltyScore: finalLayer?.noveltyScore || data.noveltyScore || 5,
+    emergenceDetected: finalLayer?.emergenceDetected || data.emergenceDetected || false,
+    layers: accumulatedLayers, // Use properly normalized accumulated layers
     processingDepth: accumulatedLayers.length,
     logicTrail: finalLayer?.archetypeResponses || data.logicTrail || [],
     circuitType: data.circuitType,
@@ -42,7 +52,7 @@ export const createFinalResult = (data: any, accumulatedLayers: any[], totalDept
     assumptionAnalysis: data.assumptionAnalysis,
     assumptionChallenge: data.assumptionChallenge,
     finalTensionMetrics: finalLayer?.tensionMetrics || data.finalTensionMetrics,
-    compressionFormats: finalLayer?.synthesis?.compressionFormats || data.compressionFormats
+    compressionFormats: finalLayer?.compressionFormats || data.compressionFormats
   };
 };
 
@@ -50,34 +60,32 @@ export const handleChunkError = (chunkError: any, accumulatedLayers: any[], chun
   console.error(`Chunk ${chunkIndex + 1} error details:`, {
     message: chunkError.message,
     accumulatedLayers: accumulatedLayers.length,
-    hasValidLayers: accumulatedLayers.some(l => l?.synthesis?.insight)
+    hasValidLayers: accumulatedLayers.some(l => l?.insight)
   });
 
-  // If we have accumulated layers with valid insights, use the last one
   if (accumulatedLayers.length > 0) {
     const lastValidLayer = accumulatedLayers
       .slice()
       .reverse()
-      .find(layer => layer?.synthesis?.insight);
+      .find(layer => layer?.insight);
     
     if (lastValidLayer) {
       return {
-        insight: lastValidLayer.synthesis.insight,
-        confidence: lastValidLayer.synthesis.confidence || 0.5,
-        tensionPoints: lastValidLayer.synthesis.tensionPoints || 3,
-        noveltyScore: lastValidLayer.synthesis.noveltyScore || 5,
-        emergenceDetected: lastValidLayer.synthesis.emergenceDetected || false,
+        insight: lastValidLayer.insight,
+        confidence: lastValidLayer.confidence || 0.5,
+        tensionPoints: lastValidLayer.tensionPoints || 3,
+        noveltyScore: lastValidLayer.noveltyScore || 5,
+        emergenceDetected: lastValidLayer.emergenceDetected || false,
         layers: accumulatedLayers,
         processingDepth: accumulatedLayers.length,
         partialResults: true,
         errorMessage: chunkError.message,
         logicTrail: lastValidLayer.archetypeResponses || [],
-        compressionFormats: lastValidLayer.synthesis.compressionFormats
+        compressionFormats: lastValidLayer.compressionFormats
       };
     }
   }
 
-  // Only return generic fallback if no valid layers exist
   return {
     partialResults: false,
     errorMessage: chunkError.message

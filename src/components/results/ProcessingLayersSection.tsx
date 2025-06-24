@@ -18,6 +18,14 @@ interface Layer {
     archetype: string;
     contribution: string;
   }>;
+  // Legacy synthesis object for backward compatibility
+  synthesis?: {
+    insight?: string;
+    confidence?: number;
+    tensionPoints?: number;
+    noveltyScore?: number;
+    emergenceDetected?: boolean;
+  };
 }
 
 interface ProcessingLayersSectionProps {
@@ -29,6 +37,30 @@ export const ProcessingLayersSection = ({ layers }: ProcessingLayersSectionProps
 
   if (!layers || layers.length <= 1) return null;
 
+  // Helper function to safely extract insight with fallbacks
+  const getLayerInsight = (layer: Layer): string => {
+    // Try multiple locations for the insight
+    const insight = layer.insight || 
+                   layer.synthesis?.insight || 
+                   `Layer ${layer.layerNumber} processing completed`;
+    
+    // Log for debugging
+    console.log(`Layer ${layer.layerNumber} insight extraction:`, {
+      hasDirectInsight: !!layer.insight,
+      hasSynthesisInsight: !!layer.synthesis?.insight,
+      finalInsight: insight.substring(0, 50) + '...'
+    });
+    
+    return insight;
+  };
+
+  // Helper function to safely extract other properties
+  const getLayerProperty = (layer: Layer, property: string, defaultValue: any) => {
+    return layer[property] !== undefined ? layer[property] : 
+           layer.synthesis?.[property] !== undefined ? layer.synthesis[property] : 
+           defaultValue;
+  };
+
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
       <Card className="p-6">
@@ -37,6 +69,9 @@ export const ProcessingLayersSection = ({ layers }: ProcessingLayersSectionProps
             <div className="flex items-center space-x-2">
               <Layers className="w-5 h-5" />
               <h3 className="font-bold text-lg">PROCESSING LAYERS</h3>
+              <Badge variant="outline" className="text-xs">
+                {layers.length} layers
+              </Badge>
             </div>
             {isOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
           </Button>
@@ -44,36 +79,57 @@ export const ProcessingLayersSection = ({ layers }: ProcessingLayersSectionProps
         
         <CollapsibleContent className="mt-6">
           <div className="space-y-4">
-            {layers.map((layer, index) => (
-              <Card key={index} className="p-4 bg-gray-50">
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-bold text-sm uppercase tracking-wide text-gray-700">
-                      Layer {layer.layerNumber} - {layer.circuitType}
-                    </h4>
-                    <div className="flex space-x-2">
-                      <Badge variant="outline" className="text-xs">
-                        {Math.round(layer.confidence * 100)}% confidence
-                      </Badge>
-                      <Badge variant="outline" className="text-xs">
-                        {layer.tensionPoints} tensions
-                      </Badge>
-                      {layer.noveltyScore !== undefined && (
+            {layers.map((layer, index) => {
+              const insight = getLayerInsight(layer);
+              const confidence = getLayerProperty(layer, 'confidence', 0.5);
+              const tensionPoints = getLayerProperty(layer, 'tensionPoints', 3);
+              const noveltyScore = getLayerProperty(layer, 'noveltyScore', null);
+              const emergenceDetected = getLayerProperty(layer, 'emergenceDetected', false);
+              
+              return (
+                <Card key={index} className="p-4 bg-gray-50">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-bold text-sm uppercase tracking-wide text-gray-700">
+                        Layer {layer.layerNumber} - {layer.circuitType || 'sequential'}
+                      </h4>
+                      <div className="flex space-x-2">
                         <Badge variant="outline" className="text-xs">
-                          {layer.noveltyScore}/10 novelty
+                          {Math.round(confidence * 100)}% confidence
                         </Badge>
-                      )}
-                      {layer.emergenceDetected && (
-                        <Badge className="text-xs bg-purple-100 text-purple-800">
-                          Emergence
+                        <Badge variant="outline" className="text-xs">
+                          {tensionPoints} tensions
                         </Badge>
-                      )}
+                        {noveltyScore !== null && noveltyScore !== undefined && (
+                          <Badge variant="outline" className="text-xs">
+                            {noveltyScore}/10 novelty
+                          </Badge>
+                        )}
+                        {emergenceDetected && (
+                          <Badge className="text-xs bg-purple-100 text-purple-800">
+                            Emergence
+                          </Badge>
+                        )}
+                      </div>
                     </div>
+                    <p className="text-gray-800 leading-relaxed">{insight}</p>
+                    
+                    {layer.archetypeResponses && layer.archetypeResponses.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-gray-200">
+                        <p className="text-xs text-gray-500 mb-2">Contributing Archetypes:</p>
+                        <div className="flex flex-wrap gap-1">
+                          {layer.archetypeResponses.map((response, idx) => (
+                            <Badge key={idx} variant="secondary" className="text-xs">
+                              {response.archetype}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  <p className="text-gray-800">{layer.insight}</p>
-                </div>
-              </Card>
-            ))}
+                </Card>
+              );
+            })}
           </div>
         </CollapsibleContent>
       </Card>
