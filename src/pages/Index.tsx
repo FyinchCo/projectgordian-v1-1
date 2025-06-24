@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { ProcessingSection } from "@/components/ProcessingSection";
@@ -69,7 +68,7 @@ const Index = () => {
   };
 
   const handleExportInsight = () => {
-    set#ExportModalOpen(true);
+    setIsExportModalOpen(true);
   };
 
   const handleReset = () => {
@@ -103,7 +102,7 @@ const Index = () => {
     <div className="min-h-screen bg-zen-paper">
       <Header customArchetypes={customArchetypes} enhancedMode={enhancedMode} />
 
-      <main className="px-8 py-zen-xl">
+      <main className="px-zen-lg py-zen-xl max-w-7xl mx-auto">
         {!isProcessing && !results && (
           <ConsolidatedGeniusInterface
             question={question}
