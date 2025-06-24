@@ -49,30 +49,6 @@ export const ConsolidatedGeniusInterface = ({
   const { optimizeAndApplyConfiguration, isAssessing: isOptimizing } = useAIConfigOptimization();
   const { toast } = useToast();
 
-  const handleAIOptimize = async () => {
-    if (!question.trim()) {
-      toast({
-        title: "Question Required",
-        description: "Please enter a question before optimizing configuration.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const result = await assessQuestion(question);
-    if (result) {
-      setProcessingDepth([result.recommendations.processingDepth]);
-      setCircuitType(result.recommendations.circuitType);
-      setEnhancedMode(result.recommendations.enhancedMode);
-      setCurrentAssessment(result);
-      
-      toast({
-        title: "AI Configuration Applied",
-        description: `Optimized for ${result.domainType} domain with ${result.recommendations.processingDepth} layers`,
-      });
-    }
-  };
-
   const handleOptimizeAllSettings = async () => {
     if (!question.trim()) {
       toast({
@@ -163,7 +139,7 @@ export const ConsolidatedGeniusInterface = ({
             question={question}
             isAssessing={isAssessing}
             currentAssessment={currentAssessment}
-            onAIOptimize={handleAIOptimize}
+            onAIOptimize={handleOptimizeAllSettings}
             processingDepth={processingDepth}
             setProcessingDepth={setProcessingDepth}
             circuitType={circuitType}
