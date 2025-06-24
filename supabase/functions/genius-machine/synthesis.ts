@@ -1,4 +1,3 @@
-
 import { ArchetypeResponse, TensionMetrics, SynthesisResult, LayerResult } from './types.ts';
 import { evaluateQuestionQuality, QuestionQualityMetrics } from './question-quality.ts';
 import { generateCompressionFormats, CompressionFormats } from './compression.ts';
@@ -137,11 +136,30 @@ Focus on breakthrough moments where contradictions resolve into paradigm-shiftin
   }
 
   if (previousLayers && layerNumber && layerNumber > 1) {
-    const layerContext = previousLayers.map(layer => 
-      `Layer ${layer.layerNumber}: ${layer.synthesis.insight}`
-    ).join('\n');
+    // FIXED: Add proper null checks and validation for previous layers
+    const validPreviousLayers = (previousLayers || []).filter(layer => 
+      layer && 
+      layer.synthesis && 
+      typeof layer.synthesis.insight === 'string' &&
+      layer.layerNumber
+    );
     
-    systemPrompt += `\n\nPrevious synthesis layers:\n${layerContext}\n\nCreate deeper synthesis that builds beyond previous layers while maintaining cognitive disruption. Adjust confidence based on how well this layer builds on previous insights.`;
+    if (validPreviousLayers.length > 0) {
+      const layerContext = validPreviousLayers.map(layer => 
+        `Layer ${layer.layerNumber}: ${layer.synthesis.insight}`
+      ).join('\n');
+      
+      systemPrompt += `\n\nPrevious synthesis layers:\n${layerContext}\n\nCreate deeper synthesis that builds beyond previous layers while maintaining cognitive disruption. Adjust confidence based on how well this layer builds on previous insights.`;
+      
+      console.log(`Layer ${layerNumber} building on ${validPreviousLayers.length} valid previous layers`);
+    } else {
+      console.warn(`Layer ${layerNumber} received ${previousLayers?.length || 0} previous layers but none were valid`);
+      console.log('Previous layers structure:', previousLayers?.map(l => ({
+        layerNumber: l?.layerNumber,
+        hasSynthesis: !!l?.synthesis,
+        hasInsight: !!l?.synthesis?.insight
+      })));
+    }
   }
   
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
