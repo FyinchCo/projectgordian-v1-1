@@ -17,6 +17,19 @@ interface LogicTrailSectionProps {
 export const LogicTrailSection = ({ logicTrail }: LogicTrailSectionProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
+  // Guard against undefined or null logicTrail
+  if (!logicTrail || !Array.isArray(logicTrail) || logicTrail.length === 0) {
+    return (
+      <Card className="p-6">
+        <div className="flex items-center space-x-2 text-gray-500">
+          <TrendingUp className="w-5 h-5" />
+          <h3 className="font-bold text-lg">LOGIC TRAIL</h3>
+        </div>
+        <p className="mt-4 text-gray-600 italic">No logic trail data available</p>
+      </Card>
+    );
+  }
+
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
       <Card className="p-6">

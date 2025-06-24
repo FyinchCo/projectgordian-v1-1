@@ -142,6 +142,9 @@ export const EnhancedResultsDisplay = ({ results, question, onReset, onExport }:
     }
   };
 
+  // Safe logicTrail with fallback to empty array
+  const safeLogicTrail = results.logicTrail || [];
+
   return (
     <div className="space-y-8">
       {/* Learning System Status - Show if question quality is available */}
@@ -190,7 +193,7 @@ export const EnhancedResultsDisplay = ({ results, question, onReset, onExport }:
         enhancedMode: results.enhancedMode,
         circuitType: results.circuitType,
         processingDepth: results.processingDepth,
-        logicTrailLength: results.logicTrail?.length || 0
+        logicTrailLength: safeLogicTrail.length
       })}
 
       {/* Question Quality Evaluation */}
@@ -211,8 +214,8 @@ export const EnhancedResultsDisplay = ({ results, question, onReset, onExport }:
       {/* Processing Layers */}
       {renderSafeSection(ProcessingLayersSection, { layers: results.layers })}
 
-      {/* Logic Trail */}
-      {renderSafeSection(LogicTrailSection, { logicTrail: results.logicTrail })}
+      {/* Logic Trail - with safe fallback */}
+      {renderSafeSection(LogicTrailSection, { logicTrail: safeLogicTrail })}
 
       {/* Actions */}
       <div className="flex justify-center space-x-4">
