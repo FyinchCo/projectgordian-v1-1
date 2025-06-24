@@ -1,4 +1,6 @@
 
+import { Layers, GitBranch, RotateCcw, Zap } from "lucide-react";
+
 export const getProcessingInsights = (currentArchetype: string) => {
   switch (currentArchetype) {
     case "The Visionary": return {
@@ -33,8 +35,6 @@ export const getProcessingInsights = (currentArchetype: string) => {
 };
 
 export const getCircuitIcon = (circuitType: string) => {
-  const { Layers, GitBranch, RotateCcw, Zap } = require("lucide-react");
-  
   switch (circuitType) {
     case 'parallel': return GitBranch;
     case 'recursive': return RotateCcw;
