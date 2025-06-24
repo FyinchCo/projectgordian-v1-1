@@ -8,6 +8,7 @@ import { PasswordGate } from "@/components/PasswordGate";
 import { useToast } from "@/hooks/use-toast";
 import { useOutputType } from "@/hooks/useOutputType";
 import { SelfTestingDashboard } from "@/components/testing/SelfTestingDashboard";
+import { useSelfTesting } from "@/hooks/useSelfTesting";
 
 const Index = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -27,6 +28,7 @@ const Index = () => {
   const [showSelfTestingDashboard, setShowSelfTestingDashboard] = useState(false);
 
   const { outputType, setOutputType } = useOutputType('practical');
+  const { runFullTestSuite } = useSelfTesting();
 
   // Check authentication status on mount
   useEffect(() => {
@@ -101,9 +103,6 @@ const Index = () => {
     // Create a processing function that uses our actual ProcessingLogic
     const actualProcessFunction = async (testQuestion: string) => {
       return new Promise((resolve, reject) => {
-        // Store original values
-        const originalQuestion = question;
-        
         // Create a temporary processing logic instance for this test
         const testProcessingLogic = ProcessingLogic({
           question: testQuestion,
@@ -133,9 +132,9 @@ const Index = () => {
       });
     };
     
-    // Call the test function with our processing function
+    // Use the runFullTestSuite method from useSelfTesting hook
     try {
-      await testProcessFunction(actualProcessFunction);
+      await runFullTestSuite(actualProcessFunction);
     } catch (error) {
       console.error('Test suite failed:', error);
       toast({
