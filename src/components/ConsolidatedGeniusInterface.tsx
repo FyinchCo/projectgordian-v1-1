@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -13,7 +12,6 @@ import { useQuestionAssessment } from "@/hooks/useQuestionAssessment";
 import { useAIConfigOptimization } from "@/hooks/useAIConfigOptimization";
 import { QuestionInputSection } from "./interface/QuestionInputSection";
 import { OptimizationReasoningCard } from "./OptimizationReasoningCard";
-
 interface ConsolidatedGeniusInterfaceProps {
   question: string;
   setQuestion: (question: string) => void;
@@ -30,7 +28,6 @@ interface ConsolidatedGeniusInterfaceProps {
   setCurrentAssessment: (assessment: any) => void;
   onStartGenius: () => void;
 }
-
 export const ConsolidatedGeniusInterface = ({
   question,
   setQuestion,
@@ -47,47 +44,31 @@ export const ConsolidatedGeniusInterface = ({
   setCurrentAssessment,
   onStartGenius
 }: ConsolidatedGeniusInterfaceProps) => {
-  const { 
-    optimizationReasoning, 
-    clearOptimizationReasoning 
+  const {
+    optimizationReasoning,
+    clearOptimizationReasoning
   } = useAIConfigOptimization();
-
   const getDepthLabel = (depth: number) => {
     if (depth <= 5) return "Quick Analysis";
     if (depth <= 10) return "Deep Analysis";
     return "Ultra-Deep Analysis";
   };
-
   const getDepthDescription = (depth: number) => {
     if (depth <= 5) return "Fast processing, good for straightforward questions";
     if (depth <= 10) return "Thorough analysis, recommended for complex problems";
     return "Maximum depth, for the most challenging questions";
   };
-
-  return (
-    <div className="space-zen-lg max-w-4xl mx-auto">
+  return <div className="space-zen-lg max-w-4xl mx-auto">
       {/* Optimization Reasoning Display - Only show if exists from config page */}
-      {optimizationReasoning && (
-        <OptimizationReasoningCard
-          reasoning={optimizationReasoning.reasoning}
-          domainType={optimizationReasoning.domainType}
-          onDismiss={clearOptimizationReasoning}
-        />
-      )}
+      {optimizationReasoning && <OptimizationReasoningCard reasoning={optimizationReasoning.reasoning} domainType={optimizationReasoning.domainType} onDismiss={clearOptimizationReasoning} />}
 
       {/* Main Question Input and Configuration */}
       <Card className="border border-zen-light bg-zen-paper shadow-zen-lg rounded-md">
         <div className="p-8 space-zen">
-          <QuestionInputSection
-            question={question}
-            setQuestion={setQuestion}
-            outputType={outputType}
-            setOutputType={setOutputType}
-          />
+          <QuestionInputSection question={question} setQuestion={setQuestion} outputType={outputType} setOutputType={setOutputType} />
 
           {/* Assessment Display - Only show if exists */}
-          {currentAssessment && (
-            <div className="p-6 bg-zen-whisper border border-zen-light rounded-md">
+          {currentAssessment && <div className="p-6 bg-zen-whisper border border-zen-light rounded-md">
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-zen-mono text-xs uppercase tracking-wide text-zen-charcoal">Domain</span>
@@ -101,8 +82,7 @@ export const ConsolidatedGeniusInterface = ({
                   Configuration optimized for maximum insight generation. Detailed reasoning shown above.
                 </div>
               </div>
-            </div>
-          )}
+            </div>}
 
           {/* Manual Configuration Section */}
           <div className="pt-6 space-zen border-t border-zen-light">
@@ -116,14 +96,7 @@ export const ConsolidatedGeniusInterface = ({
                   {processingDepth[0]} layers — {getDepthLabel(processingDepth[0])}
                 </Badge>
               </div>
-              <Slider
-                value={processingDepth}
-                onValueChange={setProcessingDepth}
-                max={20}
-                min={1}
-                step={1}
-                className="w-full"
-              />
+              <Slider value={processingDepth} onValueChange={setProcessingDepth} max={20} min={1} step={1} className="w-full" />
               <div className="flex justify-between text-xs text-zen-mono text-zen-medium">
                 <span>1 (Fast)</span>
                 <span>10 (Balanced)</span>
@@ -155,17 +128,13 @@ export const ConsolidatedGeniusInterface = ({
                     <Label className="text-zen-mono text-sm uppercase tracking-wide text-zen-charcoal">Enhanced Mode</Label>
                     <p className="text-xs text-zen-body text-zen-medium mt-1">Dialectical tension</p>
                   </div>
-                  <Switch
-                    checked={enhancedMode}
-                    onCheckedChange={setEnhancedMode}
-                  />
+                  <Switch checked={enhancedMode} onCheckedChange={setEnhancedMode} />
                 </div>
               </div>
             </div>
 
             {/* Archetype Status */}
-            {customArchetypes && (
-              <div className="space-y-2 mt-6">
+            {customArchetypes && <div className="space-y-2 mt-6">
                 <Label className="text-zen-mono text-sm uppercase tracking-wide text-zen-charcoal">Custom Archetypes</Label>
                 <div className="flex items-center space-x-3">
                   <Users className="w-4 h-4 text-zen-medium" />
@@ -173,18 +142,12 @@ export const ConsolidatedGeniusInterface = ({
                     {customArchetypes.length} custom archetypes loaded
                   </span>
                 </div>
-              </div>
-            )}
+              </div>}
           </div>
 
           {/* Launch Button */}
           <div className="pt-8 border-t border-zen-light">
-            <Button 
-              onClick={onStartGenius}
-              disabled={!question.trim()}
-              size="lg"
-              className="w-full bg-zen-ink text-zen-paper hover:bg-zen-charcoal flex items-center justify-center space-x-3 text-zen-mono uppercase tracking-wide border-0 px-8 py-6 rounded-md shadow-zen-lg transition-all duration-300 animate-zen-scale"
-            >
+            <Button onClick={onStartGenius} disabled={!question.trim()} size="lg" className="w-full bg-zen-ink text-zen-paper hover:bg-zen-charcoal flex items-center justify-center space-x-3 text-zen-mono uppercase tracking-wide border-0 px-8 py-6 rounded-md shadow-zen-lg transition-all duration-300 animate-zen-scale font-light">
               <Play className="w-5 h-5" />
               <span>Start Genius Machine</span>
               <Zap className="w-5 h-5" />
@@ -192,6 +155,5 @@ export const ConsolidatedGeniusInterface = ({
           </div>
         </div>
       </Card>
-    </div>
-  );
+    </div>;
 };
