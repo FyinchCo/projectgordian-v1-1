@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -6,12 +7,10 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Play, Zap, Brain, Users } from "lucide-react";
+import { Play, Zap, Users } from "lucide-react";
 import { OutputType } from "@/types/outputTypes";
 import { useQuestionAssessment } from "@/hooks/useQuestionAssessment";
 import { useAIConfigOptimization } from "@/hooks/useAIConfigOptimization";
-import { useArchetypes } from "@/hooks/useArchetypes";
-import { useToast } from "@/hooks/use-toast";
 import { QuestionInputSection } from "./interface/QuestionInputSection";
 import { OptimizationReasoningCard } from "./OptimizationReasoningCard";
 
@@ -48,60 +47,10 @@ export const ConsolidatedGeniusInterface = ({
   setCurrentAssessment,
   onStartGenius
 }: ConsolidatedGeniusInterfaceProps) => {
-  const { assessQuestion, isAssessing } = useQuestionAssessment();
-  const { updateArchetype } = useArchetypes();
   const { 
-    optimizeAndApplyConfiguration, 
-    isAssessing: isOptimizing, 
     optimizationReasoning, 
     clearOptimizationReasoning 
   } = useAIConfigOptimization();
-  const { toast } = useToast();
-
-  const handleOptimizeAllSettings = async () => {
-    if (!question.trim()) {
-      toast({
-        title: "Question Required",
-        description: "Please enter a question before optimizing all settings.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Real update functions that actually save to localStorage
-    const updateTensionSettings = (field: string, value: number[]) => {
-      const currentTension = JSON.parse(localStorage.getItem('genius-machine-tension') || '{"contradictionThreshold":[5],"recursionDepth":[3],"archetypeOverlap":[2]}');
-      currentTension[field] = value;
-      localStorage.setItem('genius-machine-tension', JSON.stringify(currentTension));
-    };
-
-    const updateCompressionSettings = (field: string, value: any) => {
-      const currentCompression = JSON.parse(localStorage.getItem('genius-machine-compression') || '{"style":"insight-summary","length":"medium","includeTrail":true,"includeFullTranscript":false,"customInstructions":""}');
-      currentCompression[field] = value;
-      localStorage.setItem('genius-machine-compression', JSON.stringify(currentCompression));
-    };
-
-    const result = await optimizeAndApplyConfiguration(
-      question,
-      updateArchetype,
-      updateTensionSettings,
-      updateCompressionSettings
-    );
-
-    if (result) {
-      // Apply only circuit type and enhanced mode - NOT processing depth
-      setCircuitType(result.recommendations.circuitType);
-      setEnhancedMode(result.recommendations.enhancedMode);
-      setCurrentAssessment(result);
-      
-      // Show success message
-      toast({
-        title: "Configuration Optimized",
-        description: "All settings updated based on your question analysis.",
-        variant: "default",
-      });
-    }
-  };
 
   const getDepthLabel = (depth: number) => {
     if (depth <= 5) return "Quick Analysis";
@@ -117,7 +66,7 @@ export const ConsolidatedGeniusInterface = ({
 
   return (
     <div className="space-zen-lg max-w-4xl mx-auto">
-      {/* Optimization Reasoning Display - Same as Config page */}
+      {/* Optimization Reasoning Display - Only show if exists from config page */}
       {optimizationReasoning && (
         <OptimizationReasoningCard
           reasoning={optimizationReasoning.reasoning}
@@ -136,40 +85,7 @@ export const ConsolidatedGeniusInterface = ({
             setOutputType={setOutputType}
           />
 
-          {/* AI Optimization Section - Refined */}
-          <div className="p-6 bg-zen-whisper rounded-md border border-zen-light">
-            <div className="flex items-start justify-between space-x-6">
-              <div className="flex items-start space-x-3">
-                <Brain className="w-5 h-5 text-zen-charcoal mt-1" />
-                <div className="space-y-1">
-                  <h3 className="text-zen-mono text-sm uppercase tracking-wide text-zen-ink">AI Configuration Optimizer</h3>
-                  <p className="text-xs text-zen-body text-zen-medium leading-relaxed">
-                    Automatically optimize archetype personalities, tension detection, and compression settings
-                  </p>
-                </div>
-              </div>
-              <Button
-                onClick={handleOptimizeAllSettings}
-                disabled={!question.trim() || isOptimizing}
-                size="sm"
-                className="bg-zen-ink hover:bg-zen-charcoal text-zen-paper text-zen-mono uppercase tracking-wide transition-all duration-300 px-4 py-2 rounded-sm shadow-zen"
-              >
-                {isOptimizing ? (
-                  <>
-                    <Brain className="w-4 h-4 mr-2 animate-pulse" />
-                    Optimizing...
-                  </>
-                ) : (
-                  <>
-                    <Brain className="w-4 h-4 mr-2" />
-                    Optimize All
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
-
-          {/* Assessment Display - Zen styling */}
+          {/* Assessment Display - Only show if exists */}
           {currentAssessment && (
             <div className="p-6 bg-zen-whisper border border-zen-light rounded-md">
               <div className="space-y-3">
@@ -188,11 +104,11 @@ export const ConsolidatedGeniusInterface = ({
             </div>
           )}
 
-          {/* Manual Configuration Section - Refined spacing */}
+          {/* Manual Configuration Section */}
           <div className="pt-6 space-zen border-t border-zen-light">
-            <h3 className="text-zen-mono text-sm uppercase tracking-wide text-zen-ink mb-6">Manual Configuration</h3>
+            <h3 className="text-zen-mono text-sm uppercase tracking-wide text-zen-ink mb-6">Processing Configuration</h3>
             
-            {/* Processing Depth - More zen styling */}
+            {/* Processing Depth */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <Label className="text-zen-mono text-sm uppercase tracking-wide text-zen-charcoal">Processing Depth</Label>
@@ -218,9 +134,8 @@ export const ConsolidatedGeniusInterface = ({
               </p>
             </div>
 
-            {/* Circuit Type and Enhanced Mode - Asymmetric grid */}
+            {/* Circuit Type and Enhanced Mode */}
             <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mt-8">
-              {/* Circuit Type - Takes 3 columns */}
               <div className="md:col-span-3 space-y-3">
                 <Label className="text-zen-mono text-sm uppercase tracking-wide text-zen-charcoal">Circuit Type</Label>
                 <Select value={circuitType} onValueChange={setCircuitType}>
@@ -234,7 +149,6 @@ export const ConsolidatedGeniusInterface = ({
                 </Select>
               </div>
 
-              {/* Enhanced Mode - Takes 2 columns */}
               <div className="md:col-span-2 flex flex-col justify-center">
                 <div className="flex items-center justify-between">
                   <div>
@@ -263,7 +177,7 @@ export const ConsolidatedGeniusInterface = ({
             )}
           </div>
 
-          {/* Launch Button - Zen refinement */}
+          {/* Launch Button */}
           <div className="pt-8 border-t border-zen-light">
             <Button 
               onClick={onStartGenius}

@@ -33,12 +33,11 @@ export const Header = ({ customArchetypes, enhancedMode }: HeaderProps) => {
         </div>
         <Link to="/config">
           <Button 
-            variant="ghost" 
-            size="sm" 
-            className="flex items-center space-x-2 text-zen-charcoal hover:text-zen-ink hover:bg-zen-whisper text-zen-mono uppercase tracking-wide transition-all duration-300 px-4 py-2 rounded-sm"
+            size="lg"
+            className="bg-zen-ink hover:bg-zen-charcoal text-zen-paper flex items-center space-x-3 text-zen-mono uppercase tracking-wide transition-all duration-300 px-6 py-3 rounded-md shadow-zen-lg"
           >
-            <Settings className="w-4 h-4" />
-            <span>Configure</span>
+            <Settings className="w-5 h-5" />
+            <span>AI Configuration</span>
           </Button>
         </Link>
       </div>
