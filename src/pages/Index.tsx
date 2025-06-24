@@ -117,7 +117,7 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gradient-to-br from-gordian-cream via-white to-gordian-beige">
       <Header customArchetypes={customArchetypes} enhancedMode={enhancedMode} />
 
       <main className="max-w-4xl mx-auto px-6 py-12">

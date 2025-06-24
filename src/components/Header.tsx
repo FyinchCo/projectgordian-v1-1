@@ -1,7 +1,8 @@
 
-import { Brain, Settings } from "lucide-react";
+import { Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import { KnotIcon } from "./KnotIcon";
 
 interface HeaderProps {
   customArchetypes: any;
@@ -10,21 +11,23 @@ interface HeaderProps {
 
 export const Header = ({ customArchetypes, enhancedMode }: HeaderProps) => {
   return (
-    <header className="border-b border-gray-200 px-6 py-4">
+    <header className="border-b border-gordian-beige bg-gordian-cream px-6 py-6">
       <div className="max-w-6xl mx-auto flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <Brain className="w-8 h-8" />
+        <div className="flex items-center space-x-4">
+          <KnotIcon className="text-gordian-dark-brown" size={40} animate />
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">PROJECT GORDIAN</h1>
-            <p className="text-xs text-gray-500 uppercase tracking-wide">
-              Multi-Agent Intelligence System
+            <h1 className="text-3xl font-playfair font-bold tracking-tight text-gordian-dark-brown">
+              PROJECT GORDIAN
+            </h1>
+            <p className="text-sm text-gordian-brown font-inter tracking-wide">
+              AI's Recursive Distillation of a Knot
               {customArchetypes && (
-                <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-xs">
+                <span className="ml-3 px-2 py-1 bg-gordian-gold/20 text-gordian-dark-brown rounded-full text-xs font-medium">
                   Custom Config
                 </span>
               )}
               {enhancedMode && (
-                <span className="ml-2 px-2 py-0.5 bg-purple-100 text-purple-800 rounded text-xs">
+                <span className="ml-2 px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-medium">
                   Enhanced Mode
                 </span>
               )}
@@ -32,7 +35,11 @@ export const Header = ({ customArchetypes, enhancedMode }: HeaderProps) => {
           </div>
         </div>
         <Link to="/config">
-          <Button variant="outline" size="sm" className="flex items-center space-x-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="flex items-center space-x-2 border-gordian-brown text-gordian-dark-brown hover:bg-gordian-beige font-inter"
+          >
             <Settings className="w-4 h-4" />
             <span>Configure</span>
           </Button>
