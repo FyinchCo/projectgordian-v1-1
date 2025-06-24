@@ -57,11 +57,11 @@ export const useChunkedProcessor = () => {
         
         const chunkStartTime = Date.now();
         
-        // Very aggressive timeout for chunks - 20 seconds max
-        const chunkTimeout = new Promise((_, reject) => {
+        // Very aggressive timeout for chunks - 15 seconds max
+        const chunkTimeout = new Promise<never>((_, reject) => {
           setTimeout(() => {
-            reject(new Error(`CHUNK_TIMEOUT: Chunk ${chunkIndex + 1} timed out after 20 seconds`));
-          }, 20000);
+            reject(new Error(`CHUNK_TIMEOUT: Chunk ${chunkIndex + 1} timed out after 15 seconds`));
+          }, 15000);
         });
         
         const chunkRequest = supabase.functions.invoke('genius-machine', {
@@ -69,7 +69,7 @@ export const useChunkedProcessor = () => {
         });
         
         const result = await Promise.race([chunkRequest, chunkTimeout]);
-        const { data, error } = result;
+        const { data, error } = result as { data: any; error: any };
         
         const chunkDuration = Date.now() - chunkStartTime;
         console.log(`Chunk ${chunkIndex + 1} completed in ${chunkDuration}ms`);
