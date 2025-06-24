@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { ProcessingSection } from "@/components/ProcessingSection";
@@ -10,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useOutputType } from "@/hooks/useOutputType";
 import { SelfTestingDashboard } from "@/components/testing/SelfTestingDashboard";
 import { useSelfTesting } from "@/hooks/useSelfTesting";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -101,42 +101,51 @@ const Index = () => {
   const handleRunFullTestSuite = async () => {
     console.log('Starting full test suite with real processing function...');
     
-    // Create a processing function that uses our actual ProcessingLogic
+    // Create a processing function that uses our actual processing logic
     const actualProcessFunction = async (testQuestion: string) => {
       return new Promise((resolve, reject) => {
         console.log('Running test for question:', testQuestion);
         
-        // Create a temporary processing logic instance for this test
-        const testProcessingLogic = ProcessingLogic({
+        // Use the actual processing logic directly
+        const testConfig = {
           question: testQuestion,
           processingDepth,
           circuitType,
           enhancedMode,
           customArchetypes,
           currentAssessment,
-          onProcessingStart: () => {
-            console.log('Test processing started for:', testQuestion);
-          },
-          onProcessingComplete: (results: any) => {
-            console.log('Test processing completed for:', testQuestion, results);
-            resolve(results);
-          },
-          onProcessingError: () => {
-            console.error('Test processing failed for:', testQuestion);
-            reject(new Error('Processing failed'));
-          },
-          onCurrentArchetypeChange: () => {},
-          onCurrentLayerChange: () => {},
-          onChunkProgressChange: () => {}
-        });
+        };
         
-        // Execute the test
-        try {
-          testProcessingLogic.handleStartGenius();
-        } catch (error) {
-          console.error('Error starting test processing:', error);
-          reject(error);
-        }
+        // Call the processing function directly instead of creating a component
+        const handleProcessing = async () => {
+          try {
+            console.log('Calling genius-machine function with test config...');
+            
+            const result = await supabase.functions.invoke('genius-machine', {
+              body: testConfig
+            });
+            
+            if (result.error) {
+              console.error('Test processing error:', result.error);
+              reject(new Error(`Processing failed: ${result.error.message}`));
+              return;
+            }
+            
+            if (!result.data) {
+              console.error('No data in test response');
+              reject(new Error('No data returned from processing'));
+              return;
+            }
+            
+            console.log('Test processing completed for:', testQuestion, result.data);
+            resolve(result.data);
+          } catch (error) {
+            console.error('Test processing failed for:', testQuestion, error);
+            reject(error);
+          }
+        };
+        
+        handleProcessing();
       });
     };
     
