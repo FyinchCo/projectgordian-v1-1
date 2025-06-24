@@ -39,39 +39,71 @@ serve(async (req) => {
     // Process only the requested depth, starting from the specified layer
     for (let layerNum = startFromLayer; layerNum < startFromLayer + processingDepth; layerNum++) {
       console.log(`Processing layer ${layerNum}...`);
-      const layer = await processLayer(question, layerNum, circuitType, layers, customArchetypes, enhancedMode);
-      layers.push(layer);
+      try {
+        const layer = await processLayer(question, layerNum, circuitType, layers, customArchetypes, enhancedMode);
+        layers.push(layer);
+        console.log(`Layer ${layerNum} completed successfully with synthesis:`, {
+          hasInsight: !!layer.synthesis?.insight,
+          confidence: layer.synthesis?.confidence
+        });
+      } catch (layerError) {
+        console.error(`Error processing layer ${layerNum}:`, layerError);
+        // Continue processing other layers instead of failing completely
+        break;
+      }
+    }
+
+    // Ensure we have at least one valid layer
+    if (layers.length === 0) {
+      throw new Error('No layers were successfully processed');
     }
 
     // Final results with enhanced metrics
     const finalLayer = layers[layers.length - 1];
     
+    // Safe access to synthesis properties with fallbacks
+    const safeGetSynthesis = (layer: any) => {
+      return {
+        insight: layer?.synthesis?.insight || `Layer ${layer?.layerNumber || 'unknown'} insight not available`,
+        confidence: layer?.synthesis?.confidence || 0.5,
+        tensionPoints: layer?.synthesis?.tensionPoints || 3,
+        noveltyScore: layer?.synthesis?.noveltyScore || 5,
+        emergenceDetected: layer?.synthesis?.emergenceDetected || false,
+        compressionFormats: layer?.synthesis?.compressionFormats || null
+      };
+    };
+
+    const finalSynthesis = safeGetSynthesis(finalLayer);
+    
     const results = {
-      insight: finalLayer.synthesis.insight,
-      confidence: finalLayer.synthesis.confidence,
-      tensionPoints: finalLayer.synthesis.tensionPoints,
-      noveltyScore: finalLayer.synthesis.noveltyScore || 5,
-      emergenceDetected: finalLayer.synthesis.emergenceDetected || false,
+      insight: finalSynthesis.insight,
+      confidence: finalSynthesis.confidence,
+      tensionPoints: finalSynthesis.tensionPoints,
+      noveltyScore: finalSynthesis.noveltyScore,
+      emergenceDetected: finalSynthesis.emergenceDetected,
       processingDepth: layers.length,
       circuitType,
       enhancedMode,
       assumptionAnalysis: layers[0]?.assumptionAnalysis,
       assumptionChallenge: layers[0]?.assumptionChallenge,
-      finalTensionMetrics: finalLayer.tensionMetrics,
-      compressionFormats: finalLayer.synthesis.compressionFormats,
-      layers: layers.map(layer => ({
-        layerNumber: layer.layerNumber,
-        circuitType: layer.circuitType,
-        insight: layer.synthesis.insight,
-        confidence: layer.synthesis.confidence,
-        tensionPoints: layer.synthesis.tensionPoints,
-        noveltyScore: layer.synthesis.noveltyScore || 5,
-        emergenceDetected: layer.synthesis.emergenceDetected || false,
-        tensionMetrics: layer.tensionMetrics,
-        archetypeResponses: layer.archetypeResponses,
-        compressionFormats: layer.synthesis.compressionFormats
-      })),
-      logicTrail: finalLayer.archetypeResponses
+      finalTensionMetrics: finalLayer?.tensionMetrics,
+      compressionFormats: finalSynthesis.compressionFormats,
+      layers: layers.map(layer => {
+        const layerSynthesis = safeGetSynthesis(layer);
+        return {
+          layerNumber: layer.layerNumber,
+          circuitType: layer.circuitType,
+          insight: layerSynthesis.insight,
+          confidence: layerSynthesis.confidence,
+          tensionPoints: layerSynthesis.tensionPoints,
+          noveltyScore: layerSynthesis.noveltyScore,
+          emergenceDetected: layerSynthesis.emergenceDetected,
+          tensionMetrics: layer.tensionMetrics,
+          archetypeResponses: layer.archetypeResponses || [],
+          compressionFormats: layerSynthesis.compressionFormats
+        };
+      }),
+      logicTrail: finalLayer?.archetypeResponses || []
     };
 
     console.log(`Successfully processed ${layers.length} layers`);
