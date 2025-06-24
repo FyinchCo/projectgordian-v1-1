@@ -122,7 +122,7 @@ Your analysis must:
 
 Pay special attention to tension tags like [contradiction emerged here] and [novel insight surfaced here] - these indicate fault lines where breakthrough thinking is most likely.
 
-CRITICAL: You must respond with a valid JSON object containing:
+CRITICAL: You must respond with ONLY a valid JSON object. Do not include any text before or after the JSON. The JSON must contain:
 - insight: A profound, actionable insight (1-2 sentences) that creates cognitive disruption
 - confidence: Synthesis confidence as a decimal between 0.0 and 1.0 (be precise, avoid using exactly 0.75)
 - tensionPoints: Number of unresolved tensions preserved (integer)
@@ -170,8 +170,29 @@ Focus on breakthrough moments where contradictions resolve into paradigm-shiftin
     const rawContent = data.choices[0].message.content.trim();
     console.log(`Layer ${layerNumber || 1} synthesis raw response:`, rawContent);
     
-    // Try to parse as JSON first
-    synthesisResult = JSON.parse(rawContent);
+    // Clean the response - remove any text before/after JSON
+    let cleanedContent = rawContent;
+    
+    // Remove any text before the first opening brace
+    const firstBrace = rawContent.indexOf('{');
+    if (firstBrace > 0) {
+      cleanedContent = rawContent.substring(firstBrace);
+    }
+    
+    // Remove any text after the last closing brace
+    const lastBrace = cleanedContent.lastIndexOf('}');
+    if (lastBrace !== -1 && lastBrace < cleanedContent.length - 1) {
+      cleanedContent = cleanedContent.substring(0, lastBrace + 1);
+    }
+    
+    // Remove common prefixes like "json" or "```json"
+    cleanedContent = cleanedContent.replace(/^(json\s*|```json\s*)/i, '');
+    cleanedContent = cleanedContent.replace(/```\s*$/, '');
+    
+    console.log(`Layer ${layerNumber || 1} cleaned JSON:`, cleanedContent);
+    
+    // Try to parse as JSON
+    synthesisResult = JSON.parse(cleanedContent);
     
     // Validate and adjust confidence if it's exactly 0.75 (fallback indicator)
     if (synthesisResult.confidence === 0.75) {

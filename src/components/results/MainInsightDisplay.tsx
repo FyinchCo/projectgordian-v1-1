@@ -38,6 +38,31 @@ export const MainInsightDisplay = ({
     return "Conventional";
   };
 
+  // Clean the insight text - remove any JSON artifacts
+  const cleanInsight = (text: string): string => {
+    // Remove any JSON prefixes or suffixes
+    let cleaned = text.replace(/^(json\s*|```json\s*)/i, '');
+    cleaned = cleaned.replace(/```\s*$/, '');
+    
+    // If it starts with a JSON object, extract just the insight value
+    if (cleaned.startsWith('{')) {
+      try {
+        const parsed = JSON.parse(cleaned);
+        return parsed.insight || text;
+      } catch {
+        // If parsing fails, try to extract insight from malformed JSON
+        const insightMatch = cleaned.match(/"insight":\s*"([^"]+)"/);
+        if (insightMatch) {
+          return insightMatch[1];
+        }
+      }
+    }
+    
+    return cleaned;
+  };
+
+  const displayInsight = cleanInsight(insight);
+
   return (
     <Card className="p-8 border-2 border-black">
       <div className="text-center space-y-6">
@@ -59,7 +84,7 @@ export const MainInsightDisplay = ({
             )}
           </h2>
           <p className="text-2xl font-bold leading-tight">
-            "{insight}"
+            "{displayInsight}"
           </p>
         </div>
 
