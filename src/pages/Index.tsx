@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { ProcessingSection } from "@/components/ProcessingSection";
@@ -120,8 +121,8 @@ const Index = () => {
             console.log('Test processing completed for:', testQuestion, results);
             resolve(results);
           },
-          onProcessingError: (error: any) => {
-            console.error('Test processing failed for:', testQuestion, error);
+          onProcessingError: () => {
+            console.error('Test processing failed for:', testQuestion);
             reject(new Error('Processing failed'));
           },
           onCurrentArchetypeChange: () => {},
