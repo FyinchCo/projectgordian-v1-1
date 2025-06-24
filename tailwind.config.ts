@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -19,7 +20,8 @@ export default {
 		},
 		extend: {
 			fontFamily: {
-				'playfair': ['Playfair Display', 'serif'],
+				'cormorant': ['Cormorant Garamond', 'serif'],
+				'mono': ['IBM Plex Mono', 'monospace'],
 				'inter': ['Inter', 'sans-serif'],
 			},
 			colors: {
@@ -66,13 +68,15 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
-				// Project Gordian brand colors
-				gordian: {
-					cream: '#F5F1E8',
-					beige: '#E8E0D4',
-					brown: '#8B7355',
-					'dark-brown': '#5D4E37',
-					gold: '#D4AF37'
+				// Edgy monochrome palette
+				mono: {
+					'pure-white': '#FFFFFF',
+					'off-white': '#FAFAFA',
+					'light-gray': '#F5F5F5',
+					'medium-gray': '#808080',
+					'dark-gray': '#2A2A2A',
+					'charcoal': '#1A1A1A',
+					'pure-black': '#000000'
 				}
 			},
 			borderRadius: {
@@ -100,12 +104,17 @@ export default {
 				'knot-rotate': {
 					'0%': { transform: 'rotate(0deg)' },
 					'100%': { transform: 'rotate(360deg)' }
+				},
+				'pulse-slow': {
+					'0%, 100%': { opacity: '1' },
+					'50%': { opacity: '0.3' }
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out',
-				'knot-rotate': 'knot-rotate 20s linear infinite'
+				'knot-rotate': 'knot-rotate 20s linear infinite',
+				'pulse-slow': 'pulse-slow 3s ease-in-out infinite'
 			}
 		}
 	},

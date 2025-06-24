@@ -13,41 +13,43 @@ export const KnotIcon = ({ className = "", size = 32, animate = false }: KnotIco
       width={size}
       height={size}
       viewBox="0 0 100 100"
-      className={`${className} ${animate ? 'animate-knot-rotate' : ''}`}
+      className={`${className} ${animate ? 'animate-pulse-slow' : ''}`}
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
-      {/* Main knot structure - interconnected loops */}
+      {/* Brutal geometric knot structure */}
       <path
-        d="M25 25 Q40 10, 55 25 Q70 40, 55 55 Q40 70, 25 55 Q10 40, 25 25"
+        d="M20 20 L35 35 L50 20 L65 35 L80 20 L80 35 L65 50 L80 65 L80 80 L65 65 L50 80 L35 65 L20 80 L20 65 L35 50 L20 35 Z"
         stroke="currentColor"
-        strokeWidth="3"
+        strokeWidth="4"
         fill="none"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M45 25 Q60 10, 75 25 Q90 40, 75 55 Q60 70, 45 55 Q30 40, 45 25"
-        stroke="currentColor"
-        strokeWidth="3"
-        fill="none"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M35 45 Q50 30, 65 45 Q80 60, 65 75 Q50 90, 35 75 Q20 60, 35 45"
-        stroke="currentColor"
-        strokeWidth="3"
-        fill="none"
-        strokeLinecap="round"
-        strokeLinejoin="round"
+        strokeLinecap="square"
+        strokeLinejoin="miter"
       />
       
-      {/* Intersection points for depth */}
-      <circle cx="42" cy="35" r="2" fill="currentColor" />
-      <circle cx="58" cy="50" r="2" fill="currentColor" />
-      <circle cx="42" cy="65" r="2" fill="currentColor" />
-      <circle cx="58" cy="35" r="2" fill="currentColor" />
+      {/* Inner contradiction lines */}
+      <path
+        d="M35 35 L65 65 M65 35 L35 65"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="square"
+      />
+      
+      {/* Central void - the "cut" */}
+      <rect 
+        x="45" 
+        y="45" 
+        width="10" 
+        height="10" 
+        fill="currentColor"
+        transform="rotate(45 50 50)"
+      />
+      
+      {/* Corner emphasis dots */}
+      <rect x="18" y="18" width="4" height="4" fill="currentColor" />
+      <rect x="78" y="18" width="4" height="4" fill="currentColor" />
+      <rect x="78" y="78" width="4" height="4" fill="currentColor" />
+      <rect x="18" y="78" width="4" height="4" fill="currentColor" />
     </svg>
   );
 };

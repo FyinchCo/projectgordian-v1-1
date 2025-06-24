@@ -31,105 +31,107 @@ export const QuestionInput = ({
   onOutputTypeChange
 }: QuestionInputProps) => {
   return (
-    <div className="space-y-8">
-      {/* Main Input Section */}
-      <div className="text-center space-y-6">
-        <h2 className="text-4xl font-playfair font-bold tracking-tight text-gordian-dark-brown">
+    <div className="space-y-12">
+      {/* Brutal Header Section */}
+      <div className="text-center space-y-8">
+        <h2 className="text-5xl font-cormorant font-bold tracking-tight text-mono-pure-black uppercase leading-tight">
           INPUT YOUR<br />
-          <span className="text-gordian-brown">HIGH-FRICTION QUESTION</span>
+          <span className="text-mono-charcoal border-b-4 border-mono-pure-black pb-2">HIGH-FRICTION QUESTION</span>
         </h2>
-        <p className="text-lg font-inter text-gordian-brown max-w-2xl mx-auto leading-relaxed">
+        <p className="text-lg font-inter text-mono-dark-gray max-w-2xl mx-auto leading-relaxed">
           Present a complex challenge that demands multiple perspectives. 
           The Genius Machine will deploy archetypal agents to discover breakthrough insights.
         </p>
         {customArchetypes && (
-          <p className="text-sm font-inter text-gordian-dark-brown bg-gordian-gold/20 inline-block px-3 py-1 rounded-full">
+          <p className="text-sm font-mono text-mono-pure-black bg-mono-light-gray inline-block px-4 py-2 border-2 border-mono-pure-black uppercase tracking-wide">
             Using {customArchetypes.length} custom archetypes from your configuration
           </p>
         )}
         {enhancedMode && (
-          <p className="text-sm font-inter text-purple-800 bg-purple-100 inline-block px-3 py-1 rounded-full">
+          <p className="text-sm font-mono text-mono-pure-white bg-mono-pure-black inline-block px-4 py-2 uppercase tracking-wide">
             Enhanced mode: Assumption interrogation and dialectical tension active
           </p>
         )}
       </div>
 
-      <Card className="p-8 shadow-lg border-2 border-gordian-beige bg-white">
-        <div className="space-y-6">
+      <div className="border-4 border-mono-pure-black bg-mono-pure-white shadow-2xl">
+        <div className="p-8 space-y-8">
           <Textarea
             placeholder="Enter your deep, complex question here..."
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
-            className="min-h-[150px] text-lg font-inter border-0 shadow-none resize-none focus-visible:ring-0 p-0 placeholder:text-gordian-brown/50"
+            className="min-h-[180px] text-xl font-inter border-0 shadow-none resize-none focus-visible:ring-0 p-0 placeholder:text-mono-medium-gray bg-transparent"
           />
           
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pt-4 border-t border-gordian-beige">
-            <div className="flex flex-wrap items-center gap-4">
-              <div className="text-sm font-inter text-gordian-brown">
-                {question.length} characters
-              </div>
-              
-              {onToggleAssessment && (
-                <Button
-                  onClick={onToggleAssessment}
-                  variant="ghost"
-                  size="sm"
-                  className="flex items-center space-x-2 text-gordian-brown hover:text-gordian-dark-brown hover:bg-gordian-beige font-inter"
-                >
-                  <Brain className="w-4 h-4" />
-                  <span>{showAssessment ? "Hide" : "Show"} AI Assessment</span>
-                </Button>
-              )}
+          <div className="border-t-2 border-mono-pure-black pt-6">
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+              <div className="flex flex-wrap items-center gap-6">
+                <div className="text-sm font-mono text-mono-pure-black uppercase tracking-wider">
+                  {question.length} characters
+                </div>
+                
+                {onToggleAssessment && (
+                  <Button
+                    onClick={onToggleAssessment}
+                    variant="ghost"
+                    size="sm"
+                    className="flex items-center space-x-2 text-mono-pure-black hover:text-mono-pure-white hover:bg-mono-pure-black font-mono uppercase tracking-wide border-2 border-mono-pure-black"
+                  >
+                    <Brain className="w-4 h-4" />
+                    <span>{showAssessment ? "Hide" : "Show"} AI Assessment</span>
+                  </Button>
+                )}
 
-              <div className="flex items-center space-x-2">
-                <span className="text-sm font-inter text-gordian-brown">Answer Type:</span>
-                <Select value={outputType} onValueChange={(value) => onOutputTypeChange(value as OutputType)}>
-                  <SelectTrigger className="w-[140px] h-8 border-gordian-beige bg-gordian-cream text-gordian-dark-brown font-inter text-sm">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white border-gordian-beige shadow-lg">
-                    {OUTPUT_TYPE_CONFIGS.map((config) => (
-                      <SelectItem 
-                        key={config.id} 
-                        value={config.id}
-                        className="font-inter text-gordian-dark-brown hover:bg-gordian-cream focus:bg-gordian-cream"
-                      >
-                        {config.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="flex items-center space-x-3">
+                  <span className="text-sm font-mono text-mono-pure-black uppercase tracking-wider">Answer Type:</span>
+                  <Select value={outputType} onValueChange={(value) => onOutputTypeChange(value as OutputType)}>
+                    <SelectTrigger className="w-[160px] h-10 border-2 border-mono-pure-black bg-mono-off-white text-mono-pure-black font-mono text-sm uppercase">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-mono-pure-white border-2 border-mono-pure-black shadow-xl">
+                      {OUTPUT_TYPE_CONFIGS.map((config) => (
+                        <SelectItem 
+                          key={config.id} 
+                          value={config.id}
+                          className="font-mono text-mono-pure-black hover:bg-mono-pure-black hover:text-mono-pure-white focus:bg-mono-pure-black focus:text-mono-pure-white uppercase tracking-wide"
+                        >
+                          {config.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
+
+              <Button 
+                onClick={onStartGenius}
+                disabled={!question.trim()}
+                size="lg"
+                className="bg-mono-pure-black text-mono-pure-white hover:bg-mono-charcoal flex items-center space-x-3 font-mono font-bold text-base uppercase tracking-wide border-2 border-mono-pure-black px-8 py-4"
+              >
+                <Play className="w-6 h-6" />
+                <span>START GENIUS MACHINE</span>
+                <Zap className="w-6 h-6" />
+              </Button>
             </div>
-
-            <Button 
-              onClick={onStartGenius}
-              disabled={!question.trim()}
-              size="lg"
-              className="bg-gordian-dark-brown text-gordian-cream hover:bg-gordian-brown flex items-center space-x-2 font-inter font-medium"
-            >
-              <Play className="w-5 h-5" />
-              <span>START GENIUS MACHINE</span>
-              <Zap className="w-5 h-5" />
-            </Button>
           </div>
         </div>
-      </Card>
+      </div>
 
-      {/* Info Section */}
-      <div className="grid md:grid-cols-3 gap-6 mt-12">
-        <Card className="p-6 text-center bg-gradient-to-br from-white to-gordian-cream border-gordian-beige">
-          <h3 className="font-playfair font-bold mb-2 text-gordian-dark-brown">COGNITIVE DISRUPTION</h3>
-          <p className="text-sm font-inter text-gordian-brown">Challenge assumptions and force breakthrough thinking</p>
-        </Card>
-        <Card className="p-6 text-center bg-gradient-to-br from-white to-gordian-cream border-gordian-beige">
-          <h3 className="font-playfair font-bold mb-2 text-gordian-dark-brown">DIALECTICAL TENSION</h3>
-          <p className="text-sm font-inter text-gordian-brown">Generate productive conflict between perspectives</p>
-        </Card>
-        <Card className="p-6 text-center bg-gradient-to-br from-white to-gordian-cream border-gordian-beige">
-          <h3 className="font-playfair font-bold mb-2 text-gordian-dark-brown">EMERGENCE DETECTION</h3>
-          <p className="text-sm font-inter text-gordian-brown">Identify moments of genuine insight breakthrough</p>
-        </Card>
+      {/* Brutal Info Cards */}
+      <div className="grid md:grid-cols-3 gap-8 mt-16">
+        <div className="border-2 border-mono-pure-black bg-mono-pure-white p-8 text-center shadow-lg">
+          <h3 className="font-cormorant font-bold text-xl mb-4 text-mono-pure-black uppercase">COGNITIVE DISRUPTION</h3>
+          <p className="text-sm font-inter text-mono-dark-gray leading-relaxed">Challenge assumptions and force breakthrough thinking</p>
+        </div>
+        <div className="border-2 border-mono-pure-black bg-mono-pure-white p-8 text-center shadow-lg">
+          <h3 className="font-cormorant font-bold text-xl mb-4 text-mono-pure-black uppercase">DIALECTICAL TENSION</h3>
+          <p className="text-sm font-inter text-mono-dark-gray leading-relaxed">Generate productive conflict between perspectives</p>
+        </div>
+        <div className="border-2 border-mono-pure-black bg-mono-pure-white p-8 text-center shadow-lg">
+          <h3 className="font-cormorant font-bold text-xl mb-4 text-mono-pure-black uppercase">EMERGENCE DETECTION</h3>
+          <p className="text-sm font-inter text-mono-dark-gray leading-relaxed">Identify moments of genuine insight breakthrough</p>
+        </div>
       </div>
     </div>
   );
