@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { ProcessingSection } from "@/components/ProcessingSection";
@@ -146,8 +145,12 @@ const Index = () => {
       });
     };
     
-    // Call the provided process function (which should be the useSelfTesting hook's runFullTestSuite)
-    return processFunction ? processFunction(actualProcessFunction) : Promise.resolve();
+    // Call the runFullTestSuite from useSelfTesting hook with our processing function
+    // The processFunction parameter should actually be the runFullTestSuite method
+    if (processFunction) {
+      return await processFunction(actualProcessFunction);
+    }
+    return Promise.resolve();
   };
 
   // Show password gate if not authenticated
