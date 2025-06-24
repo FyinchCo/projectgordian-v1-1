@@ -1,105 +1,86 @@
 
-import { Archetype, ArchetypeResponse, LayerResult } from './types.ts';
-import { buildSystemPromptFromPersonality } from './archetypes.ts';
+import { ArchetypeResponse, Archetype, LayerResult } from './types.ts';
 
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 
-export async function getArchetypeResponse(
-  archetype: Archetype, 
-  question: string, 
-  previousLayer?: LayerResult[], 
-  layerNumber?: number, 
-  dialecticalMode?: boolean
-): Promise<string> {
-  let contextPrompt;
-  
-  if (archetype.systemPrompt) {
-    contextPrompt = `${archetype.systemPrompt}\n\nProvide a focused 2-3 sentence perspective on the question. Be specific and insightful from your archetypal viewpoint.`;
-  } else {
-    contextPrompt = buildSystemPromptFromPersonality(
-      archetype.name,
-      archetype.description!,
-      archetype.languageStyle!,
-      archetype.imagination!,
-      archetype.skepticism!,
-      archetype.aggression!,
-      archetype.emotionality!,
-      archetype.constraint
-    );
-  }
+export function getArchetypeResponse(
+  question: string,
+  archetype: Archetype,
+  previousLayers: LayerResult[] = [],
+  layerNumber: number = 1,
+  enhancedMode: boolean = true
+): string {
+  const previousContext = previousLayers.length > 0 
+    ? previousLayers.map(layer => `Layer ${layer.layerNumber}: ${layer.synthesis?.insight || 'No insight available'}`).join('\n')
+    : '';
 
-  // Enhance dialectical tension when enabled
-  if (dialecticalMode && Math.random() > 0.5) {
-    contextPrompt += "\n\nDIALECTICAL MODE: Take a deliberately contrarian stance. If others are converging on similar insights, actively challenge that consensus. Create intellectual friction and force uncomfortable contradictions.";
-  }
-  
-  if (previousLayer && layerNumber && layerNumber > 1) {
-    const previousInsights = previousLayer.map(layer => 
-      `Layer ${layer.layerNumber}: ${layer.synthesis.insight}\n` +
-      layer.archetypeResponses.map(r => `${r.archetype}: ${r.contribution}`).join('\n')
-    ).join('\n\n');
-    
-    contextPrompt += `\n\nPrevious analysis layers:\n${previousInsights}\n\nBuild upon these insights while maintaining your archetypal perspective. If you notice the insights becoming too comfortable or consensus-driven, inject disruption.`;
-  }
+  let prompt = `You are ${archetype.name}: ${archetype.description}
 
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${openAIApiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      messages: [
-        { role: 'system', content: contextPrompt },
-        { role: 'user', content: question }
-      ],
-      max_tokens: 250,
-      temperature: dialecticalMode ? 0.9 : 0.8,
-    }),
-  });
+Question: "${question}"
 
-  const data = await response.json();
-  return data.choices[0].message.content;
+${previousContext ? `Previous Analysis:\n${previousContext}\n\n` : ''}
+
+Respond as ${archetype.name} would, using ${archetype.languageStyle} language style.
+Personality settings: Imagination(${archetype.imagination}/10), Skepticism(${archetype.skepticism}/10), Aggression(${archetype.aggression}/10), Emotionality(${archetype.emotionality}/10)
+
+${archetype.constraint ? `Special constraint: ${archetype.constraint}` : ''}
+
+Provide a ${enhancedMode ? 'detailed' : 'concise'} response (2-3 sentences) that adds unique value to the analysis${layerNumber > 1 ? ' and builds on previous layers' : ''}.`;
+
+  return prompt;
 }
 
 export async function processArchetypes(
   question: string,
   archetypes: Archetype[],
   circuitType: string,
-  previousLayers: LayerResult[],
-  layerNumber: number,
-  enhancedMode: boolean
+  previousLayers: LayerResult[] = [],
+  layerNumber: number = 1,
+  enhancedMode: boolean = true
 ): Promise<ArchetypeResponse[]> {
-  const archetypeResponses: ArchetypeResponse[] = [];
-  const dialecticalMode = enhancedMode && (layerNumber > 1 || Math.random() > 0.3);
-  
-  if (circuitType === 'parallel') {
-    // Process all archetypes simultaneously
-    const promises = archetypes.map(archetype => 
-      getArchetypeResponse(archetype, question, previousLayers, layerNumber, dialecticalMode)
-    );
-    const results = await Promise.all(promises);
-    
-    archetypes.forEach((archetype, index) => {
-      archetypeResponses.push({
-        archetype: archetype.name,
-        contribution: results[index]
+  const responses: ArchetypeResponse[] = [];
+
+  for (const archetype of archetypes) {
+    try {
+      const prompt = getArchetypeResponse(question, archetype, previousLayers, layerNumber, enhancedMode);
+      
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openAIApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            { role: 'system', content: 'You are an expert archetype responding to questions from your unique perspective.' },
+            { role: 'user', content: prompt }
+          ],
+          max_tokens: enhancedMode ? 300 : 150,
+          temperature: 0.7,
+        }),
       });
-    });
-  } else {
-    // Sequential processing with enhanced dialectical injection
-    for (let i = 0; i < archetypes.length; i++) {
-      const archetype = archetypes[i];
-      // Inject more contrarian behavior in later archetypes
-      const extraDialectical = dialecticalMode && i > archetypes.length / 2;
-      const contribution = await getArchetypeResponse(archetype, question, previousLayers, layerNumber, extraDialectical);
-      archetypeResponses.push({
+
+      const data = await response.json();
+      const contribution = data.choices[0].message.content;
+
+      responses.push({
         archetype: archetype.name,
-        contribution
+        contribution: contribution
+      });
+
+      console.log(`${archetype.name} response generated for layer ${layerNumber}`);
+      
+    } catch (error) {
+      console.error(`Error processing archetype ${archetype.name}:`, error);
+      
+      // Fallback response to prevent complete failure
+      responses.push({
+        archetype: archetype.name,
+        contribution: `${archetype.name} perspective: The question "${question}" requires deeper analysis from this viewpoint.`
       });
     }
   }
 
-  return archetypeResponses;
+  return responses;
 }

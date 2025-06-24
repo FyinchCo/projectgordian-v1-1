@@ -193,7 +193,8 @@ export const EnhancedResultsDisplay = ({ results, question, onReset, onExport }:
         enhancedMode: results.enhancedMode,
         circuitType: results.circuitType,
         processingDepth: results.processingDepth,
-        logicTrailLength: safeLogicTrail.length
+        logicTrailLength: safeLogicTrail.length,
+        compressionFormats: results.compressionFormats
       })}
 
       {/* Question Quality Evaluation */}
