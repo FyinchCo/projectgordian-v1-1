@@ -11,11 +11,17 @@ import { useAIConfigOptimization } from "@/hooks/useAIConfigOptimization";
 import { ArchetypesTab } from "@/components/ArchetypesTab";
 import { TensionTab } from "@/components/TensionTab";
 import { CompressionTab } from "@/components/CompressionTab";
+import { OptimizationReasoningCard } from "@/components/OptimizationReasoningCard";
 
 const Config = () => {
   const { toast } = useToast();
   const { archetypes, updateArchetype, addCustomArchetype, removeArchetype } = useArchetypes();
-  const { optimizeAndApplyConfiguration, isAssessing } = useAIConfigOptimization();
+  const { 
+    optimizeAndApplyConfiguration, 
+    isAssessing, 
+    optimizationReasoning, 
+    clearOptimizationReasoning 
+  } = useAIConfigOptimization();
   
   const [question, setQuestion] = useState("");
   const [tensionSettings, setTensionSettings] = useState({
@@ -85,28 +91,35 @@ const Config = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-zen-paper">
       {/* Header */}
-      <header className="border-b border-gray-200 px-6 py-4">
+      <header className="border-b border-zen-light px-6 py-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <Link to="/">
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" className="text-zen-charcoal hover:text-zen-ink hover:bg-zen-whisper">
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back
               </Button>
             </Link>
             <div>
-              <h1 className="text-2xl font-bold tracking-tight">SYSTEM CONFIGURATION</h1>
-              <p className="text-xs text-gray-500 uppercase tracking-wide">Customize Agent Behavior</p>
+              <h1 className="text-2xl text-zen-heading text-zen-ink tracking-tight">SYSTEM CONFIGURATION</h1>
+              <p className="text-xs text-zen-mono text-zen-medium uppercase tracking-wide">Customize Agent Behavior</p>
             </div>
           </div>
           <div className="flex space-x-2">
-            <Button variant="outline" onClick={resetToDefaults}>
+            <Button 
+              variant="outline" 
+              onClick={resetToDefaults}
+              className="border-zen-light text-zen-charcoal hover:bg-zen-whisper"
+            >
               <RotateCcw className="w-4 h-4 mr-2" />
               Reset to Defaults
             </Button>
-            <Button className="bg-black text-white hover:bg-gray-800" onClick={saveConfiguration}>
+            <Button 
+              className="bg-zen-ink text-zen-paper hover:bg-zen-charcoal" 
+              onClick={saveConfiguration}
+            >
               <Save className="w-4 h-4 mr-2" />
               Save Configuration
             </Button>
@@ -114,15 +127,24 @@ const Config = () => {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-6 py-8">
+      <main className="max-w-6xl mx-auto px-6 py-8 space-zen">
+        {/* Optimization Reasoning Display */}
+        {optimizationReasoning && (
+          <OptimizationReasoningCard
+            reasoning={optimizationReasoning.reasoning}
+            domainType={optimizationReasoning.domainType}
+            onDismiss={clearOptimizationReasoning}
+          />
+        )}
+
         {/* AI Optimization Section */}
-        <div className="mb-8 p-6 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200">
+        <div className="p-6 bg-zen-whisper rounded-md border border-zen-light">
           <div className="space-y-4">
             <div className="flex items-center space-x-2">
-              <Brain className="w-5 h-5 text-purple-600" />
-              <h3 className="font-semibold text-purple-800">AI Configuration Optimizer</h3>
+              <Brain className="w-5 h-5 text-zen-charcoal" />
+              <h3 className="text-zen-mono text-sm uppercase tracking-wide text-zen-ink">AI Configuration Optimizer</h3>
             </div>
-            <p className="text-sm text-purple-700">
+            <p className="text-sm text-zen-body text-zen-charcoal leading-relaxed">
               Enter a question to automatically optimize all archetype personalities, tension detection, and compression settings for the highest quality analysis.
             </p>
             
@@ -131,13 +153,13 @@ const Config = () => {
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
               rows={3}
-              className="w-full border-purple-200 focus:border-purple-400"
+              className="w-full border-zen-light focus:border-zen-medium bg-zen-paper"
             />
             
             <Button
               onClick={handleAIOptimization}
               disabled={!question.trim() || isAssessing}
-              className="bg-purple-600 hover:bg-purple-700 text-white"
+              className="bg-zen-ink hover:bg-zen-charcoal text-zen-paper text-zen-mono uppercase tracking-wide"
             >
               {isAssessing ? (
                 <>
@@ -155,10 +177,10 @@ const Config = () => {
         </div>
 
         <Tabs defaultValue="archetypes" className="space-y-8">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="archetypes">Archetypes</TabsTrigger>
-            <TabsTrigger value="tension">Tension Detection</TabsTrigger>
-            <TabsTrigger value="compression">Compression</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3 bg-zen-whisper border border-zen-light">
+            <TabsTrigger value="archetypes" className="text-zen-mono">Archetypes</TabsTrigger>
+            <TabsTrigger value="tension" className="text-zen-mono">Tension Detection</TabsTrigger>
+            <TabsTrigger value="compression" className="text-zen-mono">Compression</TabsTrigger>
           </TabsList>
 
           <TabsContent value="archetypes">

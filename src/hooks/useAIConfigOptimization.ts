@@ -1,10 +1,15 @@
 
+import { useState } from "react";
 import { useQuestionAssessment } from "./useQuestionAssessment";
 import { useToast } from "./use-toast";
 
 export const useAIConfigOptimization = () => {
   const { assessQuestion, assessment, isAssessing } = useQuestionAssessment();
   const { toast } = useToast();
+  const [optimizationReasoning, setOptimizationReasoning] = useState<{
+    reasoning: string;
+    domainType: string;
+  } | null>(null);
 
   const optimizeAndApplyConfiguration = async (
     question: string,
@@ -50,6 +55,12 @@ export const useAIConfigOptimization = () => {
         updateCompressionSettings('includeFullTranscript', false);
       }
 
+      // Store the reasoning for display
+      setOptimizationReasoning({
+        reasoning: result.recommendations.reasoning,
+        domainType: result.domainType
+      });
+
       toast({
         title: "Configuration Optimized",
         description: `All settings optimized for ${result.domainType.toLowerCase()} domain analysis.`,
@@ -60,9 +71,15 @@ export const useAIConfigOptimization = () => {
     return result;
   };
 
+  const clearOptimizationReasoning = () => {
+    setOptimizationReasoning(null);
+  };
+
   return {
     optimizeAndApplyConfiguration,
     assessment,
-    isAssessing
+    isAssessing,
+    optimizationReasoning,
+    clearOptimizationReasoning
   };
 };
