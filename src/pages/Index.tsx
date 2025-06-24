@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { Header } from "@/components/Header";
 import { ProcessingSection } from "@/components/ProcessingSection";
@@ -7,9 +8,6 @@ import { ConsolidatedGeniusInterface } from "@/components/ConsolidatedGeniusInte
 import { PasswordGate } from "@/components/PasswordGate";
 import { useToast } from "@/hooks/use-toast";
 import { useOutputType } from "@/hooks/useOutputType";
-import { SelfTestingDashboard } from "@/components/testing/SelfTestingDashboard";
-import { useSelfTesting } from "@/hooks/useSelfTesting";
-import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -26,10 +24,8 @@ const Index = () => {
   const [currentAssessment, setCurrentAssessment] = useState(null);
   const [chunkProgress, setChunkProgress] = useState({ current: 0, total: 0 });
   const { toast } = useToast();
-  const [showSelfTestingDashboard, setShowSelfTestingDashboard] = useState(false);
 
   const { outputType, setOutputType } = useOutputType('practical');
-  const { runFullTestSuite } = useSelfTesting();
 
   // Check authentication status on mount
   useEffect(() => {
@@ -98,22 +94,6 @@ const Index = () => {
     onChunkProgressChange: setChunkProgress
   });
 
-  const handleRunFullTestSuite = useCallback(async () => {
-    console.log('Index: Starting simplified test suite...');
-    
-    try {
-      // Use the simplified test suite that doesn't require a processing function parameter
-      await runFullTestSuite();
-    } catch (error) {
-      console.error('Test suite failed:', error);
-      toast({
-        title: "Test Suite Error",
-        description: "Failed to run the test suite. Check console for details.",
-        variant: "destructive",
-      });
-    }
-  }, [runFullTestSuite, toast]);
-
   // Show password gate if not authenticated
   if (!isAuthenticated) {
     return <PasswordGate onAuthenticated={() => setIsAuthenticated(true)} />;
@@ -124,18 +104,10 @@ const Index = () => {
       <Header 
         customArchetypes={customArchetypes} 
         enhancedMode={enhancedMode}
-        onToggleSelfTesting={() => setShowSelfTestingDashboard(!showSelfTestingDashboard)}
-        showSelfTestingToggle={true}
       />
 
       <main className="px-zen-lg py-zen-xl max-w-7xl mx-auto">
-        {/* Self-Testing Dashboard */}
-        <SelfTestingDashboard
-          onRunFullTest={handleRunFullTestSuite}
-          isVisible={showSelfTestingDashboard}
-        />
-
-        {!isProcessing && !results && !showSelfTestingDashboard && (
+        {!isProcessing && !results && (
           <ConsolidatedGeniusInterface
             question={question}
             setQuestion={setQuestion}
@@ -154,7 +126,7 @@ const Index = () => {
           />
         )}
 
-        {isProcessing && !showSelfTestingDashboard && (
+        {isProcessing && (
           <ProcessingSection
             currentArchetype={currentArchetype}
             question={question}
@@ -165,7 +137,7 @@ const Index = () => {
           />
         )}
 
-        {results && !showSelfTestingDashboard && (
+        {results && (
           <ResultsSection
             results={results}
             question={question}
