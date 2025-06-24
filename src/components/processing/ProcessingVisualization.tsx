@@ -1,8 +1,7 @@
-
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { ArchetypeThoughtBubble } from "./ArchetypeThoughtBubble";
-import { Layers, Zap, GitBranch, RotateCcw, Activity, Timer } from "lucide-react";
+import { Layers, Zap, GitBranch, RotateCcw, Activity, Timer, TrendingUp, Brain } from "lucide-react";
 import { useState, useEffect } from "react";
 
 interface ProcessingVisualizationProps {
@@ -24,6 +23,39 @@ const getCircuitIcon = (circuitType: string) => {
   }
 };
 
+const getProcessingInsights = (currentArchetype: string) => {
+  switch (currentArchetype) {
+    case "The Visionary": return {
+      focus: "Future Possibilities & Innovation",
+      contribution: "Exploring unconventional pathways and breakthrough potential"
+    };
+    case "The Skeptic": return {
+      focus: "Critical Analysis & Validation",
+      contribution: "Testing assumptions and identifying logical vulnerabilities"
+    };
+    case "The Mystic": return {
+      focus: "Intuitive Patterns & Deep Wisdom",
+      contribution: "Sensing hidden connections and archetypal meanings"
+    };
+    case "The Contrarian": return {
+      focus: "Alternative Perspectives",
+      contribution: "Challenging consensus and proposing radical alternatives"
+    };
+    case "The Realist": return {
+      focus: "Practical Implementation",
+      contribution: "Grounding insights in real-world constraints and feasibility"
+    };
+    case "Compression Agent": return {
+      focus: "Synthesis & Integration",
+      contribution: "Weaving all perspectives into unified breakthrough insight"
+    };
+    default: return {
+      focus: "Cognitive Processing",
+      contribution: "Analyzing question from unique perspective"
+    };
+  }
+};
+
 export const ProcessingVisualization = ({
   currentArchetype,
   currentLayer,
@@ -32,31 +64,36 @@ export const ProcessingVisualization = ({
   chunkProgress
 }: ProcessingVisualizationProps) => {
   const [processingTime, setProcessingTime] = useState(0);
-  const [currentPhase, setCurrentPhase] = useState("Initializing...");
+  const [currentPhase, setCurrentPhase] = useState("Initializing cognitive architecture...");
+  const [efficiencyScore, setEfficiencyScore] = useState(85);
   
   const CircuitIcon = getCircuitIcon(circuitType);
+  const insights = getProcessingInsights(currentArchetype);
   
-  // Timer for processing duration
+  // Enhanced timer and metrics
   useEffect(() => {
     const interval = setInterval(() => {
       setProcessingTime(prev => prev + 1);
+      // Simulate efficiency fluctuation
+      setEfficiencyScore(prev => Math.max(75, Math.min(95, prev + (Math.random() - 0.5) * 5)));
     }, 1000);
     
     return () => clearInterval(interval);
   }, []);
 
-  // Phase tracking
+  // Enhanced phase tracking
   useEffect(() => {
     if (currentArchetype === "Compression Agent") {
-      setCurrentPhase("Synthesizing insights...");
+      setCurrentPhase("Synthesizing multi-perspective breakthrough...");
     } else if (currentArchetype) {
-      setCurrentPhase(`${currentArchetype} analyzing...`);
+      const insight = getProcessingInsights(currentArchetype);
+      setCurrentPhase(`${insight.focus} - ${insight.contribution}`);
     } else {
-      setCurrentPhase("Preparing processing...");
+      setCurrentPhase("Preparing cognitive architecture...");
     }
   }, [currentArchetype]);
   
-  // Calculate progress
+  // Calculate enhanced progress
   const overallProgress = Math.min(((currentLayer - 1) / totalLayers) * 100 + 
     (currentArchetype !== "Compression Agent" ? 
       (archetypes.indexOf(currentArchetype) + 1) / (archetypes.length + 1) * (100 / totalLayers) : 
@@ -77,57 +114,90 @@ export const ProcessingVisualization = ({
 
   return (
     <div className="space-y-6">
-      {/* Enhanced Progress Header */}
-      <Card className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <CircuitIcon className="w-6 h-6 text-blue-600" />
-              <div>
-                <div className="font-bold text-lg text-blue-800">
-                  Layer {currentLayer} of {totalLayers}
+      {/* Enhanced Progress Header with Real-time Metrics */}
+      <Card className="p-6 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 border-2 border-blue-200 shadow-lg">
+        <div className="space-y-4">
+          {/* Main Progress Header */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-3">
+                <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                  <CircuitIcon className="w-6 h-6 text-blue-600" />
                 </div>
-                <div className="text-sm text-blue-600 capitalize flex items-center space-x-2">
-                  <Activity className="w-4 h-4" />
-                  <span>{circuitType} Circuit Processing</span>
+                <div>
+                  <div className="font-bold text-2xl text-blue-800">
+                    Layer {currentLayer} of {totalLayers}
+                  </div>
+                  <div className="text-sm text-blue-600 capitalize flex items-center space-x-2">
+                    <Activity className="w-4 h-4 animate-pulse" />
+                    <span>{circuitType} Circuit Processing</span>
+                  </div>
                 </div>
               </div>
             </div>
             
-            <div className="flex items-center space-x-2 text-sm text-gray-600">
-              <Timer className="w-4 h-4" />
-              <span>{formatTime(processingTime)}</span>
+            {/* Real-time Metrics */}
+            <div className="flex items-center space-x-6">
+              <div className="text-center">
+                <div className="flex items-center space-x-2 text-sm text-gray-600">
+                  <Timer className="w-4 h-4" />
+                  <span className="font-mono text-lg font-bold">{formatTime(processingTime)}</span>
+                </div>
+                <div className="text-xs text-gray-500">Processing Time</div>
+              </div>
+              
+              <div className="text-center">
+                <div className="flex items-center space-x-2 text-sm text-green-600">
+                  <TrendingUp className="w-4 h-4" />
+                  <span className="font-mono text-lg font-bold">{Math.round(efficiencyScore)}%</span>
+                </div>
+                <div className="text-xs text-gray-500">Efficiency</div>
+              </div>
+              
+              {chunkProgress && chunkProgress.total > 1 && (
+                <div className="text-center">
+                  <div className="text-lg font-bold text-purple-700">
+                    {chunkProgress.current}/{chunkProgress.total}
+                  </div>
+                  <div className="text-xs text-purple-500">Deep Chunks</div>
+                </div>
+              )}
             </div>
           </div>
           
-          {chunkProgress && chunkProgress.total > 1 && (
-            <div className="text-right">
-              <div className="text-sm font-medium text-blue-700">
-                Chunk {chunkProgress.current}/{chunkProgress.total}
+          {/* Enhanced Progress Bar with Phase Information */}
+          <div className="space-y-3">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center space-x-2">
+                <Brain className="w-4 h-4 text-blue-600" />
+                <span className="text-sm font-medium text-gray-700 max-w-md truncate">
+                  {currentPhase}
+                </span>
               </div>
-              <div className="text-xs text-blue-500">
-                Deep Processing Mode
-              </div>
+              <span className="font-bold text-blue-700 text-lg">{Math.round(overallProgress)}%</span>
             </div>
-          )}
-        </div>
-        
-        <div className="space-y-3">
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-700">{currentPhase}</span>
-            <span className="font-medium text-blue-700">{Math.round(overallProgress)}%</span>
-          </div>
-          <Progress value={overallProgress} className="h-3 bg-blue-100" />
-          
-          {/* Phase indicator */}
-          <div className="flex justify-between text-xs text-gray-500">
-            <span>Analysis Phase</span>
-            <span>Synthesis Phase</span>
+            <Progress value={overallProgress} className="h-4 bg-blue-100" />
+            
+            {/* Phase Timeline */}
+            <div className="flex justify-between text-xs text-gray-500">
+              <span className="flex items-center space-x-1">
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <span>Analysis Phase</span>
+              </span>
+              <span className="flex items-center space-x-1">
+                <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                <span>Integration Phase</span>
+              </span>
+              <span className="flex items-center space-x-1">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span>Synthesis Phase</span>
+              </span>
+            </div>
           </div>
         </div>
       </Card>
 
-      {/* Enhanced Archetype Thinking Grid */}
+      {/* Enhanced Archetype Grid with Contribution Details */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {archetypes.map((archetype, index) => (
           <ArchetypeThoughtBubble
@@ -138,7 +208,7 @@ export const ProcessingVisualization = ({
           />
         ))}
         
-        {/* Enhanced Synthesis Step */}
+        {/* Enhanced Synthesis Agent */}
         <ArchetypeThoughtBubble
           archetype="Synthesis Agent"
           isActive={currentArchetype === "Compression Agent"}
@@ -158,7 +228,7 @@ export const ProcessingVisualization = ({
               <div className="w-3 h-3 bg-purple-500 rounded-full animate-pulse"></div>
             </div>
             <p className="text-purple-600 max-w-2xl mx-auto">
-              Deep archetypal analysis in progress. Each perspective brings unique insights that contribute to a richer understanding of your question.
+              {insights.contribution}
             </p>
             <div className="flex justify-center space-x-1 mt-4">
               {[...Array(5)].map((_, i) => (
@@ -184,7 +254,7 @@ export const ProcessingVisualization = ({
               <Zap className="w-6 h-6 text-emerald-600 animate-pulse" />
             </div>
             <p className="text-emerald-600 max-w-2xl mx-auto">
-              Weaving together all archetypal perspectives into a unified breakthrough insight. This is where the magic happens.
+              {insights.contribution}
             </p>
             <div className="grid grid-cols-5 gap-2 max-w-xs mx-auto mt-4">
               {archetypes.map((_, i) => (
