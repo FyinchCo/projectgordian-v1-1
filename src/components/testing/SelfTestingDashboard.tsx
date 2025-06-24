@@ -14,10 +14,9 @@ import {
   RefreshCw
 } from "lucide-react";
 import { useSelfTesting } from "@/hooks/useSelfTesting";
-import { ProcessingResult } from "@/components/processing/types";
 
 interface SelfTestingDashboardProps {
-  onRunFullTest: (processFunction: (question: string) => Promise<ProcessingResult>) => void;
+  onRunFullTest: (processFunction: (question: string) => Promise<any>) => void;
   isVisible: boolean;
 }
 
@@ -36,6 +35,23 @@ export const SelfTestingDashboard = ({ onRunFullTest, isVisible }: SelfTestingDa
   const recentTests = testResults.slice(-10);
   const insights = getPerformanceInsights();
 
+  const handleRunFullTest = () => {
+    // Create a dummy processing function for testing
+    const dummyProcessFunction = async (question: string) => {
+      console.log('Running test with question:', question);
+      // Return a mock result structure
+      return {
+        insight: "Test insight generated",
+        confidence: 0.8,
+        tensionPoints: 5,
+        noveltyScore: 7,
+        emergenceDetected: true
+      };
+    };
+    
+    onRunFullTest(dummyProcessFunction);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -46,7 +62,7 @@ export const SelfTestingDashboard = ({ onRunFullTest, isVisible }: SelfTestingDa
         </div>
         <div className="flex space-x-2">
           <Button
-            onClick={() => onRunFullTest(() => Promise.resolve({} as ProcessingResult))}
+            onClick={handleRunFullTest}
             disabled={isRunningTests}
             className="flex items-center space-x-2"
           >
