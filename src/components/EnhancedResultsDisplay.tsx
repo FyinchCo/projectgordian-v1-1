@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { RotateCcw, Download, Brain, TrendingUp } from "lucide-react";
@@ -9,6 +8,8 @@ import { TensionAnalysisSection } from "@/components/results/TensionAnalysisSect
 import { ProcessingLayersSection } from "@/components/results/ProcessingLayersSection";
 import { LogicTrailSection } from "@/components/results/LogicTrailSection";
 import { Badge } from "@/components/ui/badge";
+import { useEnhancedAIConfigOptimization } from "@/hooks/useEnhancedAIConfigOptimization";
+import { useEffect } from "react";
 
 interface QuestionQualityMetrics {
   geniusYield: number;
@@ -71,6 +72,38 @@ interface EnhancedResultsDisplayProps {
 }
 
 export const EnhancedResultsDisplay = ({ results, question, onReset, onExport }: EnhancedResultsDisplayProps) => {
+  const { recordProcessingResults } = useEnhancedAIConfigOptimization();
+
+  // Record learning data when results are displayed
+  useEffect(() => {
+    if (results && results.questionQuality && question) {
+      console.log('EnhancedResultsDisplay: Recording processing results for learning...');
+      
+      // Create configuration object from results
+      const configuration = {
+        processingDepth: results.processingDepth || 5,
+        circuitType: results.circuitType || 'sequential',
+        enhancedMode: results.enhancedMode !== false
+      };
+      
+      // Record the results for meta-learning
+      recordProcessingResults(
+        question,
+        configuration,
+        {
+          insight: results.insight,
+          confidence: results.confidence,
+          tensionPoints: results.tensionPoints,
+          noveltyScore: results.noveltyScore || 5,
+          emergenceDetected: results.emergenceDetected || false
+        },
+        results.questionQuality
+      );
+      
+      console.log('EnhancedResultsDisplay: Learning data recorded');
+    }
+  }, [results, question, recordProcessingResults]);
+
   return (
     <div className="space-y-8">
       {/* Learning System Status - Show if question quality is available */}

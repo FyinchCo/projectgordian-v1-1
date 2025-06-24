@@ -11,10 +11,17 @@ export const useMetaLearning = () => {
   // Load dashboard data on mount
   useEffect(() => {
     try {
+      console.log('useMetaLearning: Loading dashboard data...');
       const dashboard = metaLearningEngine.getLearningDashboard();
+      console.log('useMetaLearning: Dashboard data loaded:', dashboard);
       setLearningDashboard(dashboard);
+      
+      // Force show learning system for debugging
+      if (dashboard && dashboard.learningStats.totalRecords === 0) {
+        console.log('useMetaLearning: No learning records found, but system is ready');
+      }
     } catch (error) {
-      console.warn('Could not load learning dashboard:', error);
+      console.error('useMetaLearning: Could not load learning dashboard:', error);
     }
   }, []);
 
@@ -71,6 +78,11 @@ export const useMetaLearning = () => {
     qualityMetrics: any
   ) => {
     try {
+      console.log('useMetaLearning: Recording learning cycle...');
+      console.log('Question:', question);
+      console.log('Results:', results);
+      console.log('Quality metrics:', qualityMetrics);
+      
       metaLearningEngine.recordLearningCycle(
         question,
         assessment,
@@ -81,6 +93,7 @@ export const useMetaLearning = () => {
       
       // Update dashboard
       const newDashboard = metaLearningEngine.getLearningDashboard();
+      console.log('useMetaLearning: Updated dashboard:', newDashboard);
       setLearningDashboard(newDashboard);
       
       console.log('Learning cycle recorded successfully');
