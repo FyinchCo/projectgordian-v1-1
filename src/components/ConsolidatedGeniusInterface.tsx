@@ -13,6 +13,7 @@ import { useAIConfigOptimization } from "@/hooks/useAIConfigOptimization";
 import { useArchetypes } from "@/hooks/useArchetypes";
 import { useToast } from "@/hooks/use-toast";
 import { QuestionInputSection } from "./interface/QuestionInputSection";
+import { OptimizationReasoningCard } from "./OptimizationReasoningCard";
 
 interface ConsolidatedGeniusInterfaceProps {
   question: string;
@@ -49,7 +50,12 @@ export const ConsolidatedGeniusInterface = ({
 }: ConsolidatedGeniusInterfaceProps) => {
   const { assessQuestion, isAssessing } = useQuestionAssessment();
   const { updateArchetype } = useArchetypes();
-  const { optimizeAndApplyConfiguration, isAssessing: isOptimizing } = useAIConfigOptimization();
+  const { 
+    optimizeAndApplyConfiguration, 
+    isAssessing: isOptimizing, 
+    optimizationReasoning, 
+    clearOptimizationReasoning 
+  } = useAIConfigOptimization();
   const { toast } = useToast();
 
   const handleOptimizeAllSettings = async () => {
@@ -88,10 +94,10 @@ export const ConsolidatedGeniusInterface = ({
       setEnhancedMode(result.recommendations.enhancedMode);
       setCurrentAssessment(result);
       
-      // Show success message with link to config page
+      // Show success message
       toast({
         title: "Configuration Optimized",
-        description: "All settings updated. Visit the Configuration page to see detailed reasoning.",
+        description: "All settings updated based on your question analysis.",
         variant: "default",
       });
     }
@@ -111,6 +117,15 @@ export const ConsolidatedGeniusInterface = ({
 
   return (
     <div className="space-zen-lg max-w-4xl mx-auto">
+      {/* Optimization Reasoning Display - Same as Config page */}
+      {optimizationReasoning && (
+        <OptimizationReasoningCard
+          reasoning={optimizationReasoning.reasoning}
+          domainType={optimizationReasoning.domainType}
+          onDismiss={clearOptimizationReasoning}
+        />
+      )}
+
       {/* Main Question Input and Configuration */}
       <Card className="border border-zen-light bg-zen-paper shadow-zen-lg rounded-md">
         <div className="p-8 space-zen">
@@ -167,7 +182,7 @@ export const ConsolidatedGeniusInterface = ({
                   <Badge variant="outline" className="text-xs border-zen-medium text-zen-charcoal">{currentAssessment.complexityScore}/10</Badge>
                 </div>
                 <div className="text-xs text-zen-body text-zen-medium mt-3 leading-relaxed">
-                  Configuration optimized for maximum insight generation. Visit the Configuration page for detailed reasoning.
+                  Configuration optimized for maximum insight generation. Detailed reasoning shown above.
                 </div>
               </div>
             </div>
