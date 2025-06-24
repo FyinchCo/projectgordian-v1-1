@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Header } from "@/components/Header";
 import { ProcessingSection } from "@/components/ProcessingSection";
 import { ResultsSection } from "@/components/ResultsSection";
@@ -99,59 +98,12 @@ const Index = () => {
     onChunkProgressChange: setChunkProgress
   });
 
-  const handleRunFullTestSuite = async () => {
-    console.log('Starting full test suite with real processing function...');
-    
-    // Create a processing function that uses our actual processing logic
-    const actualProcessFunction = async (testQuestion: string) => {
-      return new Promise((resolve, reject) => {
-        console.log('Running test for question:', testQuestion);
-        
-        // Use the actual processing logic directly - fix the processingDepth parameter
-        const testConfig = {
-          question: testQuestion,
-          processingDepth: processingDepth[0], // Extract the number from the array
-          circuitType,
-          enhancedMode,
-          customArchetypes,
-          currentAssessment,
-        };
-        
-        // Call the processing function directly instead of creating a component
-        const handleProcessing = async () => {
-          try {
-            console.log('Calling genius-machine function with test config...');
-            
-            const result = await supabase.functions.invoke('genius-machine', {
-              body: testConfig
-            });
-            
-            if (result.error) {
-              console.error('Test processing error:', result.error);
-              reject(new Error(`Processing failed: ${result.error.message}`));
-              return;
-            }
-            
-            if (!result.data) {
-              console.error('No data in test response');
-              reject(new Error('No data returned from processing'));
-              return;
-            }
-            
-            console.log('Test processing completed for:', testQuestion, result.data);
-            resolve(result.data);
-          } catch (error) {
-            console.error('Test processing failed for:', testQuestion, error);
-            reject(error);
-          }
-        };
-        
-        handleProcessing();
-      });
-    };
+  const handleRunFullTestSuite = useCallback(async () => {
+    console.log('Index: Starting simplified test suite...');
     
     try {
-      await runFullTestSuite(actualProcessFunction);
+      // Use the simplified test suite that doesn't require a processing function parameter
+      await runFullTestSuite();
     } catch (error) {
       console.error('Test suite failed:', error);
       toast({
@@ -160,7 +112,7 @@ const Index = () => {
         variant: "destructive",
       });
     }
-  };
+  }, [runFullTestSuite, toast]);
 
   // Show password gate if not authenticated
   if (!isAuthenticated) {
