@@ -2,9 +2,13 @@
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { OutputType } from "@/types/outputTypes";
+import { useQuestionAssessment } from "@/hooks/useQuestionAssessment";
 
 const QuestionType = () => {
   const navigate = useNavigate();
+  const [showAssessment, setShowAssessment] = useState(false);
+  const [selectedType, setSelectedType] = useState<OutputType | null>(null);
+  const { assessQuestion, assessment, isAssessing } = useQuestionAssessment();
 
   const questionTypes = [
     { id: 'practical' as OutputType, label: 'Practical', description: 'Help me act wisely' },
@@ -14,7 +18,22 @@ const QuestionType = () => {
   ];
 
   const handleTypeSelect = (type: OutputType) => {
-    navigate("/question-input", { state: { outputType: type } });
+    setSelectedType(type);
+    navigate("/question-input", { state: { outputType: type, assessment } });
+  };
+
+  const handleQuickAssessment = async () => {
+    // For now, we'll do a basic assessment without a question
+    // In the real flow, this might ask for a brief question preview
+    setShowAssessment(true);
+    const result = await assessQuestion("sample complex question for assessment");
+    if (result && result.recommendations) {
+      // Auto-suggest optimal question type
+      const suggestedType = result.domainType.toLowerCase().includes('business') ? 'practical' :
+                           result.domainType.toLowerCase().includes('philosophy') ? 'philosophical' :
+                           result.domainType.toLowerCase().includes('creative') ? 'abstract' : 'theoretical';
+      setSelectedType(suggestedType as OutputType);
+    }
   };
 
   return (
@@ -29,7 +48,7 @@ const QuestionType = () => {
 
         <div className="space-y-12">
           <h1 className="text-3xl font-cormorant font-bold text-mono-pure-black">
-            What kind of answer are you looking for?
+            What kind of question are you asking?
           </h1>
 
           <div className="space-y-6">
@@ -54,6 +73,34 @@ const QuestionType = () => {
                 </div>
               </button>
             ))}
+          </div>
+
+          <div className="pt-8 border-t border-mono-light-gray">
+            <button
+              onClick={handleQuickAssessment}
+              disabled={isAssessing}
+              className="text-mono-medium-gray hover:text-mono-pure-black font-inter transition-colors"
+            >
+              {isAssessing ? "Analyzing..." : "→ Get AI Assessment"}
+            </button>
+            
+            {showAssessment && assessment && (
+              <div className="mt-6 p-4 bg-mono-light-gray">
+                <div className="text-sm font-inter space-y-2">
+                  <div className="font-medium text-mono-pure-black">Quick Assessment:</div>
+                  <div className="text-mono-dark-gray">
+                    Domain: {assessment.domainType} | 
+                    Complexity: {assessment.complexityScore}/10 |
+                    Recommended: {assessment.recommendations.processingDepth} layers
+                  </div>
+                  {selectedType && (
+                    <div className="text-mono-pure-black">
+                      → Suggested type: <strong>{selectedType}</strong>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { QuestionAssessment } from "@/components/QuestionAssessment";
+import { ProcessingModeSelector } from "@/components/ProcessingModeSelector";
 import { OutputType } from "@/types/outputTypes";
 
 const AdvancedSettings = () => {
@@ -10,6 +11,7 @@ const AdvancedSettings = () => {
   const location = useLocation();
   const [question, setQuestion] = useState("");
   const [outputType, setOutputType] = useState<OutputType>('practical');
+  const [processingMode, setProcessingMode] = useState("standard");
   const [processingDepth, setProcessingDepth] = useState([5]);
   const [circuitType, setCircuitType] = useState("sequential");
   const [enhancedMode, setEnhancedMode] = useState(true);
@@ -18,6 +20,7 @@ const AdvancedSettings = () => {
     if (location.state) {
       setQuestion(location.state.question || "");
       setOutputType(location.state.outputType || 'practical');
+      setProcessingMode(location.state.processingMode || "standard");
     }
   }, [location.state]);
 
@@ -27,11 +30,12 @@ const AdvancedSettings = () => {
     setEnhancedMode(recommendations.enhancedMode);
   };
 
-  const handleProceedToProcessing = () => {
+  const handleStart = () => {
     navigate("/process", { 
       state: { 
         question, 
-        outputType,
+        outputType, 
+        processingMode,
         processingDepth,
         circuitType,
         enhancedMode,
@@ -52,7 +56,7 @@ const AdvancedSettings = () => {
 
         <div className="space-y-12">
           <h1 className="text-3xl font-cormorant font-bold text-mono-pure-black">
-            Manual Configuration
+            Advanced Tuning
           </h1>
 
           <div className="space-y-8">
@@ -63,25 +67,15 @@ const AdvancedSettings = () => {
               />
             )}
 
-            <div className="space-y-6 p-6 bg-mono-light-gray">
-              <h3 className="font-cormorant font-bold text-mono-pure-black text-xl">Processing Depth</h3>
-              <div className="space-y-4">
-                <label className="block">
-                  <span className="font-inter text-mono-pure-black">Cognitive Layers: {processingDepth[0]}</span>
-                  <input
-                    type="range"
-                    min="1"
-                    max="10"
-                    value={processingDepth[0]}
-                    onChange={(e) => setProcessingDepth([parseInt(e.target.value)])}
-                    className="w-full mt-2"
-                  />
-                </label>
-              </div>
-            </div>
+            <ProcessingModeSelector
+              selectedMode={processingMode}
+              onModeChange={setProcessingMode}
+              customDepth={processingDepth[0]}
+              onCustomDepthChange={(depth) => setProcessingDepth([depth])}
+            />
 
             <div className="space-y-4 p-6 bg-mono-light-gray">
-              <h3 className="font-cormorant font-bold text-mono-pure-black text-xl">Circuit Configuration</h3>
+              <h3 className="font-cormorant font-bold text-mono-pure-black">Circuit Configuration</h3>
               <div className="space-y-2">
                 <label className="flex items-center space-x-2">
                   <input
@@ -122,12 +116,12 @@ const AdvancedSettings = () => {
             </div>
 
             <Button
-              onClick={handleProceedToProcessing}
+              onClick={handleStart}
               disabled={!question.trim()}
               size="lg"
               className="w-full bg-mono-pure-black text-mono-pure-white hover:bg-mono-charcoal font-inter font-medium text-lg py-6"
             >
-              → Proceed to Processing Mode Selection
+              → Start with Advanced Configuration
             </Button>
           </div>
         </div>
