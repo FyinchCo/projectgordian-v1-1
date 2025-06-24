@@ -28,19 +28,42 @@ export default function LearningAnalytics() {
   useEffect(() => {
     if (isAuthenticated) {
       loadDeveloperData();
+      // Set up interval to refresh data every 2 seconds when page is active
+      const interval = setInterval(() => {
+        loadDeveloperData();
+      }, 2000);
+      
+      return () => clearInterval(interval);
     }
   }, [isAuthenticated]);
 
   const loadDeveloperData = () => {
     try {
+      console.log('LearningAnalytics: Loading developer data...');
       const stored = localStorage.getItem('genius-machine-learning-db');
+      console.log('LearningAnalytics: Raw localStorage data:', stored ? 'Found data' : 'No data');
+      
       if (stored) {
         const data = JSON.parse(stored);
+        console.log('LearningAnalytics: Parsed data:', {
+          recordsCount: data.records?.length || 0,
+          patternsCount: data.patterns?.length || 0,
+          lastUpdated: data.lastUpdated ? new Date(data.lastUpdated).toISOString() : 'Unknown'
+        });
         setRawData(data);
         setPatterns(data.patterns || []);
+      } else {
+        console.log('LearningAnalytics: No learning data found in localStorage');
+        setRawData(null);
+        setPatterns([]);
       }
+      
+      // Also get fresh stats from the database instance
+      const freshStats = learningDatabase.getLearningStats();
+      console.log('LearningAnalytics: Fresh stats from database:', freshStats);
+      
     } catch (error) {
-      console.error('Could not load raw learning data:', error);
+      console.error('LearningAnalytics: Could not load raw learning data:', error);
     }
   };
 
@@ -55,6 +78,14 @@ export default function LearningAnalytics() {
       link.click();
       URL.revokeObjectURL(url);
     }
+  };
+
+  // Force refresh function
+  const forceRefresh = () => {
+    console.log('LearningAnalytics: Force refreshing all data...');
+    loadDeveloperData();
+    // Force re-render by updating a timestamp
+    setRawData(prev => ({ ...prev, _refreshTimestamp: Date.now() }));
   };
 
   if (!isAuthenticated) {
@@ -72,11 +103,17 @@ export default function LearningAnalytics() {
             <p className="text-gordian-brown font-inter">
               Developer insights into the meta-learning system's progress and patterns
             </p>
+            {/* Debug info */}
+            <div className="mt-2 text-xs text-gray-500">
+              Records: {rawData?.records?.length || 0} | 
+              Last refresh: {new Date().toLocaleTimeString()} |
+              Dashboard total: {learningDashboard?.learningStats?.totalRecords || 0}
+            </div>
           </div>
           <div className="flex items-center space-x-3">
-            <Button onClick={loadDeveloperData} variant="outline" size="sm">
+            <Button onClick={forceRefresh} variant="outline" size="sm">
               <RefreshCw className="w-4 h-4 mr-2" />
-              Refresh Data
+              Force Refresh
             </Button>
             <Button onClick={exportLearningData} size="sm" className="bg-gordian-dark-brown hover:bg-gordian-brown">
               <Download className="w-4 h-4 mr-2" />
@@ -105,6 +142,9 @@ export default function LearningAnalytics() {
                       <h3 className="font-semibold">Data Health</h3>
                       <p className="text-sm text-gray-600">
                         {rawData?.records?.length || 0} learning records stored
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        Hook reports: {learningDashboard.learningStats?.totalRecords || 0}
                       </p>
                     </div>
                   </div>
@@ -174,7 +214,12 @@ export default function LearningAnalytics() {
 
           <TabsContent value="data" className="space-y-4">
             <Card className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Raw Learning Records</h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">Raw Learning Records</h3>
+                <div className="text-sm text-gray-500">
+                  Total: {rawData?.records?.length || 0} records
+                </div>
+              </div>
               <ScrollArea className="h-96">
                 {rawData?.records?.length > 0 ? (
                   <div className="space-y-3">
@@ -202,7 +247,12 @@ export default function LearningAnalytics() {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-gray-500">No learning records found.</p>
+                  <div className="text-center py-8">
+                    <p className="text-gray-500 mb-2">No learning records found.</p>
+                    <p className="text-xs text-gray-400">
+                      Process a question on the main page to generate learning data.
+                    </p>
+                  </div>
                 )}
               </ScrollArea>
             </Card>
