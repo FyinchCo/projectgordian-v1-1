@@ -81,13 +81,12 @@ serve(async (req) => {
     console.log(`=== STARTING SEQUENTIAL LAYER PROCESSING ===`);
     console.log(`Target: ${requestedDepth} layers (MUST process ALL requested layers)`);
     
-    // CRITICAL FIX: Process each layer sequentially from 1 to requestedDepth
+    // Process each layer sequentially from 1 to requestedDepth
     for (let layerNumber = 1; layerNumber <= requestedDepth; layerNumber++) {
       console.log(`\n--- PROCESSING LAYER ${layerNumber} of ${requestedDepth} ---`);
       console.log(`Current processed layers: ${processedLayers.length}`);
       
       try {
-        // Use ALL previous layers as context (not filtered)
         const previousLayers = [...processedLayers];
         
         console.log(`Layer ${layerNumber}: Processing with ${previousLayers.length} previous layers as context`);
@@ -101,7 +100,6 @@ serve(async (req) => {
           enhancedMode
         );
         
-        // STRICT VALIDATION
         if (!layerResult) {
           throw new Error(`Layer ${layerNumber} returned null result`);
         }
@@ -116,7 +114,6 @@ serve(async (req) => {
           throw new Error(`Layer ${layerNumber} missing required synthesis`);
         }
         
-        // Detect and prevent duplicate insights
         const isDuplicate = processedLayers.some(prevLayer => {
           const prevInsight = prevLayer.synthesis.insight.toLowerCase();
           const currentInsight = layerResult.synthesis.insight.toLowerCase();
@@ -129,7 +126,6 @@ serve(async (req) => {
           layerResult.synthesis.insight = `Layer ${layerNumber} breakthrough: ${layerResult.synthesis.insight} This represents a ${layerNumber > 6 ? 'transcendent' : 'progressive'} advancement beyond previous layers, introducing ${layerNumber}-level complexity and depth.`;
         }
         
-        // Add the validated layer
         processedLayers.push(layerResult);
         
         console.log(`✓ Layer ${layerNumber} completed successfully:`);
@@ -141,7 +137,6 @@ serve(async (req) => {
       } catch (layerError) {
         console.error(`Layer ${layerNumber} processing failed:`, layerError);
         
-        // Create meaningful fallback with unique content
         const fallbackLayer: LayerResult = {
           layerNumber: layerNumber,
           archetypeResponses: [],
@@ -160,7 +155,6 @@ serve(async (req) => {
       }
     }
 
-    // FINAL VALIDATION
     if (processedLayers.length !== requestedDepth) {
       console.error(`CRITICAL ERROR: Expected ${requestedDepth} layers but processed ${processedLayers.length}`);
       console.error('Layer numbers in result:', processedLayers.map(l => l.layerNumber));
@@ -168,19 +162,33 @@ serve(async (req) => {
       console.log(`✓ SUCCESS: All ${processedLayers.length} layers processed successfully`);
     }
 
-    // Validate layer uniqueness
     const uniqueInsights = new Set(processedLayers.map(l => l.synthesis.insight.substring(0, 100)));
     if (uniqueInsights.size < processedLayers.length) {
       console.warn(`WARNING: ${processedLayers.length - uniqueInsights.size} duplicate insights detected`);
     }
 
-    // Get final synthesis from the last layer
     const finalLayer = processedLayers[processedLayers.length - 1];
     if (!finalLayer || !finalLayer.synthesis) {
       throw new Error('No valid final layer was processed');
     }
     
     const finalSynthesis = finalLayer.synthesis;
+    
+    // Generate compression formats for the final insight
+    console.log('Generating compression formats for final insight...');
+    let compressionFormats = null;
+    try {
+      const { generateCompressionFormats } = await import('./compression.ts');
+      compressionFormats = await generateCompressionFormats(
+        finalSynthesis.insight,
+        finalSynthesis,
+        question
+      );
+      console.log('Compression formats generated successfully');
+    } catch (compressionError) {
+      console.error('Compression formats generation failed:', compressionError);
+      // Continue without compression formats
+    }
     
     // Evaluate question quality
     let questionQuality = null;
@@ -217,13 +225,15 @@ serve(async (req) => {
       questionQuality: questionQuality,
       assumptionAnalysis: assumptionAnalysis,
       logicTrail: finalLayer.archetypeResponses || [],
+      compressionFormats: compressionFormats,
       metadata: {
         timestamp: Date.now(),
         requestedDepth: requestedDepth,
         actualDepth: processedLayers.length,
         layerProcessingSuccess: processedLayers.length === requestedDepth,
         uniqueInsights: uniqueInsights.size,
-        version: '2.2'
+        compressionAvailable: !!compressionFormats,
+        version: '2.3'
       }
     };
 
@@ -245,10 +255,11 @@ serve(async (req) => {
       layers: [],
       questionQuality: null,
       assumptionAnalysis: null,
+      compressionFormats: null,
       metadata: {
         timestamp: Date.now(),
         error: error.message,
-        version: '2.2'
+        version: '2.3'
       }
     }), {
       status: 500,
