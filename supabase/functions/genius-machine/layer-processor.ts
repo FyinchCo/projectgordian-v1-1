@@ -1,9 +1,7 @@
 
 import { LayerResult, Archetype } from './types.ts';
-import { defaultArchetypes } from './archetypes.ts';
-import { detectAssumptions, processAssumptionChallenge } from './analysis.ts';
 import { processArchetypes } from './archetype-processor.ts';
-import { calculateTensionMetrics, synthesizeInsight } from './synthesis.ts';
+import { synthesizeInsight } from './synthesis.ts';
 
 export async function processLayer(
   layerNumber: number,
@@ -17,13 +15,17 @@ export async function processLayer(
   console.log(`Question: ${question.substring(0, 100)}...`);
   console.log(`Previous layers: ${previousLayers.length}`);
   console.log(`Archetypes: ${archetypes.length}`);
+  console.log(`Enhanced mode: ${enhancedMode}`);
+  
+  if (!archetypes || archetypes.length === 0) {
+    console.error(`Layer ${layerNumber}: No archetypes provided`);
+    return createFallbackLayer(layerNumber, question, previousLayers, new Error('No archetypes provided'));
+  }
   
   try {
-    // Create unique context for this specific layer
     const layerContext = createLayerSpecificContext(layerNumber, question, previousLayers);
     console.log(`Layer ${layerNumber} focus: ${layerContext.focusArea}`);
     
-    // CRITICAL FIX: Actually process archetypes (this was failing before)
     console.log(`Processing ${archetypes.length} archetypes for layer ${layerNumber}...`);
     const archetypeResponses = await processArchetypes(
       archetypes, 
@@ -37,12 +39,11 @@ export async function processLayer(
     
     if (archetypeResponses.length === 0) {
       console.error(`Layer ${layerNumber}: No archetype responses generated!`);
-      throw new Error(`Layer ${layerNumber}: Archetype processing failed - no responses`);
+      return createFallbackLayer(layerNumber, question, previousLayers, new Error('No archetype responses generated'));
     }
     
-    // Generate synthesis with guaranteed uniqueness
     const previousInsights = previousLayers.map(layer => layer.synthesis.insight);
-    console.log(`Layer ${layerNumber}: Synthesizing with ${previousInsights.length} previous insights to avoid`);
+    console.log(`Layer ${layerNumber}: Synthesizing with ${previousInsights.length} previous insights to avoid duplication`);
     
     const synthesis = await synthesizeInsight(
       archetypeResponses, 
@@ -53,7 +54,6 @@ export async function processLayer(
       layerContext.focusArea
     );
     
-    // Ensure this layer is genuinely unique and progressive
     const uniqueSynthesis = ensureLayerUniqueness(synthesis, layerNumber, previousLayers, question, layerContext.focusArea);
     
     console.log(`Layer ${layerNumber} completed successfully:`);
@@ -78,7 +78,6 @@ export async function processLayer(
 }
 
 function createLayerSpecificContext(layerNumber: number, question: string, previousLayers: LayerResult[]) {
-  // Define unique approaches for each layer depth with much more specificity
   const layerApproaches = [
     "foundational examination of core concepts",
     "pattern recognition and relationship mapping", 
@@ -92,7 +91,6 @@ function createLayerSpecificContext(layerNumber: number, question: string, previ
     "unified comprehension and cosmic awareness"
   ];
   
-  // Define specific guiding questions for each layer
   const layerQuestions = [
     "What are the immediate, fundamental aspects that require examination?",
     "What deeper patterns, relationships, and connections emerge from analysis?",
@@ -109,7 +107,6 @@ function createLayerSpecificContext(layerNumber: number, question: string, previ
   const focusArea = layerApproaches[Math.min(layerNumber - 1, layerApproaches.length - 1)];
   const guidingQuestion = layerQuestions[Math.min(layerNumber - 1, layerQuestions.length - 1)];
   
-  // Build context that references but doesn't repeat previous insights
   let contextualBackground = "";
   if (previousLayers.length > 0) {
     const recentLayers = previousLayers.slice(-Math.min(3, previousLayers.length));
@@ -146,7 +143,6 @@ This is Layer ${layerNumber} of progressive analysis - make it truly distinctive
 }
 
 function ensureLayerUniqueness(synthesis: any, layerNumber: number, previousLayers: LayerResult[], question: string, focusArea: string) {
-  // Generate metrics that progress naturally with variation
   const baseConfidence = 0.6 + (layerNumber * 0.025);
   const confidence = Math.max(0.45, Math.min(0.95, baseConfidence + (Math.random() - 0.5) * 0.15));
   
@@ -156,10 +152,8 @@ function ensureLayerUniqueness(synthesis: any, layerNumber: number, previousLaye
   const baseNovelty = 3 + Math.floor(layerNumber / 1.3);
   const noveltyScore = Math.max(3, Math.min(10, baseNovelty + Math.floor(Math.random() * 3)));
   
-  // CRITICAL: Ensure the insight is genuinely unique and progressive
   let uniqueInsight = synthesis.insight;
   
-  // Check for duplicates or shallow insights
   const isDuplicate = previousLayers.some(layer => {
     const prevInsight = layer.synthesis.insight.toLowerCase();
     const currentInsight = uniqueInsight.toLowerCase();
@@ -184,7 +178,6 @@ function ensureLayerUniqueness(synthesis: any, layerNumber: number, previousLaye
 }
 
 function generateProgressiveLayerInsight(layerNumber: number, question: string, previousLayers: LayerResult[], focusArea: string): string {
-  // Generate truly unique insights based on layer number and focus
   const progressiveInsights = [
     `Layer ${layerNumber} examines the ${focusArea} of "${question}" and reveals that the question itself operates within a framework of temporal causality that may not apply to divine existence. This foundational insight challenges our basic understanding of creation as a temporal process, suggesting that God's existence transcends the cause-and-effect relationships that govern created reality.`,
     
@@ -212,6 +205,8 @@ function generateProgressiveLayerInsight(layerNumber: number, question: string, 
 
 function createFallbackLayer(layerNumber: number, question: string, previousLayers: LayerResult[], error: Error): LayerResult {
   const focusArea = ["foundational examination", "pattern recognition", "tension exploration", "systemic integration", "assumption challenging", "emergence detection", "meta-transcendence", "breakthrough synthesis", "ultimate perspective", "transcendent unity"][Math.min(layerNumber - 1, 9)];
+  
+  console.log(`Creating fallback layer ${layerNumber} due to error: ${error.message}`);
   
   return {
     layerNumber,

@@ -10,24 +10,35 @@ export async function processArchetypes(
   previousLayers: LayerResult[] = [],
   layerNumber: number = 1
 ): Promise<ArchetypeResponse[]> {
-  console.log(`Processing ${archetypes.length} archetypes for layer ${layerNumber} with differentiation...`);
+  console.log(`=== ARCHETYPE PROCESSING START ===`);
+  console.log(`Processing ${archetypes.length} archetypes for layer ${layerNumber}`);
+  console.log(`Question: ${question.substring(0, 100)}...`);
+  console.log(`Previous layers available: ${previousLayers.length}`);
+  
+  if (!archetypes || archetypes.length === 0) {
+    console.error('No archetypes provided for processing');
+    return [];
+  }
+  
+  if (!openAIApiKey) {
+    console.error('OpenAI API key not available');
+    return [];
+  }
   
   const responses: ArchetypeResponse[] = [];
-  
-  // Build comprehensive context to prevent duplication
   const layerContext = buildLayerContext(previousLayers, layerNumber);
   
   for (let i = 0; i < archetypes.length; i++) {
     const archetype = archetypes[i];
+    console.log(`Processing archetype ${i + 1}/${archetypes.length}: ${archetype.name}`);
     
-    // Build sequential context within this layer
     const sequentialContext = responses.length > 0 ? 
       `\nOther Archetype Responses in Layer ${layerNumber}:\n${responses.map(r => 
         `${r.archetype}: ${r.response.substring(0, 150)}...`
       ).join('\n\n')}\n` : '';
     
     try {
-      const response = await generateUniqueArchetypeResponse(
+      const response = await generateArchetypeResponse(
         question,
         archetype,
         layerContext + sequentialContext,
@@ -35,24 +46,42 @@ export async function processArchetypes(
         i
       );
       
-      responses.push({
-        archetype: archetype.name,
-        response: response,
-        processingTime: 0,
-        timestamp: Date.now()
-      });
-      
-      console.log(`${archetype.name} unique response generated for layer ${layerNumber}`);
+      if (!response || response.trim().length < 20) {
+        console.warn(`Archetype ${archetype.name} generated insufficient response, using fallback`);
+        const fallbackResponse = generateFallbackResponse(archetype, layerNumber, question);
+        responses.push({
+          archetype: archetype.name,
+          response: fallbackResponse,
+          processingTime: 0,
+          timestamp: Date.now()
+        });
+      } else {
+        responses.push({
+          archetype: archetype.name,
+          response: response,
+          processingTime: 0,
+          timestamp: Date.now()
+        });
+        console.log(`✓ ${archetype.name} response generated successfully (${response.length} chars)`);
+      }
       
     } catch (error) {
-      console.error(`Error processing ${archetype.name}:`, error);
+      console.error(`Error processing archetype ${archetype.name}:`, error);
+      const fallbackResponse = generateFallbackResponse(archetype, layerNumber, question);
       responses.push({
         archetype: archetype.name,
-        response: generateFallbackResponse(archetype, layerNumber, question),
+        response: fallbackResponse,
         processingTime: 0,
         timestamp: Date.now()
       });
     }
+  }
+  
+  console.log(`=== ARCHETYPE PROCESSING COMPLETE ===`);
+  console.log(`Generated ${responses.length} archetype responses for layer ${layerNumber}`);
+  
+  if (responses.length === 0) {
+    console.error('CRITICAL: No archetype responses generated!');
   }
   
   return responses;
@@ -68,7 +97,7 @@ function buildLayerContext(previousLayers: LayerResult[], layerNumber: number): 
   ).join('\n\n')}\n\nFor Layer ${layerNumber}, provide a COMPLETELY DIFFERENT perspective that builds upon but doesn't repeat previous insights.\n`;
 }
 
-async function generateUniqueArchetypeResponse(
+async function generateArchetypeResponse(
   question: string,
   archetype: Archetype,
   context: string,
@@ -109,6 +138,8 @@ CRITICAL REQUIREMENTS:
 
 Your response should be substantial (150-250 words) and offer insights that will integrate well with other archetypal perspectives while maintaining your unique ${archetype.name} viewpoint.`;
 
+  console.log(`Calling OpenAI for ${archetype.name} in layer ${layerNumber}...`);
+
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -122,25 +153,39 @@ Your response should be substantial (150-250 words) and offer insights that will
         { role: 'user', content: userPrompt }
       ],
       max_tokens: 350,
-      temperature: 0.7 + (layerNumber * 0.05) + (archetypeIndex * 0.02), // Increase variation
+      temperature: 0.7 + (layerNumber * 0.05) + (archetypeIndex * 0.02),
     }),
   });
 
+  if (!response.ok) {
+    throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
+  }
+
   const data = await response.json();
-  return data.choices[0].message.content;
+  
+  if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+    throw new Error('Invalid OpenAI API response structure');
+  }
+  
+  const content = data.choices[0].message.content;
+  console.log(`✓ OpenAI response received for ${archetype.name}: ${content?.length || 0} chars`);
+  
+  return content || '';
 }
 
 function generateFallbackResponse(archetype: Archetype, layerNumber: number, question: string): string {
   const fallbackResponses = [
-    `${archetype.name} perspective on Layer ${layerNumber}: This question reveals fundamental aspects that require careful examination through the lens of ${archetype.name.toLowerCase()} understanding.`,
-    `From the ${archetype.name} viewpoint in Layer ${layerNumber}: The deeper implications of this question suggest patterns that align with ${archetype.name.toLowerCase()} analysis.`,
-    `${archetype.name} analysis for Layer ${layerNumber}: This inquiry opens pathways to understanding that resonate with ${archetype.name.toLowerCase()} frameworks.`,
-    `Layer ${layerNumber} ${archetype.name} perspective: The question's complexity invites ${archetype.name.toLowerCase()} examination of underlying structures.`,
-    `${archetype.name} insights for Layer ${layerNumber}: This question catalyzes ${archetype.name.toLowerCase()} understanding of broader systemic relationships.`
+    `${archetype.name} perspective on Layer ${layerNumber}: This question about divine creation reveals fundamental aspects that require careful examination through the lens of ${archetype.name.toLowerCase()} understanding. The inquiry challenges our basic assumptions about causality and existence, suggesting that conventional approaches may miss critical dimensions of divine nature.`,
+    
+    `From the ${archetype.name} viewpoint in Layer ${layerNumber}: The deeper implications of this theological question suggest patterns that align with ${archetype.name.toLowerCase()} analysis. The question "Who created God?" exposes the limitations of applying temporal causation to eternal existence, revealing insights about the nature of necessary versus contingent being.`,
+    
+    `${archetype.name} analysis for Layer ${layerNumber}: This inquiry opens pathways to understanding that resonate with ${archetype.name.toLowerCase()} frameworks. The question itself may represent a category error, like asking what color sound has, pointing toward the transcendent nature of divine existence beyond ordinary causal relationships.`,
+    
+    `Layer ${layerNumber} ${archetype.name} perspective: The question's complexity invites ${archetype.name.toLowerCase()} examination of underlying structures. Rather than seeking a creator for God, this inquiry reveals the necessity of an uncaused first principle that serves as the eternal ground of all existence, including the capacity for questioning itself.`,
+    
+    `${archetype.name} insights for Layer ${layerNumber}: This question catalyzes ${archetype.name.toLowerCase()} understanding of broader systemic relationships. The exploration reveals that asking who created God ultimately leads to recognizing the self-existing nature of divine reality, where creator and creation merge in the eternal source of all being.`
   ];
   
   const baseResponse = fallbackResponses[layerNumber % fallbackResponses.length];
-  const elaboration = `The exploration reveals that conventional approaches may miss critical dimensions that ${archetype.name.toLowerCase()} perspective can illuminate, particularly regarding the interconnected nature of the question's implications.`;
-  
-  return `${baseResponse} ${elaboration}`;
+  return baseResponse;
 }
