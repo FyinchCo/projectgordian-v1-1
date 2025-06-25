@@ -9,19 +9,15 @@ interface LaunchSectionProps {
 
 export const LaunchSection = ({ question, onStartGenius }: LaunchSectionProps) => {
   return (
-    <div className="pt-8 border-t border-zen-light">
-      <Button 
-        onClick={onStartGenius} 
-        disabled={!question.trim()} 
-        size="lg" 
-        className="w-full bg-zen-ink hover:bg-zen-charcoal text-zen-paper border-0 px-8 py-6 rounded-lg shadow-zen-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        <div className="flex items-center justify-center space-x-3 text-zen-mono uppercase tracking-wide font-light">
-          <Play className="w-5 h-5" />
-          <span>Start Genius Machine</span>
-          <Zap className="w-5 h-5" />
-        </div>
-      </Button>
-    </div>
+    <Button 
+      onClick={onStartGenius}
+      disabled={!question.trim()}
+      size="lg"
+      className="w-full bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white flex items-center justify-center space-x-3 font-bold text-lg shadow-lg hover:shadow-xl transition-all duration-300 border-0 px-8 py-6 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      <Play className="w-6 h-6" />
+      <span>Let's Think Together!</span>
+      <Zap className="w-6 h-6" />
+    </Button>
   );
 };
