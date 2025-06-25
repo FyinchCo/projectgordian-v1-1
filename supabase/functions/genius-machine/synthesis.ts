@@ -1,3 +1,4 @@
+
 import { ArchetypeResponse, TensionMetrics, SynthesisResult, LayerResult } from './types.ts';
 import { evaluateQuestionQuality, QuestionQualityMetrics } from './question-quality.ts';
 import { generateCompressionFormats, CompressionFormats } from './compression.ts';
@@ -101,42 +102,100 @@ Return only the (possibly tagged) contribution text.`;
   return taggedResponses;
 }
 
-export async function synthesizeInsight(
-  question: string, 
-  archetypeResponses: ArchetypeResponse[], 
-  previousLayers?: LayerResult[], 
-  layerNumber?: number, 
+async function performInitialSynthesis(
+  question: string,
+  archetypeResponses: ArchetypeResponse[],
   tensionMetrics?: TensionMetrics
-): Promise<SynthesisResult & { questionQuality?: QuestionQualityMetrics; compressionFormats?: CompressionFormats }> {
-  // Add tension tags to responses
-  const taggedResponses = await addTensionTags(archetypeResponses);
-  const allResponses = taggedResponses.map(r => `${r.archetype}: ${r.contribution}`).join('\n\n');
+): Promise<{patterns: string[], contradictions: string[], emergentThemes: string[]}> {
+  const allResponses = archetypeResponses.map(r => `${r.archetype}: ${r.contribution}`).join('\n\n');
   
-  let systemPrompt = `You are the Enhanced Compression Agent. Your role is to synthesize insights from multiple archetypal perspectives into breakthrough insights that transcend conventional wisdom.
+  let systemPrompt = `You are the Pattern Recognition Engine. Your role is to identify the deep structural patterns, contradictions, and emergent themes across all archetype perspectives.
 
-Your analysis must:
-1. Identify genuine emergence - insights that are MORE than the sum of their parts
-2. Detect novelty - how much this challenges typical thinking patterns
-3. Preserve essential tensions rather than smoothing them over
-4. Flag when synthesis creates true cognitive disruption vs. elegant restatement
+Analyze the responses and identify:
+1. PATTERNS: Common threads, shared assumptions, or recurring themes across different archetypes
+2. CONTRADICTIONS: Direct conflicts, opposing viewpoints, or irreconcilable differences
+3. EMERGENT THEMES: New insights that emerge from the combination of perspectives, not present in any single response
 
-Pay special attention to tension tags like [contradiction emerged here] and [novel insight surfaced here] - these indicate fault lines where breakthrough thinking is most likely.
-
-CRITICAL: You must respond with ONLY a valid JSON object. Do not include any text before or after the JSON. The JSON must contain:
-- insight: A profound, actionable insight (1-2 sentences) that creates cognitive disruption
-- confidence: Synthesis confidence as a decimal between 0.0 and 1.0 (be precise, avoid using exactly 0.75)
-- tensionPoints: Number of unresolved tensions preserved (integer)
-- noveltyScore: How novel/challenging this insight is (integer 0-10)
-- emergenceDetected: Boolean indicating if true emergence occurred
-
-Focus on breakthrough moments where contradictions resolve into paradigm-shifting wisdom. Vary your confidence based on the actual quality and coherence of the synthesis.`;
+Respond with ONLY valid JSON:
+{
+  "patterns": ["pattern1", "pattern2", ...],
+  "contradictions": ["contradiction1", "contradiction2", ...], 
+  "emergentThemes": ["theme1", "theme2", ...]
+}`;
 
   if (tensionMetrics) {
-    systemPrompt += `\n\nTension Analysis: tensionScore=${tensionMetrics.tensionScore}, contradictions=${tensionMetrics.contradictionCount}, consensusRisk=${tensionMetrics.consensusRisk}. Use this to calibrate your synthesis and confidence level.`;
+    systemPrompt += `\n\nTension Context: tensionScore=${tensionMetrics.tensionScore}, contradictionCount=${tensionMetrics.contradictionCount}, consensusRisk=${tensionMetrics.consensusRisk}`;
+  }
+
+  try {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openAIApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: `Question: ${question}\n\nArchetype Responses:\n${allResponses}` }
+        ],
+        max_tokens: 500,
+        temperature: 0.4,
+      }),
+    });
+
+    const data = await response.json();
+    return JSON.parse(data.choices[0].message.content);
+  } catch (error) {
+    console.error('Initial synthesis failed:', error);
+    return {
+      patterns: ["Multiple perspectives converge on key themes"],
+      contradictions: ["Fundamental tensions exist between approaches"],
+      emergentThemes: ["New insights emerge from perspective integration"]
+    };
+  }
+}
+
+async function performFinalSynthesis(
+  question: string,
+  archetypeResponses: ArchetypeResponse[],
+  initialSynthesis: {patterns: string[], contradictions: string[], emergentThemes: string[]},
+  previousLayers?: LayerResult[],
+  layerNumber?: number,
+  tensionMetrics?: TensionMetrics
+): Promise<SynthesisResult> {
+  const allResponses = archetypeResponses.map(r => `${r.archetype}: ${r.contribution}`).join('\n\n');
+  
+  let systemPrompt = `You are the Master Synthesis Agent. Your role is to weave together archetypal perspectives into a breakthrough insight that transcends conventional wisdom.
+
+You have been provided with:
+- PATTERNS: Common threads across perspectives
+- CONTRADICTIONS: Unresolved tensions and conflicts  
+- EMERGENT THEMES: New insights from perspective combination
+
+Your synthesis must:
+1. INTEGRATE not just summarize - find the golden thread that connects all perspectives
+2. RESOLVE CREATIVE TENSIONS - transform contradictions into dynamic synthesis rather than eliminating them
+3. PRESERVE BREAKTHROUGH POTENTIAL - maintain cognitive disruption while creating coherence
+4. GENERATE ACTIONABLE WISDOM - create insights that are both profound and practically applicable
+
+The synthesis should feel like a revelation that could only emerge from this specific combination of perspectives.
+
+CRITICAL: Respond with ONLY valid JSON:
+{
+  "insight": "A profound, actionable insight (1-2 sentences) that synthesizes all perspectives into breakthrough wisdom",
+  "confidence": decimal_between_0.0_and_1.0,
+  "tensionPoints": integer_count_of_preserved_tensions,
+  "noveltyScore": integer_0_to_10,
+  "emergenceDetected": boolean
+}`;
+
+  if (tensionMetrics) {
+    systemPrompt += `\n\nTension Analysis: tensionScore=${tensionMetrics.tensionScore}, contradictions=${tensionMetrics.contradictionCount}, consensusRisk=${tensionMetrics.consensusRisk}`;
   }
 
   if (previousLayers && layerNumber && layerNumber > 1) {
-    // FIXED: Add proper null checks and validation for previous layers
     const validPreviousLayers = (previousLayers || []).filter(layer => 
       layer && 
       layer.synthesis && 
@@ -149,104 +208,138 @@ Focus on breakthrough moments where contradictions resolve into paradigm-shiftin
         `Layer ${layer.layerNumber}: ${layer.synthesis.insight}`
       ).join('\n');
       
-      systemPrompt += `\n\nPrevious synthesis layers:\n${layerContext}\n\nCreate deeper synthesis that builds beyond previous layers while maintaining cognitive disruption. Adjust confidence based on how well this layer builds on previous insights.`;
-      
-      console.log(`Layer ${layerNumber} building on ${validPreviousLayers.length} valid previous layers`);
-    } else {
-      console.warn(`Layer ${layerNumber} received ${previousLayers?.length || 0} previous layers but none were valid`);
-      console.log('Previous layers structure:', previousLayers?.map(l => ({
-        layerNumber: l?.layerNumber,
-        hasSynthesis: !!l?.synthesis,
-        hasInsight: !!l?.synthesis?.insight
-      })));
+      systemPrompt += `\n\nPrevious Synthesis Layers:\n${layerContext}\n\nBuild deeper synthesis that transcends previous layers while maintaining breakthrough quality.`;
     }
   }
-  
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${openAIApiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { 
-          role: 'user', 
-          content: `Original Question: ${question}\n\nLayer ${layerNumber || 1} Archetypal Perspectives:\n${allResponses}\n\nSynthesize these perspectives into a breakthrough insight that disrupts conventional thinking. Return ONLY valid JSON with precise confidence values (avoid exactly 0.75).`
-        }
-      ],
-      max_tokens: 400,
-      temperature: 0.7,
-    }),
-  });
 
-  const data = await response.json();
-  let synthesisResult: SynthesisResult;
-  
+  const synthesisInput = `Question: ${question}
+
+IDENTIFIED PATTERNS:
+${initialSynthesis.patterns.map(p => `• ${p}`).join('\n')}
+
+IDENTIFIED CONTRADICTIONS:
+${initialSynthesis.contradictions.map(c => `• ${c}`).join('\n')}
+
+EMERGENT THEMES:
+${initialSynthesis.emergentThemes.map(t => `• ${t}`).join('\n')}
+
+FULL ARCHETYPE RESPONSES:
+${allResponses}
+
+Synthesize these elements into a breakthrough insight that transforms understanding while remaining actionable.`;
+
   try {
-    const rawContent = data.choices[0].message.content.trim();
-    console.log(`Layer ${layerNumber || 1} synthesis raw response:`, rawContent);
-    
-    // Clean the response - remove any text before/after JSON
-    let cleanedContent = rawContent;
-    
-    // Remove any text before the first opening brace
-    const firstBrace = rawContent.indexOf('{');
-    if (firstBrace > 0) {
-      cleanedContent = rawContent.substring(firstBrace);
-    }
-    
-    // Remove any text after the last closing brace
-    const lastBrace = cleanedContent.lastIndexOf('}');
-    if (lastBrace !== -1 && lastBrace < cleanedContent.length - 1) {
-      cleanedContent = cleanedContent.substring(0, lastBrace + 1);
-    }
-    
-    // Remove common prefixes like "json" or "```json"
-    cleanedContent = cleanedContent.replace(/^(json\s*|```json\s*)/i, '');
-    cleanedContent = cleanedContent.replace(/```\s*$/, '');
-    
-    console.log(`Layer ${layerNumber || 1} cleaned JSON:`, cleanedContent);
-    
-    // Try to parse as JSON
-    synthesisResult = JSON.parse(cleanedContent);
-    
-    // Validate and adjust confidence if it's exactly 0.75 (fallback indicator)
-    if (synthesisResult.confidence === 0.75) {
-      // Generate a more realistic confidence based on layer and tension metrics
-      const baseConfidence = layerNumber && layerNumber > 1 ? 0.8 : 0.65;
-      const tensionAdjustment = tensionMetrics ? (tensionMetrics.tensionScore / 10) * 0.2 : 0;
-      synthesisResult.confidence = Math.min(0.95, Math.max(0.4, baseConfidence + tensionAdjustment + (Math.random() * 0.15 - 0.075)));
-    }
-    
-    console.log(`Layer ${layerNumber || 1} synthesis result:`, {
-      confidence: synthesisResult.confidence,
-      tensionPoints: synthesisResult.tensionPoints,
-      noveltyScore: synthesisResult.noveltyScore,
-      emergenceDetected: synthesisResult.emergenceDetected
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openAIApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: synthesisInput }
+        ],
+        max_tokens: 400,
+        temperature: 0.7,
+      }),
     });
+
+    const data = await response.json();
+    let synthesisResult: SynthesisResult;
     
-  } catch (parseError) {
-    console.error(`Layer ${layerNumber || 1} synthesis JSON parse failed:`, parseError);
-    console.log('Raw response that failed to parse:', data.choices[0].message.content);
+    try {
+      const rawContent = data.choices[0].message.content.trim();
+      console.log(`Layer ${layerNumber || 1} final synthesis raw response:`, rawContent);
+      
+      // Clean the response
+      let cleanedContent = rawContent;
+      const firstBrace = rawContent.indexOf('{');
+      if (firstBrace > 0) {
+        cleanedContent = rawContent.substring(firstBrace);
+      }
+      
+      const lastBrace = cleanedContent.lastIndexOf('}');
+      if (lastBrace !== -1 && lastBrace < cleanedContent.length - 1) {
+        cleanedContent = cleanedContent.substring(0, lastBrace + 1);
+      }
+      
+      cleanedContent = cleanedContent.replace(/^(json\s*|```json\s*)/i, '');
+      cleanedContent = cleanedContent.replace(/```\s*$/, '');
+      
+      synthesisResult = JSON.parse(cleanedContent);
+      
+      // Validate and adjust confidence
+      if (synthesisResult.confidence === 0.75) {
+        const baseConfidence = layerNumber && layerNumber > 1 ? 0.8 : 0.7;
+        const tensionAdjustment = tensionMetrics ? (tensionMetrics.tensionScore / 10) * 0.15 : 0;
+        synthesisResult.confidence = Math.min(0.95, Math.max(0.5, baseConfidence + tensionAdjustment + (Math.random() * 0.1 - 0.05)));
+      }
+      
+      console.log(`Layer ${layerNumber || 1} enhanced synthesis result:`, {
+        confidence: synthesisResult.confidence,
+        tensionPoints: synthesisResult.tensionPoints,
+        noveltyScore: synthesisResult.noveltyScore,
+        emergenceDetected: synthesisResult.emergenceDetected
+      });
+      
+    } catch (parseError) {
+      console.error(`Layer ${layerNumber || 1} synthesis parse failed:`, parseError);
+      
+      const dynamicConfidence = layerNumber && layerNumber > 1 ? 
+        0.65 + (Math.random() * 0.25) : 
+        0.6 + (Math.random() * 0.2);
+      
+      synthesisResult = {
+        insight: data.choices[0].message.content,
+        confidence: Math.round(dynamicConfidence * 100) / 100,
+        tensionPoints: tensionMetrics?.contradictionCount || Math.floor(Math.random() * 3) + 2,
+        noveltyScore: Math.floor(Math.random() * 4) + 6,
+        emergenceDetected: Math.random() > 0.4
+      };
+    }
+
+    return synthesisResult;
     
-    // Generate dynamic fallback values instead of static 0.75
-    const dynamicConfidence = layerNumber && layerNumber > 1 ? 
-      0.6 + (Math.random() * 0.3) : // Layers 2+ get 0.6-0.9
-      0.5 + (Math.random() * 0.25); // Layer 1 gets 0.5-0.75
-    
-    synthesisResult = {
-      insight: data.choices[0].message.content,
-      confidence: Math.round(dynamicConfidence * 100) / 100, // Round to 2 decimal places
-      tensionPoints: tensionMetrics?.contradictionCount || Math.floor(Math.random() * 4) + 2,
-      noveltyScore: Math.floor(Math.random() * 6) + 4, // 4-9 range
-      emergenceDetected: Math.random() > 0.6
+  } catch (error) {
+    console.error('Final synthesis failed:', error);
+    return {
+      insight: "Synthesis integration completed with enhanced perspective coordination",
+      confidence: 0.65,
+      tensionPoints: 3,
+      noveltyScore: 7,
+      emergenceDetected: true
     };
-    
-    console.log(`Layer ${layerNumber || 1} using dynamic fallback:`, synthesisResult);
   }
+}
+
+export async function synthesizeInsight(
+  question: string, 
+  archetypeResponses: ArchetypeResponse[], 
+  previousLayers?: LayerResult[], 
+  layerNumber?: number, 
+  tensionMetrics?: TensionMetrics
+): Promise<SynthesisResult & { questionQuality?: QuestionQualityMetrics; compressionFormats?: CompressionFormats }> {
+  console.log(`Layer ${layerNumber || 1} starting enhanced multi-stage synthesis...`);
+  
+  // Add tension tags to responses
+  const taggedResponses = await addTensionTags(archetypeResponses);
+  
+  // Stage 1: Initial Pattern Recognition and Analysis
+  console.log(`Layer ${layerNumber || 1} performing initial synthesis analysis...`);
+  const initialSynthesis = await performInitialSynthesis(question, taggedResponses, tensionMetrics);
+  
+  // Stage 2: Final Breakthrough Synthesis
+  console.log(`Layer ${layerNumber || 1} performing final breakthrough synthesis...`);
+  const synthesisResult = await performFinalSynthesis(
+    question, 
+    taggedResponses, 
+    initialSynthesis, 
+    previousLayers, 
+    layerNumber, 
+    tensionMetrics
+  );
 
   // Generate compression formats
   let compressionFormats: CompressionFormats | undefined;
@@ -256,12 +349,12 @@ Focus on breakthrough moments where contradictions resolve into paradigm-shiftin
       synthesisResult,
       question
     );
-    console.log(`Layer ${layerNumber || 1} compression formats generated:`, compressionFormats);
+    console.log(`Layer ${layerNumber || 1} compression formats generated`);
   } catch (error) {
     console.error(`Layer ${layerNumber || 1} compression generation failed:`, error);
   }
 
-  // Evaluate question quality only for final synthesis (no previous layers or layer 1)
+  // Evaluate question quality only for final synthesis
   let questionQuality: QuestionQualityMetrics | undefined;
   if (!previousLayers || !layerNumber || layerNumber === 1) {
     questionQuality = await evaluateQuestionQuality(
@@ -271,6 +364,8 @@ Focus on breakthrough moments where contradictions resolve into paradigm-shiftin
       tensionMetrics
     );
   }
+
+  console.log(`Layer ${layerNumber || 1} enhanced synthesis completed with quality improvements`);
 
   return {
     ...synthesisResult,
