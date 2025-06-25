@@ -21,7 +21,7 @@ export class MarketViabilityTester {
     };
   }> {
     
-    const configurations = archetypeTestingFramework.getTestConfigurations();
+    const configurations = archetypeTestingFramework.getConfigurations();
     const bestConfig = configurations.find(c => c.name.includes('Balanced Default')) || configurations[0];
     
     // Filter questions by segment if specified
@@ -111,7 +111,7 @@ export class MarketViabilityTester {
     const question = marketViabilityQuestions.find(q => q.id === questionId);
     if (!question) return null;
     
-    const configurations = archetypeTestingFramework.getTestConfigurations();
+    const configurations = archetypeTestingFramework.getConfigurations();
     const bestConfig = configurations.find(c => c.name.includes('Balanced Default')) || configurations[0];
     
     try {

@@ -29,6 +29,11 @@ export interface TestQuestion {
   category: 'philosophical' | 'technical' | 'creative' | 'social' | 'business' | 'scientific';
   archetypeTarget?: string;
   measuresQualities?: string[];
+  // Market viability testing properties
+  marketSegment?: string;
+  customerValue?: string;
+  typicalCost?: string;
+  realWorldContext?: string;
 }
 
 export interface TestResult {
