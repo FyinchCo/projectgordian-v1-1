@@ -68,16 +68,16 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
-				// Japanese minimalist palette
+				// New darker palette based on uploaded image
 				zen: {
-					'paper': '#FEFEFE',
-					'off-white': '#FCFCFC',  
-					'whisper': '#F8F8F8',
-					'light': '#F2F2F2',
-					'medium': '#A0A0A0',
-					'charcoal': '#404040',
-					'ink': '#1A1A1A',
-					'pure': '#000000'
+					'paper': '#ECDFCC',      // Light cream from image
+					'off-white': '#F5F1E8',  // Slightly darker cream
+					'whisper': '#E8E2D5',    // Muted cream
+					'light': '#697565',      // Muted olive green from image
+					'medium': '#5A6B57',     // Darker green variant
+					'charcoal': '#3C3D37',   // Dark green-gray from image
+					'ink': '#181C14',        // Darkest color from image
+					'pure': '#000000'        // Pure black
 				}
 			},
 			borderRadius: {

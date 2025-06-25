@@ -98,7 +98,7 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-zen-paper">
+    <div className="min-h-screen bg-zen-ink">
       <main className="px-zen-lg py-zen-xl max-w-7xl mx-auto">
         {!isProcessing && !results && (
           <ConsolidatedGeniusInterface
