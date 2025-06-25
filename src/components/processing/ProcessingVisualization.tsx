@@ -3,6 +3,7 @@ import { ArchetypeThoughtBubble } from "./ArchetypeThoughtBubble";
 import { ProcessingHeader } from "./ProcessingHeader";
 import { CurrentFocusCards } from "./CurrentFocusCards";
 import { getProcessingInsights } from "./processingInsights";
+import { PixelRobot } from "../PixelRobot";
 import { useState, useEffect } from "react";
 
 interface ProcessingVisualizationProps {
@@ -66,17 +67,32 @@ export const ProcessingVisualization = ({
 
   return (
     <div className="space-y-6">
-      {/* Enhanced Progress Header with Real-time Metrics */}
-      <ProcessingHeader
-        currentLayer={currentLayer}
-        totalLayers={totalLayers}
-        circuitType={circuitType}
-        overallProgress={overallProgress}
-        currentPhase={currentPhase}
-        processingTime={processingTime}
-        efficiencyScore={efficiencyScore}
-        chunkProgress={chunkProgress}
-      />
+      {/* Friendly Processing Header */}
+      <div className="bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-200 rounded-xl p-6 shadow-lg">
+        <div className="flex items-center justify-center space-x-4 mb-4">
+          <PixelRobot size={48} mood="working" animate={true} />
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">
+              Working on Your Question! 
+            </h2>
+            <p className="text-gray-600 font-medium">
+              My AI friends and I are thinking hard about this...
+            </p>
+          </div>
+          <PixelRobot size={48} mood="thinking" animate={true} />
+        </div>
+        
+        <ProcessingHeader
+          currentLayer={currentLayer}
+          totalLayers={totalLayers}
+          circuitType={circuitType}
+          overallProgress={overallProgress}
+          currentPhase={currentPhase}
+          processingTime={processingTime}
+          efficiencyScore={efficiencyScore}
+          chunkProgress={chunkProgress}
+        />
+      </div>
 
       {/* Enhanced Archetype Grid with Contribution Details */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">

@@ -2,9 +2,10 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Loader2, ListChecks, ArrowRight } from "lucide-react";
+import { Loader2, ListChecks, ArrowRight, Lightbulb } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { PixelRobot } from "../PixelRobot";
 
 interface ActionPlanGeneratorProps {
   insight: string;
@@ -50,12 +51,12 @@ Format as clear, actionable bullet points that someone can immediately act upon.
       setShowGenerator(false);
       
       toast({
-        title: "Action Plan Generated",
+        title: "Action Plan Ready! 🎉",
         description: "Your breakthrough insight has been converted into practical next steps.",
       });
     } catch (error) {
       toast({
-        title: "Generation Failed",
+        title: "Oops! Something went wrong",
         description: "Unable to generate action plan. Please try again.",
         variant: "destructive",
       });
@@ -66,26 +67,29 @@ Format as clear, actionable bullet points that someone can immediately act upon.
 
   if (actionPlan) {
     return (
-      <Card className="p-6 bg-green-50 border border-green-200">
+      <Card className="p-6 bg-gradient-to-br from-green-50 to-blue-50 border-2 border-green-300 shadow-lg">
         <div className="space-y-4">
-          <div className="flex items-center space-x-2">
-            <ListChecks className="w-5 h-5 text-green-600" />
-            <h3 className="font-bold text-green-800">PRACTICAL ACTION PLAN</h3>
+          <div className="flex items-center justify-center space-x-3 mb-4">
+            <PixelRobot size={32} mood="celebrating" animate={true} />
+            <h3 className="font-bold text-xl text-green-800">Your Action Plan is Ready!</h3>
+            <ListChecks className="w-6 h-6 text-green-600" />
           </div>
           <div className="prose prose-sm max-w-none">
-            <div className="whitespace-pre-wrap text-gray-800">{actionPlan}</div>
+            <div className="whitespace-pre-wrap text-gray-800 leading-relaxed">{actionPlan}</div>
           </div>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => {
-              setActionPlan(null);
-              setShowGenerator(true);
-            }}
-            className="text-green-700 border-green-300 hover:bg-green-100"
-          >
-            Generate Different Plan
-          </Button>
+          <div className="flex justify-center pt-4">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => {
+                setActionPlan(null);
+                setShowGenerator(true);
+              }}
+              className="text-green-700 border-2 border-green-300 hover:bg-green-100 font-medium rounded-lg"
+            >
+              Generate Different Plan
+            </Button>
+          </div>
         </div>
       </Card>
     );
@@ -94,33 +98,33 @@ Format as clear, actionable bullet points that someone can immediately act upon.
   if (!showGenerator) return null;
 
   return (
-    <Card className="p-4 bg-blue-50 border border-blue-200">
+    <Card className="p-6 bg-gradient-to-br from-blue-50 to-purple-50 border-2 border-blue-300 shadow-lg hover:shadow-xl transition-all duration-300">
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-            <ListChecks className="w-5 h-5 text-blue-600" />
-          </div>
+        <div className="flex items-center space-x-4">
+          <PixelRobot size={48} mood="excited" animate={true} />
           <div>
-            <h3 className="font-semibold text-blue-900">Ready for Action?</h3>
-            <p className="text-sm text-blue-700">
-              Convert this breakthrough insight into a practical action plan with specific next steps.
+            <h3 className="font-bold text-xl text-blue-900 mb-2">Ready to Take Action?</h3>
+            <p className="text-blue-700 leading-relaxed">
+              Great insights deserve great action plans! Let me help you turn this breakthrough 
+              into concrete steps you can take right away. 🚀
             </p>
           </div>
         </div>
         <Button
           onClick={generateActionPlan}
           disabled={isGenerating}
-          className="bg-blue-600 hover:bg-blue-700 flex items-center space-x-2"
+          className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white flex items-center space-x-2 font-bold shadow-lg hover:shadow-xl transition-all duration-300 px-6 py-3 rounded-xl"
         >
           {isGenerating ? (
             <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span>Generating...</span>
+              <Loader2 className="w-5 h-5 animate-spin" />
+              <span>Creating Your Plan...</span>
             </>
           ) : (
             <>
+              <Lightbulb className="w-5 h-5" />
               <span>Create Action Plan</span>
-              <ArrowRight className="w-4 h-4" />
+              <ArrowRight className="w-5 h-5" />
             </>
           )}
         </Button>
