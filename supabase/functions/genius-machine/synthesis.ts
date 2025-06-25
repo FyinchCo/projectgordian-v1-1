@@ -334,18 +334,26 @@ export async function synthesizeInsight(
     previousInsights
   );
 
-  // Generate compression formats
+  // Generate compression formats - ENSURE THIS IS ALWAYS ATTEMPTED
   let compressionFormats: CompressionFormats | undefined;
   try {
-    const { generateCompressionFormats } = await import('./compression.ts');
+    console.log('Generating compression formats...');
     compressionFormats = await generateCompressionFormats(
       synthesisResult.insight,
       synthesisResult,
       question
     );
-    console.log('Compression formats generated');
+    console.log('Compression formats generated successfully:', !!compressionFormats);
   } catch (error) {
     console.error('Compression generation failed:', error);
+    // Provide fallback compression formats
+    const words = synthesisResult.insight.split(' ');
+    compressionFormats = {
+      ultraConcise: words.slice(0, 3).join(' '),
+      medium: synthesisResult.insight,
+      comprehensive: `${synthesisResult.insight} This insight emerges from analyzing multiple perspectives and identifying breakthrough patterns.`
+    };
+    console.log('Using fallback compression formats');
   }
 
   // Evaluate question quality only for final synthesis
@@ -362,9 +370,14 @@ export async function synthesizeInsight(
 
   console.log('Enhanced synthesis completed with quality improvements');
 
-  return {
+  // ENSURE COMPRESSION FORMATS ARE RETURNED
+  const finalResult = {
     ...synthesisResult,
     questionQuality,
     compressionFormats
   };
+
+  console.log('Final synthesis result includes compression formats:', !!finalResult.compressionFormats);
+  
+  return finalResult;
 }

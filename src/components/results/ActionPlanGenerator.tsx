@@ -18,26 +18,93 @@ export const ActionPlanGenerator = ({ insight, question }: ActionPlanGeneratorPr
   const [showGenerator, setShowGenerator] = useState(true);
   const { toast } = useToast();
 
+  const formatActionPlan = (text: string): string => {
+    // Convert paragraphs to bullet points and improve formatting
+    const lines = text.split('\n').filter(line => line.trim().length > 0);
+    
+    let formattedPlan = '';
+    let currentSection = '';
+    let inList = false;
+    
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+      
+      // Check if it's a section header (contains numbers like 1., 2., etc. or keywords)
+      if (trimmedLine.match(/^\d+\./) || 
+          trimmedLine.toLowerCase().includes('action items') ||
+          trimmedLine.toLowerCase().includes('timeline') ||
+          trimmedLine.toLowerCase().includes('metrics') ||
+          trimmedLine.toLowerCase().includes('obstacles') ||
+          trimmedLine.toLowerCase().includes('resources')) {
+        
+        if (inList) {
+          formattedPlan += '\n';
+          inList = false;
+        }
+        formattedPlan += `\n**${trimmedLine}**\n`;
+        currentSection = trimmedLine.toLowerCase();
+        
+      } else if (trimmedLine.startsWith('-') || trimmedLine.startsWith('•')) {
+        // Already a bullet point
+        formattedPlan += `${trimmedLine}\n`;
+        inList = true;
+        
+      } else if (trimmedLine.length > 20 && !trimmedLine.endsWith(':')) {
+        // Convert regular sentences to bullet points
+        formattedPlan += `• ${trimmedLine}\n`;
+        inList = true;
+        
+      } else if (trimmedLine.endsWith(':')) {
+        // Sub-header
+        formattedPlan += `\n*${trimmedLine}*\n`;
+        
+      } else if (trimmedLine.length > 0) {
+        formattedPlan += `${trimmedLine}\n`;
+      }
+    }
+    
+    return formattedPlan.trim();
+  };
+
   const generateActionPlan = async () => {
     setIsGenerating(true);
     
     try {
       const { data, error } = await supabase.functions.invoke('genius-machine', {
         body: {
-          question: `Transform this breakthrough insight into a practical action plan with specific steps:
+          question: `Transform this breakthrough insight into a practical action plan with specific, bulleted steps:
 
 ORIGINAL QUESTION: ${question}
 
 BREAKTHROUGH INSIGHT: ${insight}
 
-Please provide:
-1. Key Action Items (3-5 specific steps)
-2. Implementation Timeline (immediate, short-term, long-term)
-3. Success Metrics (how to measure progress)
-4. Potential Obstacles & Solutions
-5. Resource Requirements
+Create a structured action plan with clear bullet points under these sections:
 
-Format as clear, actionable bullet points that someone can immediately act upon.`,
+**1. KEY ACTION ITEMS**
+• [Specific actionable step 1]
+• [Specific actionable step 2]
+• [Specific actionable step 3]
+
+**2. IMPLEMENTATION TIMELINE**
+• Immediate (next 24-48 hours): [specific actions]
+• Short-term (next 1-2 weeks): [specific actions]
+• Long-term (next 1-3 months): [specific actions]
+
+**3. SUCCESS METRICS**
+• [How to measure progress - specific metric 1]
+• [How to measure progress - specific metric 2]
+• [How to measure progress - specific metric 3]
+
+**4. POTENTIAL OBSTACLES & SOLUTIONS**
+• Obstacle: [specific challenge] → Solution: [specific approach]
+• Obstacle: [specific challenge] → Solution: [specific approach]
+
+**5. RESOURCE REQUIREMENTS**
+• [Specific resource or tool needed]
+• [Specific resource or tool needed]
+• [Specific resource or tool needed]
+
+Format everything as clear, actionable bullet points that someone can immediately follow.`,
           processingDepth: 1,
           circuitType: 'sequential',
           enhancedMode: false,
@@ -47,7 +114,8 @@ Format as clear, actionable bullet points that someone can immediately act upon.
 
       if (error) throw error;
 
-      setActionPlan(data.insight);
+      const formattedPlan = formatActionPlan(data.insight);
+      setActionPlan(formattedPlan);
       setShowGenerator(false);
       
       toast({
@@ -75,7 +143,21 @@ Format as clear, actionable bullet points that someone can immediately act upon.
             <ListChecks className="w-6 h-6 text-green-600" />
           </div>
           <div className="prose prose-sm max-w-none">
-            <div className="whitespace-pre-wrap text-gray-800 leading-relaxed">{actionPlan}</div>
+            <div className="whitespace-pre-wrap text-gray-800 leading-relaxed font-mono text-sm bg-white p-4 rounded-lg border">
+              {actionPlan.split('\n').map((line, index) => {
+                if (line.startsWith('**') && line.endsWith('**')) {
+                  return <div key={index} className="font-bold text-blue-800 mt-4 mb-2 text-base">{line.replace(/\*\*/g, '')}</div>;
+                } else if (line.startsWith('*') && line.endsWith('*')) {
+                  return <div key={index} className="font-semibold text-gray-700 mt-2 mb-1">{line.replace(/\*/g, '')}</div>;
+                } else if (line.startsWith('•')) {
+                  return <div key={index} className="ml-4 mb-1 text-gray-800">{line}</div>;
+                } else if (line.trim()) {
+                  return <div key={index} className="mb-1 text-gray-800">{line}</div>;
+                } else {
+                  return <div key={index} className="mb-2"></div>;
+                }
+              })}
+            </div>
           </div>
           <div className="flex justify-center pt-4">
             <Button 
