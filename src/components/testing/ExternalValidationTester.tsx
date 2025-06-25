@@ -32,16 +32,16 @@ export const ExternalValidationTester = () => {
       
       switch (selectedTestSet) {
         case 'benchmark':
-          testQuestions = benchmarkQuestions.slice(0, 5); // Start with 5 questions
+          testQuestions = benchmarkQuestions.slice(0, 3); // Reduced to 3 for faster testing with 3 LLMs
           break;
         case 'creative':
-          testQuestions = questions.filter(q => q.category === 'creative').slice(0, 3);
+          testQuestions = questions.filter(q => q.category === 'creative').slice(0, 2);
           break;
         case 'analytical':
-          testQuestions = questions.filter(q => q.category === 'technical' || q.category === 'scientific').slice(0, 3);
+          testQuestions = questions.filter(q => q.category === 'technical' || q.category === 'scientific').slice(0, 2);
           break;
         default:
-          testQuestions = questions.slice(0, 3);
+          testQuestions = questions.slice(0, 2);
       }
 
       if (testQuestions.length === 0) {
@@ -60,7 +60,7 @@ export const ExternalValidationTester = () => {
         for (let i = 0; i < testQuestions.length; i++) {
           setCurrentTest(`Testing: ${testQuestions[i].question.substring(0, 50)}...`);
           setProgress({ current: i, total: testQuestions.length });
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          await new Promise(resolve => setTimeout(resolve, 3000)); // Longer delay for 3 LLMs
         }
       };
 
@@ -75,7 +75,7 @@ export const ExternalValidationTester = () => {
 
       toast({
         title: "External Validation Complete",
-        description: `Successfully compared ${testResults.length} questions across multiple LLMs.`,
+        description: `Successfully compared ${testResults.length} questions across Genius Machine, GPT-4, Claude, and Gemini.`,
       });
 
     } catch (error) {
@@ -146,7 +146,7 @@ export const ExternalValidationTester = () => {
             <span>External Validation Testing</span>
           </CardTitle>
           <CardDescription>
-            Compare Genius Machine performance against external LLMs (GPT-4, Claude) to validate breakthrough claims
+            Compare Genius Machine performance against 3 leading LLMs: GPT-4o-mini, Claude-3.5-Sonnet, and Gemini-1.5-Pro
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -158,10 +158,10 @@ export const ExternalValidationTester = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="benchmark">Benchmark Questions (5 tests)</SelectItem>
-                  <SelectItem value="creative">Creative Challenges (3 tests)</SelectItem>
-                  <SelectItem value="analytical">Analytical Problems (3 tests)</SelectItem>
-                  <SelectItem value="mixed">Mixed Sample (3 tests)</SelectItem>
+                  <SelectItem value="benchmark">Benchmark Questions (3 tests × 4 AIs)</SelectItem>
+                  <SelectItem value="creative">Creative Challenges (2 tests × 4 AIs)</SelectItem>
+                  <SelectItem value="analytical">Analytical Problems (2 tests × 4 AIs)</SelectItem>
+                  <SelectItem value="mixed">Mixed Sample (2 tests × 4 AIs)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -171,7 +171,7 @@ export const ExternalValidationTester = () => {
             <div className="space-y-3">
               <Progress value={(progress.current / progress.total) * 100} />
               <div className="text-sm text-gray-600">
-                Progress: {progress.current}/{progress.total} questions tested
+                Progress: {progress.current}/{progress.total} questions tested across 4 AI systems
               </div>
               {currentTest && (
                 <div className="text-sm text-blue-600">
@@ -190,12 +190,12 @@ export const ExternalValidationTester = () => {
               {isRunning ? (
                 <>
                   <Play className="w-4 h-4 mr-2 animate-spin" />
-                  Running Validation Test...
+                  Running 4-Way AI Comparison...
                 </>
               ) : (
                 <>
                   <Play className="w-4 h-4 mr-2" />
-                  Start External Validation
+                  Start 4-Way External Validation
                 </>
               )}
             </Button>

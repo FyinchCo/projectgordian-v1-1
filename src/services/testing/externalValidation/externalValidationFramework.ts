@@ -97,10 +97,11 @@ export class ExternalValidationFramework {
   private async getExternalLLMResults(question: string): Promise<ExternalLLMResult[]> {
     const results: ExternalLLMResult[] = [];
     
-    // Test with multiple external LLMs
+    // Test with multiple external LLMs - now including Gemini
     const llmTests = [
       { provider: 'OpenAI', model: 'gpt-4o-mini', endpoint: 'openai-comparison' },
-      { provider: 'Anthropic', model: 'claude-3-5-sonnet', endpoint: 'claude-comparison' }
+      { provider: 'Anthropic', model: 'claude-3-5-sonnet', endpoint: 'claude-comparison' },
+      { provider: 'Google', model: 'gemini-1.5-pro', endpoint: 'gemini-comparison' }
     ];
     
     for (const llm of llmTests) {
