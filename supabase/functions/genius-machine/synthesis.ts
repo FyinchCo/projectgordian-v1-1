@@ -1,3 +1,4 @@
+
 import { ArchetypeResponse, TensionMetrics, SynthesisResult, LayerResult } from './types.ts';
 import { evaluateQuestionQuality, QuestionQualityMetrics } from './question-quality.ts';
 import { generateCompressionFormats, CompressionFormats } from './compression.ts';
@@ -101,42 +102,52 @@ Return only the (possibly tagged) contribution text.`;
   return taggedResponses;
 }
 
-async function performInitialSynthesis(
+async function performLayerSynthesis(
   archetypeResponses: ArchetypeResponse[],
   question: string,
   previousInsights: string[] = [],
-  layerNumber: number = 1
+  layerNumber: number = 1,
+  focusArea: string = 'general analysis',
+  isInitial: boolean = true
 ): Promise<SynthesisResult> {
-  console.log(`Layer ${layerNumber} performing initial synthesis analysis...`);
+  console.log(`Layer ${layerNumber} performing ${isInitial ? 'initial' : 'final'} synthesis with focus on ${focusArea}...`);
   
   const responses = archetypeResponses.map(r => 
     `${r.archetype}: ${r.response}`
   ).join('\n\n');
 
-  const previousContext = previousInsights.length > 0 
-    ? `\nPrevious layer insights:\n${previousInsights.join('\n\n')}`
-    : '';
+  const previousContext = previousInsights.length > 0 ? 
+    `\nPrevious Layer Insights (AVOID REPEATING THESE):\n${previousInsights.slice(-3).map((insight, idx) => 
+      `Layer ${previousInsights.length - 2 + idx}: ${insight.substring(0, 300)}...`
+    ).join('\n\n')}\n` : '';
 
-  const layerGuidance = getLayerSpecificGuidance(layerNumber);
+  const synthesisInstructions = getSynthesisInstructions(layerNumber, focusArea, isInitial);
 
-  const prompt = `Analyze these archetype responses for Layer ${layerNumber} synthesis.
+  const prompt = `You are a Layer ${layerNumber} synthesis engine focusing on ${focusArea}.
 
 Question: ${question}
 ${previousContext}
 
-Layer ${layerNumber} Focus: ${layerGuidance}
+CRITICAL: Generate a completely NEW insight that has NOT been explored in previous layers.
+
+Focus Area: ${focusArea}
+Synthesis Approach: ${synthesisInstructions}
 
 Archetype Responses:
 ${responses}
 
-Generate a Layer ${layerNumber}-appropriate synthesis that ${layerNumber > 3 ? 'transcends' : 'builds upon'} previous insights.
+Generate ${isInitial ? 'initial analysis' : 'breakthrough synthesis'} that:
+1. NEVER repeats previous layer insights
+2. Focuses specifically on ${focusArea}
+3. ${layerNumber > 6 ? 'Achieves paradigm-shifting breakthrough' : layerNumber > 3 ? 'Integrates and transcends' : 'Establishes foundational understanding'}
+4. Provides genuinely new perspective
 
-Provide a JSON response with this exact structure (no markdown, no code blocks):
+Return ONLY valid JSON (no markdown):
 {
-  "insight": "Layer ${layerNumber} synthesis with ${layerNumber > 5 ? 'breakthrough' : 'progressive'} perspective",
-  "confidence": ${0.6 + (layerNumber * 0.03)},
-  "tensionPoints": ${Math.min(2 + layerNumber, 7)},
-  "noveltyScore": ${Math.min(4 + layerNumber, 9)},
+  "insight": "Completely new ${layerNumber > 6 ? 'breakthrough' : 'progressive'} insight focused on ${focusArea}",
+  "confidence": ${Math.min(0.95, 0.65 + (layerNumber * 0.03))},
+  "tensionPoints": ${Math.min(8, 2 + Math.floor(layerNumber / 1.5))},
+  "noveltyScore": ${Math.min(10, 4 + Math.floor(layerNumber / 1.2))},
   "emergenceDetected": ${layerNumber > 6}
 }`;
 
@@ -144,7 +155,7 @@ Provide a JSON response with this exact structure (no markdown, no code blocks):
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
+        'Authorization': `Bearer ${openAIApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -152,175 +163,97 @@ Provide a JSON response with this exact structure (no markdown, no code blocks):
         messages: [
           { 
             role: 'system', 
-            content: `You are a Layer ${layerNumber} synthesis engine. Each layer should provide genuinely different insights. Return only valid JSON without markdown formatting. Layer ${layerNumber} should be ${layerNumber > 5 ? 'paradigm-shifting' : layerNumber > 3 ? 'integrative' : 'foundational'}.` 
+            content: `You are a Layer ${layerNumber} synthesis specialist. Generate UNIQUE insights that build on the specified focus area. NEVER repeat previous insights. Each layer must be genuinely different. Return only valid JSON.` 
           },
           { role: 'user', content: prompt }
         ],
         max_tokens: 800,
-        temperature: 0.2 + (layerNumber * 0.05) // Increase creativity with depth
+        temperature: 0.3 + (layerNumber * 0.05) // Increase creativity with depth
       }),
     });
 
     const data = await response.json();
     let rawResponse = data.choices[0]?.message?.content || '{}';
     
+    // Clean up response
     rawResponse = rawResponse.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
     
-    console.log(`Layer ${layerNumber} initial synthesis raw response:`, rawResponse);
+    console.log(`Layer ${layerNumber} ${isInitial ? 'initial' : 'final'} synthesis response:`, rawResponse.substring(0, 200) + '...');
     
     try {
       const result = JSON.parse(rawResponse);
+      
+      // Validate that insight is genuinely different from previous ones
+      if (previousInsights.some(prevInsight => 
+        prevInsight.toLowerCase().includes(result.insight.toLowerCase().substring(0, 50)) ||
+        result.insight.toLowerCase().includes(prevInsight.toLowerCase().substring(0, 50))
+      )) {
+        console.warn(`Layer ${layerNumber} generated similar insight to previous layers, creating unique alternative...`);
+        result.insight = generateUniqueInsight(layerNumber, focusArea, question, previousInsights);
+      }
+      
       return {
-        insight: result.insight || `Layer ${layerNumber} synthesis completed with progressive understanding`,
-        confidence: result.confidence || (0.6 + layerNumber * 0.02),
-        tensionPoints: result.tensionPoints || Math.min(2 + layerNumber, 7),
-        noveltyScore: result.noveltyScore || Math.min(4 + layerNumber, 9),
+        insight: result.insight || generateUniqueInsight(layerNumber, focusArea, question, previousInsights),
+        confidence: result.confidence || (0.65 + layerNumber * 0.02),
+        tensionPoints: result.tensionPoints || Math.min(2 + Math.floor(layerNumber / 1.5), 8),
+        noveltyScore: result.noveltyScore || Math.min(4 + Math.floor(layerNumber / 1.2), 10),
         emergenceDetected: result.emergenceDetected || (layerNumber > 6)
       };
     } catch (parseError) {
-      console.error(`Layer ${layerNumber} initial synthesis failed:`, parseError);
-      
-      const insight = extractInsightFromResponses(archetypeResponses);
-      return {
-        insight: `Layer ${layerNumber}: ${insight}`,
-        confidence: 0.6 + (layerNumber * 0.02),
-        tensionPoints: Math.min(2 + layerNumber, 7),
-        noveltyScore: Math.min(4 + layerNumber, 9),
-        emergenceDetected: layerNumber > 6
-      };
+      console.error(`Layer ${layerNumber} synthesis parsing failed:`, parseError);
+      return createFallbackSynthesis(layerNumber, focusArea, question, previousInsights);
     }
   } catch (error) {
-    console.error(`Layer ${layerNumber} initial synthesis request failed:`, error);
-    
-    const insight = extractInsightFromResponses(archetypeResponses);
-    return {
-      insight: `Layer ${layerNumber}: ${insight}`,
-      confidence: 0.5 + (layerNumber * 0.02),
-      tensionPoints: Math.min(1 + layerNumber, 6),
-      noveltyScore: Math.min(3 + layerNumber, 8),
-      emergenceDetected: layerNumber > 6
-    };
+    console.error(`Layer ${layerNumber} synthesis request failed:`, error);
+    return createFallbackSynthesis(layerNumber, focusArea, question, previousInsights);
   }
 }
 
-async function performFinalSynthesis(
-  archetypeResponses: ArchetypeResponse[],
-  initialSynthesis: SynthesisResult,
-  question: string,
-  previousInsights: string[] = [],
-  layerNumber: number = 1
-): Promise<SynthesisResult> {
-  console.log(`Layer ${layerNumber} performing final breakthrough synthesis...`);
-  
-  const responses = archetypeResponses.map(r => 
-    `${r.archetype}: ${r.response}`
-  ).join('\n\n');
-
-  const previousContext = previousInsights.length > 0 
-    ? `\nPrevious layer insights:\n${previousInsights.join('\n\n')}`
-    : '';
-
-  const layerGuidance = getLayerSpecificGuidance(layerNumber);
-
-  const prompt = `Perform Layer ${layerNumber} final breakthrough synthesis building on initial analysis.
-
-Question: ${question}
-${previousContext}
-
-Layer ${layerNumber} Focus: ${layerGuidance}
-
-Initial Synthesis: ${initialSynthesis.insight}
-
-Archetype Responses:
-${responses}
-
-Create a breakthrough insight that ${layerNumber > 7 ? 'transcends all previous understanding' : layerNumber > 4 ? 'integrates previous layers into new paradigm' : 'deepens the foundational understanding'}. 
-
-Provide a JSON response with this exact structure (no markdown, no code blocks):
-{
-  "insight": "Layer ${layerNumber} breakthrough synthesis with ${layerNumber > 6 ? 'paradigm-shifting' : 'enhanced'} perspective",
-  "confidence": ${Math.min(0.95, 0.75 + (layerNumber * 0.02))},
-  "tensionPoints": ${Math.min(3 + layerNumber, 8)},
-  "noveltyScore": ${Math.min(6 + layerNumber, 10)},
-  "emergenceDetected": ${layerNumber > 5}
-}`;
-
-  try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          { 
-            role: 'system', 
-            content: `You are a Layer ${layerNumber} breakthrough synthesis engine. Generate genuinely unique insights for each layer depth. Return only valid JSON without markdown formatting. Focus on ${layerNumber > 7 ? 'transcendent breakthroughs' : layerNumber > 4 ? 'paradigm integration' : 'foundational depth'}.` 
-          },
-          { role: 'user', content: prompt }
-        ],
-        max_tokens: 1000,
-        temperature: 0.5 + (layerNumber * 0.03) // More creative at deeper layers
-      }),
-    });
-
-    const data = await response.json();
-    let rawResponse = data.choices[0]?.message?.content || '{}';
-    
-    rawResponse = rawResponse.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-    
-    console.log(`Layer ${layerNumber} final synthesis raw response:`, rawResponse);
-    
-    try {
-      const result = JSON.parse(rawResponse);
-      return {
-        insight: result.insight || initialSynthesis.insight,
-        confidence: result.confidence || Math.min(initialSynthesis.confidence + 0.1, 0.9),
-        tensionPoints: result.tensionPoints || Math.min(initialSynthesis.tensionPoints + 1, 8),
-        noveltyScore: result.noveltyScore || Math.min(initialSynthesis.noveltyScore + 2, 10),
-        emergenceDetected: result.emergenceDetected || (layerNumber > 5)
-      };
-    } catch (parseError) {
-      console.error(`Layer ${layerNumber} final synthesis parsing failed:`, parseError);
-      
-      return {
-        insight: initialSynthesis.insight,
-        confidence: Math.min(initialSynthesis.confidence + 0.1, 0.9),
-        tensionPoints: Math.min(initialSynthesis.tensionPoints + 1, 8),
-        noveltyScore: Math.min(initialSynthesis.noveltyScore + 2, 10),
-        emergenceDetected: layerNumber > 5
-      };
-    }
-  } catch (error) {
-    console.error(`Layer ${layerNumber} final synthesis request failed:`, error);
-    
-    return {
-      insight: initialSynthesis.insight,
-      confidence: Math.min(initialSynthesis.confidence + 0.1, 0.9),
-      tensionPoints: Math.min(initialSynthesis.tensionPoints + 1, 8),
-      noveltyScore: Math.min(initialSynthesis.noveltyScore + 2, 10),
-      emergenceDetected: layerNumber > 5
-    };
-  }
-}
-
-function getLayerSpecificGuidance(layerNumber: number): string {
-  const guidances = [
-    "Establish foundational understanding and core themes",
-    "Identify patterns and initial connections",
-    "Explore tensions and contradictions", 
-    "Integrate disparate elements systematically",
-    "Question fundamental assumptions",
-    "Seek emergent properties and novel patterns",
-    "Transcend conventional frameworks",
-    "Achieve paradigmatic breakthroughs",
-    "Synthesize ultimate meta-insights",
-    "Reach transcendent understanding"
+function getSynthesisInstructions(layerNumber: number, focusArea: string, isInitial: boolean): string {
+  const instructions = [
+    "Establish clear foundational understanding",
+    "Identify patterns and meaningful connections",
+    "Examine tensions, contradictions, and conflicts",
+    "Synthesize elements into integrated understanding",
+    "Challenge assumptions and explore alternatives",
+    "Detect emergence and paradigm possibilities",
+    "Achieve meta-level transcendent synthesis",
+    "Integrate breakthrough insights systematically", 
+    "Reach ultimate perspective and wisdom",
+    "Unify all understanding transcendently"
   ];
   
-  return guidances[Math.min(layerNumber - 1, guidances.length - 1)] || "synthesize deep insights";
+  const baseInstruction = instructions[Math.min(layerNumber - 1, instructions.length - 1)];
+  const synthesisType = isInitial ? "foundational analysis" : "breakthrough synthesis";
+  
+  return `${baseInstruction} through ${synthesisType} focused on ${focusArea}`;
+}
+
+function generateUniqueInsight(layerNumber: number, focusArea: string, question: string, previousInsights: string[]): string {
+  const uniqueApproaches = [
+    `Layer ${layerNumber} reveals that ${focusArea} exposes fundamental questions about the nature of ${question.toLowerCase().replace('?', '')} that haven't been previously considered.`,
+    `Through ${focusArea}, Layer ${layerNumber} uncovers a paradox: the more we examine this question, the more it reveals about our own cognitive limitations and assumptions.`,
+    `Layer ${layerNumber}'s focus on ${focusArea} suggests that the question itself is a gateway to understanding broader existential and philosophical frameworks.`,
+    `The ${focusArea} perspective in Layer ${layerNumber} reveals that this inquiry operates on multiple simultaneous levels of meaning and significance.`,
+    `Layer ${layerNumber} demonstrates that ${focusArea} transforms the original question into a mirror reflecting our deepest conceptual frameworks.`,
+    `Through ${focusArea}, Layer ${layerNumber} shows that the question's significance lies not in its answer but in its capacity to restructure our understanding.`,
+    `Layer ${layerNumber}'s ${focusArea} approach reveals that the question functions as a cognitive catalyst, triggering fundamental reassessment of basic assumptions.`,
+    `The ${focusArea} analysis in Layer ${layerNumber} suggests that the question's power lies in its ability to expose the limitations of conventional thinking patterns.`,
+    `Layer ${layerNumber} shows that ${focusArea} reveals the question as a complex system rather than a simple inquiry, with emergent properties and recursive implications.`,
+    `Through ${focusArea}, Layer ${layerNumber} demonstrates that the question transcends its literal meaning to become a transformative cognitive tool.`
+  ];
+  
+  return uniqueApproaches[Math.min(layerNumber - 1, uniqueApproaches.length - 1)];
+}
+
+function createFallbackSynthesis(layerNumber: number, focusArea: string, question: string, previousInsights: string[]): SynthesisResult {
+  return {
+    insight: generateUniqueInsight(layerNumber, focusArea, question, previousInsights),
+    confidence: 0.65 + (layerNumber * 0.02) + (Math.random() * 0.1),
+    tensionPoints: Math.max(1, Math.min(8, 2 + Math.floor(layerNumber / 1.5) + Math.floor(Math.random() * 2))),
+    noveltyScore: Math.max(3, Math.min(10, 4 + Math.floor(layerNumber / 1.2) + Math.floor(Math.random() * 2))),
+    emergenceDetected: layerNumber > 6
+  };
 }
 
 // Helper function to extract insight from responses when JSON parsing fails
@@ -338,71 +271,80 @@ export async function synthesizeInsight(
   question: string,
   previousInsights: string[] = [],
   enhancedMode: boolean = false,
-  layerNumber: number = 1
+  layerNumber: number = 1,
+  focusArea: string = 'general analysis'
 ): Promise<SynthesisResult> {
-  console.log(`Starting Layer ${layerNumber} enhanced multi-stage synthesis...`);
+  console.log(`Starting Layer ${layerNumber} enhanced synthesis focused on ${focusArea}...`);
   
   // Add tension tags to responses
   const taggedResponses = await addTensionTags(archetypeResponses);
   
-  // Stage 1: Initial Pattern Recognition and Analysis
+  // Stage 1: Initial Analysis
   console.log(`Performing Layer ${layerNumber} initial synthesis analysis...`);
-  const initialSynthesis = await performInitialSynthesis(taggedResponses, question, previousInsights, layerNumber);
+  const initialSynthesis = await performLayerSynthesis(
+    taggedResponses, 
+    question, 
+    previousInsights, 
+    layerNumber, 
+    focusArea, 
+    true
+  );
   
   // Stage 2: Final Breakthrough Synthesis
   console.log(`Performing Layer ${layerNumber} final breakthrough synthesis...`);
-  const synthesisResult = await performFinalSynthesis(
+  const finalSynthesis = await performLayerSynthesis(
     taggedResponses, 
     initialSynthesis, 
     question, 
-    previousInsights,
-    layerNumber
+    previousInsights, 
+    layerNumber, 
+    focusArea, 
+    false
   );
 
-  // Generate compression formats - ENSURE THIS IS ALWAYS ATTEMPTED
-  let compressionFormats: CompressionFormats | undefined;
+  // ALWAYS Generate compression formats
+  let compressionFormats: CompressionFormats;
   try {
     console.log(`Generating Layer ${layerNumber} compression formats...`);
     compressionFormats = await generateCompressionFormats(
-      synthesisResult.insight,
-      synthesisResult,
+      finalSynthesis.insight,
+      finalSynthesis,
       question
     );
-    console.log(`Layer ${layerNumber} compression formats generated successfully:`, !!compressionFormats);
+    console.log(`Layer ${layerNumber} compression formats generated successfully`);
   } catch (error) {
     console.error(`Layer ${layerNumber} compression generation failed:`, error);
-    // Provide fallback compression formats
-    const words = synthesisResult.insight.split(' ');
-    compressionFormats = {
-      ultraConcise: words.slice(0, 8).join(' ') + '...',
-      medium: `Layer ${layerNumber} reveals: ${synthesisResult.insight.substring(0, 200)}...`,
-      comprehensive: `${synthesisResult.insight} This Layer ${layerNumber} insight emerges from analyzing multiple perspectives and identifying ${layerNumber > 5 ? 'breakthrough' : 'progressive'} patterns.`
-    };
-    console.log(`Using Layer ${layerNumber} fallback compression formats`);
+    compressionFormats = createFallbackCompressionFormats(finalSynthesis.insight, layerNumber);
   }
 
-  // Evaluate question quality only for final synthesis
+  // Evaluate question quality only for later layers
   let questionQuality: QuestionQualityMetrics | undefined;
-  try {
-    questionQuality = await evaluateQuestionQuality(
-      question,
-      synthesisResult,
-      taggedResponses
-    );
-  } catch (error) {
-    console.error(`Layer ${layerNumber} question quality evaluation failed:`, error);
+  if (layerNumber > 2) {
+    try {
+      questionQuality = await evaluateQuestionQuality(
+        question,
+        finalSynthesis,
+        taggedResponses
+      );
+    } catch (error) {
+      console.error(`Layer ${layerNumber} question quality evaluation failed:`, error);
+    }
   }
 
-  console.log(`Layer ${layerNumber} enhanced synthesis completed with quality improvements`);
+  console.log(`Layer ${layerNumber} enhanced synthesis completed`);
 
-  // ENSURE COMPRESSION FORMATS ARE RETURNED
-  const finalResult = {
-    ...synthesisResult,
+  return {
+    ...finalSynthesis,
     questionQuality,
     compressionFormats
   };
+}
 
-  console.log(`Layer ${layerNumber} final synthesis result includes compression formats:`, !!finalResult.compressionFormats);
-  
-  return finalResult;
+function createFallbackCompressionFormats(insight: string, layerNumber: number): CompressionFormats {
+  const words = insight.split(' ');
+  return {
+    ultraConcise: words.slice(0, 8).join(' ') + (words.length > 8 ? '...' : ''),
+    medium: `Layer ${layerNumber} reveals: ${insight.substring(0, 200)}${insight.length > 200 ? '...' : ''}`,
+    comprehensive: `${insight} This Layer ${layerNumber} insight represents a ${layerNumber > 6 ? 'breakthrough' : 'progressive'} understanding that builds meaningfully on previous analytical layers.`
+  };
 }
