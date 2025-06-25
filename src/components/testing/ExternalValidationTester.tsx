@@ -12,13 +12,38 @@ import { archetypeTestingFramework } from "@/services/testing/archetypeTestingFr
 import { TestQuestion } from "@/services/testing/types";
 import { Play, Download, Eye, BarChart3, Users, RefreshCw, Bug, AlertTriangle } from "lucide-react";
 
+// Define proper types for debug info
+interface DetailedAnalysis {
+  totalResults: number;
+  geniusMachineErrors: number;
+  externalErrors: Record<string, number>;
+  partialResults: number;
+  completeResults: number;
+  issues: string[];
+}
+
+interface SimpleAnalysis {
+  message: string;
+  resultsCount: number;
+  hasData?: boolean;
+  error?: string;
+  hasIssue?: boolean;
+}
+
+type DebugInfo = DetailedAnalysis | SimpleAnalysis;
+
+// Type guard to check if debug info is detailed analysis
+const isDetailedAnalysis = (debugInfo: DebugInfo): debugInfo is DetailedAnalysis => {
+  return 'totalResults' in debugInfo;
+};
+
 export const ExternalValidationTester = () => {
   const [isRunning, setIsRunning] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [currentTest, setCurrentTest] = useState("");
   const [results, setResults] = useState<ValidationTestResult[]>([]);
   const [selectedTestSet, setSelectedTestSet] = useState<string>("benchmark");
-  const [debugInfo, setDebugInfo] = useState<any>(null);
+  const [debugInfo, setDebugInfo] = useState<DebugInfo | null>(null);
   const { toast } = useToast();
 
   // Load results on component mount with enhanced debugging
@@ -66,11 +91,16 @@ export const ExternalValidationTester = () => {
         }
       } else {
         console.log("ℹ️ No previous results found");
-        setDebugInfo({ message: "No results in localStorage", hasData: false });
+        setDebugInfo({ message: "No results in localStorage", hasData: false, resultsCount: 0 });
       }
     } catch (error) {
       console.error("❌ Error loading results:", error);
-      setDebugInfo({ error: error.message, hasIssue: true });
+      setDebugInfo({ 
+        error: error instanceof Error ? error.message : String(error), 
+        hasIssue: true, 
+        message: "Error loading results",
+        resultsCount: 0 
+      });
       toast({
         title: "Error Loading Results",
         description: "There was an issue loading previous results. Check console for details.",
@@ -79,12 +109,12 @@ export const ExternalValidationTester = () => {
     }
   };
 
-  const analyzeResults = (results: ValidationTestResult[]) => {
+  const analyzeResults = (results: ValidationTestResult[]): DebugInfo => {
     if (!results || results.length === 0) {
       return { message: "No results to analyze", resultsCount: 0 };
     }
 
-    const analysis = {
+    const analysis: DetailedAnalysis = {
       totalResults: results.length,
       geniusMachineErrors: 0,
       externalErrors: {},
@@ -169,9 +199,10 @@ export const ExternalValidationTester = () => {
     // Force reload and reanalyze
     loadAndAnalyzeResults();
     
+    const issuesCount = debugInfo && isDetailedAnalysis(debugInfo) ? debugInfo.issues?.length || 0 : 0;
     toast({
       title: "Debug Complete",
-      description: `Found ${results.length} results. ${debugInfo?.issues?.length || 0} issues detected. Check console for full details.`,
+      description: `Found ${results.length} results. ${issuesCount} issues detected. Check console for full details.`,
     });
   };
 
@@ -229,8 +260,8 @@ export const ExternalValidationTester = () => {
       setCurrentTest("");
 
       // Better success reporting
-      const completeResults = newAnalysis.completeResults || 0;
-      const partialResults = newAnalysis.partialResults || 0;
+      const completeResults = isDetailedAnalysis(newAnalysis) ? newAnalysis.completeResults : 0;
+      const partialResults = isDetailedAnalysis(newAnalysis) ? newAnalysis.partialResults : 0;
       
       if (completeResults > 0) {
         toast({
@@ -248,9 +279,10 @@ export const ExternalValidationTester = () => {
     } catch (error) {
       console.error('❌ Validation test failed:', error);
       setCurrentTest("");
+      const errorMessage = error instanceof Error ? error.message : String(error);
       toast({
         title: "Validation Test Failed",
-        description: `Test failed: ${error.message}. Check console for details.`,
+        description: `Test failed: ${errorMessage}. Check console for details.`,
         variant: "destructive"
       });
     } finally {
@@ -393,7 +425,7 @@ export const ExternalValidationTester = () => {
                   <div className="flex items-center justify-between">
                     <h4 className="font-medium text-green-800 flex items-center">
                       ✅ Validation Results Available ({results.length} tests)
-                      {debugInfo.issues && debugInfo.issues.length > 0 && (
+                      {debugInfo && isDetailedAnalysis(debugInfo) && debugInfo.issues && debugInfo.issues.length > 0 && (
                         <AlertTriangle className="w-4 h-4 ml-2 text-yellow-600" />
                       )}
                     </h4>
@@ -401,26 +433,35 @@ export const ExternalValidationTester = () => {
                   
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                     <div className="text-center p-2 bg-green-50 rounded">
-                      <div className="font-bold text-green-700">{debugInfo.completeResults || 0}</div>
+                      <div className="font-bold text-green-700">
+                        {isDetailedAnalysis(debugInfo) ? debugInfo.completeResults : 0}
+                      </div>
                       <div className="text-xs text-green-600">Complete</div>
                     </div>
                     <div className="text-center p-2 bg-yellow-50 rounded">
-                      <div className="font-bold text-yellow-700">{debugInfo.partialResults || 0}</div>
+                      <div className="font-bold text-yellow-700">
+                        {isDetailedAnalysis(debugInfo) ? debugInfo.partialResults : 0}
+                      </div>
                       <div className="text-xs text-yellow-600">Partial</div>
                     </div>
                     <div className="text-center p-2 bg-blue-50 rounded">
-                      <div className="font-bold text-blue-700">{debugInfo.geniusMachineErrors || 0}</div>
+                      <div className="font-bold text-blue-700">
+                        {isDetailedAnalysis(debugInfo) ? debugInfo.geniusMachineErrors : 0}
+                      </div>
                       <div className="text-xs text-blue-600">GM Errors</div>
                     </div>
                     <div className="text-center p-2 bg-purple-50 rounded">
                       <div className="font-bold text-purple-700">
-                        {Object.values(debugInfo.externalErrors || {}).reduce((a: number, b: number) => a + b, 0)}
+                        {isDetailedAnalysis(debugInfo) 
+                          ? Object.values(debugInfo.externalErrors).reduce((a: number, b: number) => a + b, 0)
+                          : 0
+                        }
                       </div>
                       <div className="text-xs text-purple-600">Ext Errors</div>
                     </div>
                   </div>
                   
-                  {debugInfo.issues && debugInfo.issues.length > 0 && (
+                  {debugInfo && isDetailedAnalysis(debugInfo) && debugInfo.issues && debugInfo.issues.length > 0 && (
                     <div className="mt-3 p-3 bg-yellow-50 rounded border border-yellow-200">
                       <p className="text-sm font-medium text-yellow-800 mb-2">Issues Detected:</p>
                       <ul className="text-xs text-yellow-700 space-y-1">
@@ -442,7 +483,7 @@ export const ExternalValidationTester = () => {
                   <p className="text-sm text-gray-600">
                     {debugInfo.message || "Run a validation test to see comparisons."}
                   </p>
-                  {debugInfo.error && (
+                  {'error' in debugInfo && debugInfo.error && (
                     <p className="text-sm text-red-600 mt-2">
                       Error: {debugInfo.error}
                     </p>
