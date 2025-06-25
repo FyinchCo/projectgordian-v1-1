@@ -13,14 +13,26 @@ export class MarketViabilityTester {
     if (!configurations || configurations.length === 0) {
       console.log('No configurations found, initializing framework...');
       
-      // Import and add default configurations
-      const { defaultTestConfigurations } = await import('./defaultTestConfigurations');
+      // Import individual configurations
+      const {
+        currentDefaultConfiguration,
+        highCreativeConfiguration,
+        balancedDefaultConfiguration,
+        analyticalFocusConfiguration
+      } = await import('./defaultTestConfigurations');
       
-      for (const config of defaultTestConfigurations) {
+      const defaultConfigurations = [
+        currentDefaultConfiguration,
+        highCreativeConfiguration,
+        balancedDefaultConfiguration,
+        analyticalFocusConfiguration
+      ];
+      
+      for (const config of defaultConfigurations) {
         archetypeTestingFramework.addConfiguration(config);
       }
       
-      console.log('Framework initialized with', defaultTestConfigurations.length, 'configurations');
+      console.log('Framework initialized with', defaultConfigurations.length, 'configurations');
     }
   }
   
