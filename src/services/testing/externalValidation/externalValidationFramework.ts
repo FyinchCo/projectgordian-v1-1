@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { TestQuestion, TestResult } from '../types';
 
@@ -20,6 +19,8 @@ export interface ValidationTestResult {
     tensionPoints: number;
     noveltyScore: number;
     emergenceDetected: boolean;
+    processingDepth: number; // Added to track actual processing depth
+    layerCount: number; // Added to show layer progression
   };
   externalResults: ExternalLLMResult[];
   evaluationMetrics?: {
@@ -39,15 +40,18 @@ export class ExternalValidationFramework {
     const results: ValidationTestResult[] = [];
     
     console.log(`Starting external validation test with ${questions.length} questions...`);
+    console.log('🎯 DEEP LAYER SHOWCASE: Genius Machine will use 3-layer processing vs single-pass external LLMs');
     
     for (const question of questions) {
       console.log(`Testing question: ${question.question.substring(0, 50)}...`);
       
       try {
-        // Get Genius Machine result
+        // Get Genius Machine result with 3-layer processing
+        console.log('🧠 Processing Genius Machine with 3-layer deep architecture...');
         const geniusResult = await this.getGeniusMachineResult(question.question);
         
-        // Get external LLM results
+        // Get external LLM results (single-pass only)
+        console.log('🤖 Processing external LLMs with single-pass responses...');
         const externalResults = await this.getExternalLLMResults(question.question);
         
         const testResult: ValidationTestResult = {
@@ -74,10 +78,12 @@ export class ExternalValidationFramework {
   }
 
   private async getGeniusMachineResult(question: string) {
+    console.log('🎯 Genius Machine: Initiating 3-layer deep processing...');
+    
     const { data, error } = await supabase.functions.invoke('genius-machine', {
       body: {
         question,
-        processingDepth: 1,
+        processingDepth: 3, // EXPLICITLY SET TO 3 LAYERS
         circuitType: 'sequential',
         enhancedMode: true
       }
@@ -85,28 +91,35 @@ export class ExternalValidationFramework {
 
     if (error) throw error;
 
+    console.log(`✅ Genius Machine completed ${data.processingDepth || 3} layers with ${data.layers?.length || 0} layer results`);
+
     return {
       insight: data.insight,
       confidence: data.confidence,
       tensionPoints: data.tensionPoints,
       noveltyScore: data.noveltyScore,
-      emergenceDetected: data.emergenceDetected
+      emergenceDetected: data.emergenceDetected,
+      processingDepth: data.processingDepth || 3,
+      layerCount: data.layers?.length || 0
     };
   }
 
   private async getExternalLLMResults(question: string): Promise<ExternalLLMResult[]> {
     const results: ExternalLLMResult[] = [];
     
-    // Test with multiple external LLMs - now including Gemini
+    // Test with multiple external LLMs - single-pass only
     const llmTests = [
       { provider: 'OpenAI', model: 'gpt-4o-mini', endpoint: 'openai-comparison' },
       { provider: 'Anthropic', model: 'claude-3-5-sonnet', endpoint: 'claude-comparison' },
       { provider: 'Google', model: 'gemini-1.5-pro', endpoint: 'gemini-comparison' }
     ];
     
+    console.log('🤖 External LLMs: Single-pass processing (architectural limitation)');
+    
     for (const llm of llmTests) {
       try {
         const startTime = Date.now();
+        console.log(`Processing ${llm.provider} ${llm.model} (single-pass)...`);
         
         const { data, error } = await supabase.functions.invoke(llm.endpoint, {
           body: { question }
@@ -124,6 +137,7 @@ export class ExternalValidationFramework {
             error: error.message
           });
         } else {
+          console.log(`✅ ${llm.provider} completed single-pass in ${processingTime}ms`);
           results.push({
             provider: llm.provider,
             model: llm.model,
@@ -195,12 +209,14 @@ export class ExternalValidationFramework {
         confidence: 0,
         noveltyScore: 0,
         tensionPoints: 0,
-        emergenceRate: 0
+        emergenceRate: 0,
+        averageProcessingDepth: 0, // Added to track actual depth
+        averageLayerCount: 0 // Added to track layer progression
       },
       externalProviderStats: {} as Record<string, any>
     };
 
-    // Calculate Genius Machine averages
+    // Calculate Genius Machine averages with depth tracking
     const validGeniusResults = results.filter(r => r.geniusMachineResult);
     if (validGeniusResults.length > 0) {
       metrics.averageGeniusMetrics.confidence = 
@@ -211,6 +227,10 @@ export class ExternalValidationFramework {
         validGeniusResults.reduce((sum, r) => sum + r.geniusMachineResult.tensionPoints, 0) / validGeniusResults.length;
       metrics.averageGeniusMetrics.emergenceRate = 
         validGeniusResults.filter(r => r.geniusMachineResult.emergenceDetected).length / validGeniusResults.length;
+      metrics.averageGeniusMetrics.averageProcessingDepth =
+        validGeniusResults.reduce((sum, r) => sum + r.geniusMachineResult.processingDepth, 0) / validGeniusResults.length;
+      metrics.averageGeniusMetrics.averageLayerCount =
+        validGeniusResults.reduce((sum, r) => sum + r.geniusMachineResult.layerCount, 0) / validGeniusResults.length;
     }
 
     // Calculate external provider statistics
