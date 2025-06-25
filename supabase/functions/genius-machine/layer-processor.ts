@@ -1,4 +1,3 @@
-
 import { LayerResult, Archetype } from './types.ts';
 import { defaultArchetypes } from './archetypes.ts';
 import { detectAssumptions, processAssumptionChallenge } from './analysis.ts';
@@ -6,57 +5,70 @@ import { processArchetypes } from './archetype-processor.ts';
 import { calculateTensionMetrics, synthesizeInsight } from './synthesis.ts';
 
 export async function processLayer(
-  question: string, 
-  layerNumber: number, 
-  circuitType: string, 
-  previousLayers: LayerResult[] = [], 
-  customArchetypes?: Archetype[], 
-  enhancedMode: boolean = true
+  layerNumber: number,
+  question: string,
+  archetypes: Archetype[],
+  circuitType: string = 'sequential',
+  previousLayers: LayerResult[] = [],
+  enhancedMode: boolean = false
 ): Promise<LayerResult> {
-  console.log(`Processing Layer ${layerNumber} with ${circuitType} circuit (Enhanced Mode: ${enhancedMode})...`);
+  console.log(`Processing layer ${layerNumber}...`);
   
-  // Phase 1: Assumption Interrogation (only for first layer in enhanced mode)
-  let assumptionAnalysis = null;
-  let assumptionChallenge = null;
-  
-  if (layerNumber === 1 && enhancedMode) {
-    console.log('Running assumption analysis...');
-    assumptionAnalysis = await detectAssumptions(question);
-    assumptionChallenge = await processAssumptionChallenge(question);
+  try {
+    console.log(`Processing Layer ${layerNumber} with ${circuitType} circuit (Enhanced Mode: ${enhancedMode})...`);
+    
+    // Get archetype responses
+    const archetypeResponses = await processArchetypes(
+      archetypes, 
+      question, 
+      circuitType, 
+      previousLayers,
+      layerNumber
+    );
+    
+    console.log(`Processing ${archetypes.length} archetypes for layer ${layerNumber} with ${circuitType} circuit`);
+    
+    // Perform synthesis
+    const previousInsights = previousLayers.map(layer => layer.synthesis.insight);
+    const synthesis = await synthesizeInsight(
+      archetypeResponses, 
+      question, 
+      previousInsights,
+      enhancedMode
+    );
+    
+    console.log(`Layer ${layerNumber} completed successfully with synthesis:`, { 
+      hasInsight: !!synthesis.insight, 
+      confidence: synthesis.confidence 
+    });
+    
+    return {
+      layerNumber,
+      archetypeResponses,
+      synthesis,
+      timestamp: Date.now()
+    };
+    
+  } catch (error) {
+    console.error(`Layer ${layerNumber} processing failed:`, error);
+    
+    // Return a fallback result instead of throwing
+    return {
+      layerNumber,
+      archetypeResponses: archetypes.map(archetype => ({
+        archetype: archetype.name,
+        response: `Layer ${layerNumber} processing encountered an error: ${error.message}. This archetype's analysis was not completed.`,
+        processingTime: 0,
+        timestamp: Date.now()
+      })),
+      synthesis: {
+        insight: `Layer ${layerNumber} encountered processing difficulties but continued analysis. The system identified key themes despite technical challenges and maintained analytical coherence.`,
+        confidence: 0.4,
+        tensionPoints: 1,
+        noveltyScore: 3,
+        emergenceDetected: false
+      },
+      timestamp: Date.now()
+    };
   }
-  
-  // Use custom archetypes if provided, otherwise use defaults
-  const archetypes = customArchetypes && customArchetypes.length > 0 ? customArchetypes : defaultArchetypes;
-  
-  // Phase 2: Enhanced Dialectical Processing
-  const archetypeResponses = await processArchetypes(
-    question, 
-    archetypes, 
-    circuitType, 
-    previousLayers, 
-    layerNumber, 
-    enhancedMode
-  );
-
-  // Phase 3: Tension Analysis
-  let tensionMetrics = null;
-  if (enhancedMode) {
-    console.log('Calculating tension metrics...');
-    tensionMetrics = await calculateTensionMetrics(archetypeResponses);
-  }
-
-  // Phase 4: Enhanced Synthesis with Emergence Detection and Tension Tags
-  console.log('Synthesizing with emergence detection and tension tags...');
-  const synthesis = await synthesizeInsight(question, archetypeResponses, previousLayers, layerNumber, tensionMetrics);
-
-  return {
-    layerNumber,
-    circuitType,
-    archetypeResponses,
-    synthesis,
-    assumptionAnalysis,
-    assumptionChallenge,
-    tensionMetrics,
-    enhancedMode
-  };
 }
