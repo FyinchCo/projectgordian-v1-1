@@ -1,19 +1,28 @@
-
 import { ProcessingResult } from './types';
 
-export const createProcessingTimeout = (chunkIndex: number, timeoutMs: number = 120000) => {
+export const createProcessingTimeout = (chunkIndex: number, timeoutMs: number = 480000) => {
   return new Promise((_, reject) => 
-    setTimeout(() => reject(new Error(`Chunk ${chunkIndex + 1} timed out after ${timeoutMs}ms`)), timeoutMs)
+    setTimeout(() => reject(new Error(`Chunk ${chunkIndex + 1} timed out after ${Math.round(timeoutMs/60000)} minutes`)), timeoutMs)
   );
 };
 
 export const validateChunkResult = (result: any, chunkIndex: number) => {
+  console.log(`Validating chunk ${chunkIndex + 1} result:`, {
+    hasResult: !!result,
+    hasError: !!result?.error,
+    hasData: !!result?.data,
+    status: result?.status,
+    statusText: result?.statusText
+  });
+
   if (!result) {
     throw new Error(`Chunk ${chunkIndex + 1} returned null result`);
   }
   
+  // Handle Supabase function invoke errors
   if (result.error) {
-    throw new Error(`Chunk ${chunkIndex + 1} error: ${result.error.message || 'Unknown error'}`);
+    console.error(`Chunk ${chunkIndex + 1} supabase error:`, result.error);
+    throw new Error(`Chunk ${chunkIndex + 1} error: ${result.error.message || 'Unknown supabase error'}`);
   }
   
   const { data } = result;
@@ -25,7 +34,6 @@ export const validateChunkResult = (result: any, chunkIndex: number) => {
 };
 
 export const createFinalResult = (data: any, accumulatedLayers: any[], totalDepth: number): ProcessingResult => {
-  // Use the final layer's data as the main result, with proper fallbacks
   const finalLayer = accumulatedLayers[accumulatedLayers.length - 1];
   
   console.log('Creating final result with layers:', {
@@ -44,7 +52,7 @@ export const createFinalResult = (data: any, accumulatedLayers: any[], totalDept
     tensionPoints: finalLayer?.tensionPoints || data.tensionPoints || 3,
     noveltyScore: finalLayer?.noveltyScore || data.noveltyScore || 5,
     emergenceDetected: finalLayer?.emergenceDetected || data.emergenceDetected || false,
-    layers: accumulatedLayers, // Use properly normalized accumulated layers
+    layers: accumulatedLayers,
     processingDepth: accumulatedLayers.length,
     logicTrail: finalLayer?.archetypeResponses || data.logicTrail || [],
     circuitType: data.circuitType,

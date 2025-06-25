@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ChunkedProcessorProps, ProcessingResult } from './types';
@@ -96,15 +95,33 @@ export const useChunkedProcessor = () => {
         
         console.log(`Calling genius-machine for chunk ${chunkIndex + 1}...`);
         
-        const timeoutPromise = createProcessingTimeout(chunkIndex, 300000); // Increased timeout to 5 minutes
+        // Increased timeout to 8 minutes for deep processing
+        const timeoutPromise = createProcessingTimeout(chunkIndex, 480000);
+        
+        // Make the supabase call with better error handling
         const requestPromise = supabase.functions.invoke('genius-machine', {
           body: chunkConfig
+        }).then(result => {
+          console.log(`Chunk ${chunkIndex + 1} raw result:`, {
+            hasData: !!result.data,
+            hasError: !!result.error,
+            errorMessage: result.error?.message,
+            statusText: result.statusText,
+            status: result.status
+          });
+          
+          // Handle supabase client errors
+          if (result.error) {
+            throw new Error(`Supabase function error: ${result.error.message}`);
+          }
+          
+          return result;
         });
         
         const result = await Promise.race([requestPromise, timeoutPromise]);
         
         const chunkDuration = Date.now() - chunkStartTime;
-        console.log(`Chunk ${chunkIndex + 1} completed in ${chunkDuration}ms`);
+        console.log(`Chunk ${chunkIndex + 1} completed in ${Math.round(chunkDuration/1000)}s`);
         
         const { data } = validateChunkResult(result, chunkIndex);
         
@@ -178,18 +195,38 @@ export const useChunkedProcessor = () => {
           toast(progressData);
           
           console.log(`Chunk ${chunkIndex + 1} complete, continuing to next chunk...`);
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise(resolve => setTimeout(resolve, 2000)); // Longer pause between chunks
         }
         
       } catch (chunkError: any) {
         console.error(`=== CHUNK ${chunkIndex + 1} ERROR ===`);
         console.error('Error details:', {
           message: chunkError.message,
+          name: chunkError.name,
+          stack: chunkError.stack?.substring(0, 200),
           accumulatedLayers: accumulatedLayers.length,
           hasValidLayers: accumulatedLayers.some(l => l?.insight),
           chunkIndex,
           totalChunks: chunks
         });
+        
+        // Improved error handling - distinguish between different error types
+        const isTimeoutError = chunkError.message?.includes('timeout') || chunkError.message?.includes('timed out');
+        const isConnectionError = chunkError.message?.includes('Failed to send a request') || chunkError.message?.includes('connection');
+        
+        if (isTimeoutError) {
+          toast({
+            title: "Processing Timeout",
+            description: `Chunk ${chunkIndex + 1} took longer than expected. This can happen with deep processing.`,
+            variant: "destructive",
+          });
+        } else if (isConnectionError) {
+          toast({
+            title: "Connection Issue",
+            description: `Chunk ${chunkIndex + 1} had a connection problem. The system will retry with better settings.`,
+            variant: "destructive",
+          });
+        }
         
         // If we have accumulated layers, return partial results
         if (accumulatedLayers.length > 0) {
