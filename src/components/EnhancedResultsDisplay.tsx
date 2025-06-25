@@ -1,4 +1,3 @@
-
 import { MainInsightDisplay } from "@/components/results/MainInsightDisplay";
 import { QuestionQualitySection } from "@/components/results/QuestionQualitySection";
 import { AssumptionAnalysisSection } from "@/components/results/AssumptionAnalysisSection";
@@ -8,6 +7,7 @@ import { LogicTrailSection } from "@/components/results/LogicTrailSection";
 import { LearningSystemStatus } from "@/components/results/LearningSystemStatus";
 import { QuestionContext } from "@/components/results/QuestionContext";
 import { ActionButtons } from "@/components/results/ActionButtons";
+import { ActionPlanGenerator } from "@/components/results/ActionPlanGenerator";
 import { useMetaLearning } from "@/hooks/useMetaLearning";
 import { useEffect } from "react";
 
@@ -173,6 +173,12 @@ export const EnhancedResultsDisplay = ({ results, question, onReset, onExport }:
         logicTrailLength: safeLogicTrail.length,
         compressionFormats: results.compressionFormats
       })}
+
+      {/* NEW: Action Plan Generator - Post-Output Scaffolding */}
+      <ActionPlanGenerator 
+        insight={results.insight}
+        question={question}
+      />
 
       {/* Question Quality Evaluation */}
       {results.questionQuality && renderSafeSection(QuestionQualitySection, { 
