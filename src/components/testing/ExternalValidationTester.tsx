@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { externalValidationFramework, ValidationTestResult } from "@/services/testing/externalValidation/externalValidationFramework";
 import { archetypeTestingFramework } from "@/services/testing/archetypeTestingFramework";
 import { TestQuestion } from "@/services/testing/types";
-import { Play, Download, Eye, BarChart3, Users, RefreshCw, Bug } from "lucide-react";
+import { Play, Download, Eye, BarChart3, Users, RefreshCw, Bug, AlertTriangle } from "lucide-react";
 
 export const ExternalValidationTester = () => {
   const [isRunning, setIsRunning] = useState(false);
@@ -18,50 +18,160 @@ export const ExternalValidationTester = () => {
   const [currentTest, setCurrentTest] = useState("");
   const [results, setResults] = useState<ValidationTestResult[]>([]);
   const [selectedTestSet, setSelectedTestSet] = useState<string>("benchmark");
+  const [debugInfo, setDebugInfo] = useState<any>(null);
   const { toast } = useToast();
 
-  // Load results on component mount with detailed logging
+  // Load results on component mount with enhanced debugging
   useEffect(() => {
-    console.log("🔄 ExternalValidationTester: Loading results on mount...");
-    const loadedResults = externalValidationFramework.loadResults();
-    console.log("📊 Loaded results:", loadedResults.length, loadedResults);
-    setResults(loadedResults);
-    
-    if (loadedResults.length > 0) {
-      console.log(`✅ Successfully loaded ${loadedResults.length} previous results on mount`);
-      toast({
-        title: "Previous Results Found",
-        description: `Loaded ${loadedResults.length} previous validation test results.`,
-      });
-    } else {
-      console.log("ℹ️ No previous results found on mount");
-    }
+    console.log("🔄 ExternalValidationTester: Component mounting, loading results...");
+    loadAndAnalyzeResults();
   }, []);
+
+  const loadAndAnalyzeResults = () => {
+    try {
+      // Get raw localStorage data
+      const rawData = localStorage.getItem('external-validation-results');
+      console.log("📊 Raw localStorage data:", rawData ? rawData.substring(0, 200) + '...' : 'null');
+      
+      // Load through framework
+      const loadedResults = externalValidationFramework.loadResults();
+      console.log("📋 Framework loaded results:", loadedResults.length, loadedResults);
+      
+      // Analyze the results for issues
+      const analysisResults = analyzeResults(loadedResults);
+      setDebugInfo(analysisResults);
+      
+      setResults(loadedResults);
+      
+      if (loadedResults.length > 0) {
+        console.log(`✅ Successfully loaded ${loadedResults.length} results`);
+        
+        // Check for failed tests
+        const failedTests = loadedResults.filter(r => 
+          r.geniusMachineResult.insight.startsWith('Error:') || 
+          r.externalResults.every(ext => ext.error)
+        );
+        
+        if (failedTests.length > 0) {
+          toast({
+            title: "Previous Results Found (with Issues)",
+            description: `Loaded ${loadedResults.length} results, ${failedTests.length} had errors. Check Results tab for details.`,
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "Previous Results Found",
+            description: `Successfully loaded ${loadedResults.length} validation test results.`,
+          });
+        }
+      } else {
+        console.log("ℹ️ No previous results found");
+        setDebugInfo({ message: "No results in localStorage", hasData: false });
+      }
+    } catch (error) {
+      console.error("❌ Error loading results:", error);
+      setDebugInfo({ error: error.message, hasIssue: true });
+      toast({
+        title: "Error Loading Results",
+        description: "There was an issue loading previous results. Check console for details.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const analyzeResults = (results: ValidationTestResult[]) => {
+    if (!results || results.length === 0) {
+      return { message: "No results to analyze", resultsCount: 0 };
+    }
+
+    const analysis = {
+      totalResults: results.length,
+      geniusMachineErrors: 0,
+      externalErrors: {},
+      partialResults: 0,
+      completeResults: 0,
+      issues: []
+    };
+
+    results.forEach((result, index) => {
+      // Check Genius Machine issues
+      if (result.geniusMachineResult.insight.startsWith('Error:')) {
+        analysis.geniusMachineErrors++;
+        analysis.issues.push(`Result ${index + 1}: Genius Machine failed`);
+      }
+
+      // Check external LLM issues
+      result.externalResults.forEach(ext => {
+        if (!analysis.externalErrors[ext.provider]) {
+          analysis.externalErrors[ext.provider] = 0;
+        }
+        if (ext.error) {
+          analysis.externalErrors[ext.provider]++;
+        }
+      });
+
+      // Check if result is complete
+      const hasGeniusResult = !result.geniusMachineResult.insight.startsWith('Error:');
+      const hasExternalResults = result.externalResults.some(ext => !ext.error);
+      
+      if (hasGeniusResult && hasExternalResults) {
+        analysis.completeResults++;
+      } else {
+        analysis.partialResults++;
+        analysis.issues.push(`Result ${index + 1}: Partial data (Genius: ${hasGeniusResult ? 'OK' : 'FAILED'}, External: ${hasExternalResults ? 'PARTIAL' : 'ALL FAILED'})`);
+      }
+    });
+
+    console.log("📊 Results Analysis:", analysis);
+    return analysis;
+  };
 
   const questions = archetypeTestingFramework.getTestQuestions();
   const benchmarkQuestions = questions.filter(q => q.category === 'philosophical' || q.difficulty === 'hard');
 
   const debugFrameworkState = () => {
-    console.log("🔍 DEBUG: Framework state check initiated");
+    console.log("🔍 DEBUG: Complete framework state check");
+    
+    // Framework debug
     externalValidationFramework.debugState();
     
-    // Also check the current state in this component
-    console.log("🔍 DEBUG: Component state:");
-    console.log("- Results in component state:", results.length);
-    console.log("- Results details:", results);
+    // Component state debug
+    console.log("🔍 DEBUG: Component Analysis:");
+    console.log("- Results in state:", results.length);
+    console.log("- Debug info:", debugInfo);
     
-    // Force reload from localStorage
-    const freshResults = externalValidationFramework.loadResults();
-    console.log("🔍 DEBUG: Fresh load results:", freshResults.length);
-    
-    if (freshResults.length !== results.length) {
-      console.log("⚠️ DEBUG: Mismatch detected, updating component state");
-      setResults(freshResults);
+    // localStorage deep dive
+    const rawData = localStorage.getItem('external-validation-results');
+    if (rawData) {
+      try {
+        const parsed = JSON.parse(rawData);
+        console.log("🔍 DEBUG: Parsed localStorage structure:", {
+          hasResults: !!parsed.results,
+          resultsCount: parsed.results?.length || 0,
+          hasTimestamp: !!parsed.timestamp,
+          hasVersion: !!parsed.version,
+          keys: Object.keys(parsed)
+        });
+        
+        if (parsed.results && parsed.results.length > 0) {
+          console.log("🔍 DEBUG: First result sample:", {
+            questionId: parsed.results[0].questionId,
+            hasGeniusResult: !!parsed.results[0].geniusMachineResult,
+            externalResultsCount: parsed.results[0].externalResults?.length || 0,
+            geniusInsightPreview: parsed.results[0].geniusMachineResult?.insight?.substring(0, 50) + '...'
+          });
+        }
+      } catch (e) {
+        console.log("🔍 DEBUG: Failed to parse localStorage data:", e);
+      }
     }
     
+    // Force reload and reanalyze
+    loadAndAnalyzeResults();
+    
     toast({
-      title: "Debug Info",
-      description: `Component: ${results.length} results, Storage: ${freshResults.length} results. Check console for details.`,
+      title: "Debug Complete",
+      description: `Found ${results.length} results. ${debugInfo?.issues?.length || 0} issues detected. Check console for full details.`,
     });
   };
 
@@ -98,20 +208,42 @@ export const ExternalValidationTester = () => {
 
       setProgress({ current: 0, total: testQuestions.length });
       setCurrentTest(`Starting validation test with ${testQuestions.length} questions...`);
-      console.log(`🎯 Starting External Validation Test with ${testQuestions.length} questions`);
+      console.log(`🎯 Starting NEW External Validation Test with ${testQuestions.length} questions`);
 
-      // Actually run the validation test
+      // Clear previous results before starting new test
+      console.log("🗑️ Clearing previous results before new test");
+      externalValidationFramework.clearResults();
+      setResults([]);
+
+      // Run the new test
       const testResults = await externalValidationFramework.runComparisonTest(testQuestions);
       
-      console.log("✅ Test completed, setting results:", testResults.length);
+      console.log("✅ NEW Test completed, got results:", testResults.length);
+      
+      // Analyze new results immediately
+      const newAnalysis = analyzeResults(testResults);
+      setDebugInfo(newAnalysis);
       setResults(testResults);
+      
       setProgress({ current: testQuestions.length, total: testQuestions.length });
       setCurrentTest("");
 
-      toast({
-        title: "External Validation Complete",
-        description: `Successfully tested ${testResults.length} questions across 4 AI systems. Check the Results tab.`,
-      });
+      // Better success reporting
+      const completeResults = newAnalysis.completeResults || 0;
+      const partialResults = newAnalysis.partialResults || 0;
+      
+      if (completeResults > 0) {
+        toast({
+          title: "External Validation Complete",
+          description: `${completeResults} complete results, ${partialResults} partial results. Check Results tab.`,
+        });
+      } else {
+        toast({
+          title: "Test Completed with Issues",
+          description: `All ${testResults.length} tests had errors. Check Results tab for details.`,
+          variant: "destructive"
+        });
+      }
 
     } catch (error) {
       console.error('❌ Validation test failed:', error);
@@ -126,30 +258,11 @@ export const ExternalValidationTester = () => {
     }
   };
 
-  const loadPreviousResults = () => {
-    console.log("🔄 Manual load previous results triggered");
-    const stored = externalValidationFramework.loadResults();
-    console.log("📊 Manually loaded results:", stored.length, stored);
-    setResults(stored);
-    
-    if (stored.length > 0) {
-      toast({
-        title: "Results Loaded",
-        description: `Loaded ${stored.length} previous validation test results.`,
-      });
-    } else {
-      toast({
-        title: "No Previous Results",
-        description: "No previous validation test results found in storage.",
-        variant: "destructive"
-      });
-    }
-  };
-
   const clearAllResults = () => {
-    console.log("🗑️ Clearing all results");
+    console.log("🗑️ Clearing all results and debug info");
     externalValidationFramework.clearResults();
     setResults([]);
+    setDebugInfo(null);
     toast({
       title: "Results Cleared",
       description: "All validation test results have been cleared.",
@@ -169,7 +282,6 @@ export const ExternalValidationTester = () => {
     try {
       const blindData = await externalValidationFramework.generateBlindEvaluationData(results);
       
-      // Export for external evaluation
       const blob = new Blob([JSON.stringify(blindData, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -192,7 +304,7 @@ export const ExternalValidationTester = () => {
 
   const metrics = results.length > 0 ? externalValidationFramework.calculateValidationMetrics(results) : null;
 
-  console.log("🖼️ Rendering component with", results.length, "results");
+  console.log("🖼️ Rendering component with", results.length, "results and debug info:", debugInfo);
 
   return (
     <div className="space-y-6">
@@ -263,36 +375,81 @@ export const ExternalValidationTester = () => {
               ) : (
                 <>
                   <Play className="w-4 h-4 mr-2" />
-                  Start 4-Way External Validation
+                  Start NEW 4-Way Validation Test
                 </>
               )}
             </Button>
             
-            <Button variant="outline" onClick={loadPreviousResults}>
-              Load Previous Results
+            <Button variant="outline" onClick={loadAndAnalyzeResults}>
+              Reload & Analyze Results
             </Button>
           </div>
 
-          {/* Results Preview - Enhanced with debugging */}
-          {results.length > 0 ? (
-            <div className="p-4 bg-green-50 rounded-lg">
-              <h4 className="font-medium text-green-800 mb-2">
-                ✅ Validation Results Available ({results.length} tests)
-              </h4>
-              <p className="text-sm text-green-700">
-                {results.length} questions tested across {results.length > 0 ? results[0].externalResults.length + 1 : 4} AI systems. 
-                View detailed results in the tabs below.
-              </p>
-            </div>
-          ) : (
-            <div className="p-4 bg-gray-50 rounded-lg">
-              <h4 className="font-medium text-gray-600 mb-2">
-                📋 No Results Available
-              </h4>
-              <p className="text-sm text-gray-600">
-                Run a validation test or load previous results to see comparisons.
-              </p>
-            </div>
+          {/* Enhanced Results Status with Debug Info */}
+          {debugInfo && (
+            <Card className="p-4 border-2">
+              {results.length > 0 ? (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-medium text-green-800 flex items-center">
+                      ✅ Validation Results Available ({results.length} tests)
+                      {debugInfo.issues && debugInfo.issues.length > 0 && (
+                        <AlertTriangle className="w-4 h-4 ml-2 text-yellow-600" />
+                      )}
+                    </h4>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div className="text-center p-2 bg-green-50 rounded">
+                      <div className="font-bold text-green-700">{debugInfo.completeResults || 0}</div>
+                      <div className="text-xs text-green-600">Complete</div>
+                    </div>
+                    <div className="text-center p-2 bg-yellow-50 rounded">
+                      <div className="font-bold text-yellow-700">{debugInfo.partialResults || 0}</div>
+                      <div className="text-xs text-yellow-600">Partial</div>
+                    </div>
+                    <div className="text-center p-2 bg-blue-50 rounded">
+                      <div className="font-bold text-blue-700">{debugInfo.geniusMachineErrors || 0}</div>
+                      <div className="text-xs text-blue-600">GM Errors</div>
+                    </div>
+                    <div className="text-center p-2 bg-purple-50 rounded">
+                      <div className="font-bold text-purple-700">
+                        {Object.values(debugInfo.externalErrors || {}).reduce((a: number, b: number) => a + b, 0)}
+                      </div>
+                      <div className="text-xs text-purple-600">Ext Errors</div>
+                    </div>
+                  </div>
+                  
+                  {debugInfo.issues && debugInfo.issues.length > 0 && (
+                    <div className="mt-3 p-3 bg-yellow-50 rounded border border-yellow-200">
+                      <p className="text-sm font-medium text-yellow-800 mb-2">Issues Detected:</p>
+                      <ul className="text-xs text-yellow-700 space-y-1">
+                        {debugInfo.issues.slice(0, 3).map((issue: string, idx: number) => (
+                          <li key={idx}>• {issue}</li>
+                        ))}
+                        {debugInfo.issues.length > 3 && (
+                          <li>• ... and {debugInfo.issues.length - 3} more issues</li>
+                        )}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h4 className="font-medium text-gray-600 mb-2">
+                    📋 No Results Available
+                  </h4>
+                  <p className="text-sm text-gray-600">
+                    {debugInfo.message || "Run a validation test to see comparisons."}
+                  </p>
+                  {debugInfo.error && (
+                    <p className="text-sm text-red-600 mt-2">
+                      Error: {debugInfo.error}
+                    </p>
+                  )}
+                </div>
+              )}
+            </Card>
           )}
         </CardContent>
       </Card>
@@ -315,65 +472,94 @@ export const ExternalValidationTester = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-6">
-                  {results.map((result, index) => (
-                    <div key={result.questionId} className="border rounded-lg p-4">
-                      <div className="mb-3">
-                        <Badge variant="outline" className="text-xs mb-2">
-                          Question {index + 1}
-                        </Badge>
-                        <h4 className="font-medium text-sm">{result.question}</h4>
-                      </div>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {/* Genius Machine Result */}
-                        <div className="border rounded p-3 bg-blue-50">
+                  {results.map((result, index) => {
+                    const hasGeniusError = result.geniusMachineResult.insight.startsWith('Error:');
+                    const externalErrors = result.externalResults.filter(ext => ext.error).length;
+                    const externalSuccess = result.externalResults.filter(ext => !ext.error).length;
+                    
+                    return (
+                      <div key={result.questionId} className="border rounded-lg p-4">
+                        <div className="mb-3">
                           <div className="flex items-center justify-between mb-2">
-                            <Badge className="text-xs bg-blue-600">Genius Machine (3-layer)</Badge>
-                            <div className="flex space-x-1">
-                              <Badge variant="outline" className="text-xs">
-                                Novel: {result.geniusMachineResult.noveltyScore}/10
-                              </Badge>
-                              {result.geniusMachineResult.emergenceDetected && (
+                            <Badge variant="outline" className="text-xs">
+                              Question {index + 1}
+                            </Badge>
+                            <div className="flex space-x-2">
+                              {hasGeniusError && (
+                                <Badge variant="destructive" className="text-xs">
+                                  GM Failed
+                                </Badge>
+                              )}
+                              {externalErrors > 0 && (
+                                <Badge variant="outline" className="text-xs text-red-600">
+                                  {externalErrors} Ext Failed
+                                </Badge>
+                              )}
+                              {externalSuccess > 0 && (
                                 <Badge variant="outline" className="text-xs text-green-600">
-                                  Emergence
+                                  {externalSuccess} Ext Success
                                 </Badge>
                               )}
                             </div>
                           </div>
-                          <p className="text-sm text-gray-700 mb-2">
-                            {result.geniusMachineResult.insight.substring(0, 150)}...
-                          </p>
-                          <div className="text-xs text-gray-500">
-                            {result.geniusMachineResult.processingDepth} layers, {Math.round(result.geniusMachineResult.confidence * 100)}% confidence
-                          </div>
+                          <h4 className="font-medium text-sm">{result.question}</h4>
                         </div>
-
-                        {/* External LLM Results */}
-                        {result.externalResults.map((ext, extIndex) => (
-                          <div key={extIndex} className="border rounded p-3">
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {/* Genius Machine Result */}
+                          <div className={`border rounded p-3 ${hasGeniusError ? 'bg-red-50 border-red-200' : 'bg-blue-50'}`}>
                             <div className="flex items-center justify-between mb-2">
-                              <Badge variant="secondary" className="text-xs">
-                                {ext.provider} {ext.model}
+                              <Badge className={`text-xs ${hasGeniusError ? 'bg-red-600' : 'bg-blue-600'}`}>
+                                Genius Machine (3-layer)
                               </Badge>
-                              <Badge variant="outline" className="text-xs">
-                                {ext.processingTime}ms
-                              </Badge>
+                              {!hasGeniusError && (
+                                <div className="flex space-x-1">
+                                  <Badge variant="outline" className="text-xs">
+                                    Novel: {result.geniusMachineResult.noveltyScore}/10
+                                  </Badge>
+                                  {result.geniusMachineResult.emergenceDetected && (
+                                    <Badge variant="outline" className="text-xs text-green-600">
+                                      Emergence
+                                    </Badge>
+                                  )}
+                                </div>
+                              )}
                             </div>
-                            {ext.error ? (
-                              <p className="text-sm text-red-600 mb-2">Error: {ext.error}</p>
-                            ) : (
-                              <p className="text-sm text-gray-700 mb-2">
-                                {ext.response.substring(0, 150)}...
-                              </p>
-                            )}
+                            <p className={`text-sm mb-2 ${hasGeniusError ? 'text-red-700' : 'text-gray-700'}`}>
+                              {result.geniusMachineResult.insight.substring(0, 150)}...
+                            </p>
                             <div className="text-xs text-gray-500">
-                              Single-pass processing
+                              {hasGeniusError ? 'Processing failed' : `${result.geniusMachineResult.processingDepth} layers, ${Math.round(result.geniusMachineResult.confidence * 100)}% confidence`}
                             </div>
                           </div>
-                        ))}
+
+                          {/* External LLM Results */}
+                          {result.externalResults.map((ext, extIndex) => (
+                            <div key={extIndex} className={`border rounded p-3 ${ext.error ? 'bg-red-50 border-red-200' : ''}`}>
+                              <div className="flex items-center justify-between mb-2">
+                                <Badge variant="secondary" className="text-xs">
+                                  {ext.provider} {ext.model}
+                                </Badge>
+                                <Badge variant="outline" className="text-xs">
+                                  {ext.processingTime}ms
+                                </Badge>
+                              </div>
+                              {ext.error ? (
+                                <p className="text-sm text-red-600 mb-2">Error: {ext.error}</p>
+                              ) : (
+                                <p className="text-sm text-gray-700 mb-2">
+                                  {ext.response.substring(0, 150)}...
+                                </p>
+                              )}
+                              <div className="text-xs text-gray-500">
+                                Single-pass processing
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>
