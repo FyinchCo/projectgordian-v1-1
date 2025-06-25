@@ -1,5 +1,6 @@
 
 import { ArchetypeTestConfiguration } from './types';
+import { archetypeTestingFramework } from './archetypeTestingFramework';
 
 export const optimizedSynthesisConfiguration: ArchetypeTestConfiguration = {
   id: 'optimized-synthesis-v1',
@@ -115,13 +116,14 @@ export const balancedOptimizationConfiguration: ArchetypeTestConfiguration = {
 };
 
 export function addOptimizedConfigurations() {
-  const { archetypeTestingFramework } = require('./archetypeTestingFramework');
-  
   try {
+    console.log('Adding optimized synthesis configuration...');
     archetypeTestingFramework.addConfiguration(optimizedSynthesisConfiguration);
+    console.log('Adding balanced optimization configuration...');
     archetypeTestingFramework.addConfiguration(balancedOptimizationConfiguration);
-    console.log('Added optimized configurations for synthesis improvement');
+    console.log('Successfully added optimized configurations for synthesis improvement');
   } catch (error) {
     console.error('Error adding optimized configurations:', error);
+    throw error;
   }
 }
