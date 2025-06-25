@@ -24,7 +24,7 @@ export const QuestionInputSection = ({
       {/* Refined Header */}
       <div className="text-center space-y-6">
         <h1 className="text-4xl text-zen-heading text-zen-ink leading-tight">
-          THE GENIUS MACHINE
+          PROJECT GORDIAN
         </h1>
         <p className="text-base text-zen-body text-zen-charcoal max-w-lg mx-auto leading-relaxed">
           AI's Recursive Distillation of Complex Questions

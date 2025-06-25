@@ -1,6 +1,4 @@
-
 import { useState, useEffect, useCallback } from "react";
-import { Header } from "@/components/Header";
 import { ProcessingSection } from "@/components/ProcessingSection";
 import { ResultsSection } from "@/components/ResultsSection";
 import { ProcessingLogic } from "@/components/ProcessingLogic";
@@ -101,11 +99,6 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-zen-paper">
-      <Header 
-        customArchetypes={customArchetypes} 
-        enhancedMode={enhancedMode}
-      />
-
       <main className="px-zen-lg py-zen-xl max-w-7xl mx-auto">
         {!isProcessing && !results && (
           <ConsolidatedGeniusInterface
