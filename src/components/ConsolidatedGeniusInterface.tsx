@@ -7,7 +7,7 @@ import { MetaLearningStatusCard } from "./interface/MetaLearningStatusCard";
 import { AssessmentDisplay } from "./interface/AssessmentDisplay";
 import { ProcessingConfigurationSection } from "./interface/ProcessingConfigurationSection";
 import { LaunchSection } from "./interface/LaunchSection";
-import { PixelRobot } from "./PixelRobot";
+import { KnotIcon } from "./KnotIcon";
 
 interface ConsolidatedGeniusInterfaceProps {
   question: string;
@@ -51,59 +51,53 @@ export const ConsolidatedGeniusInterface = ({
   const learningInsights = getLearningInsights();
 
   return (
-    <div className="space-y-8 max-w-4xl mx-auto">
-      {/* Charming Welcome Section */}
-      <div className="text-center space-y-6">
-        <div className="flex items-center justify-center space-x-4 mb-6">
-          <PixelRobot size={64} mood="excited" animate={true} />
-          <div className="text-left">
-            <h2 className="text-5xl font-bold tracking-tight text-gray-800 leading-tight">
-              What's Puzzling You?
+    <div className="space-y-12 max-w-4xl mx-auto">
+      {/* Philosophical Welcome Section */}
+      <div className="text-center space-y-8">
+        <div className="flex items-center justify-center space-x-6 mb-8">
+          <KnotIcon size={48} className="text-zen-charcoal" animate={true} />
+          <div>
+            <h2 className="text-zen-heading text-4xl font-light text-zen-ink leading-tight mb-2">
+              Unravel Complex Questions
             </h2>
-            <p className="text-lg text-gray-600 font-medium">
-              I love a good challenge! 🤖✨
+            <p className="text-zen-body text-lg text-zen-medium">
+              Where contradictions become clarity
             </p>
           </div>
-          <PixelRobot size={64} mood="thinking" />
+          <KnotIcon size={48} className="text-zen-charcoal" />
         </div>
         
-        <p className="text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
-          Ask me something complex, contradictory, or just plain tricky. 
-          I'll gather my AI friends and we'll brainstorm breakthrough insights together!
+        <p className="text-zen-body text-lg text-zen-charcoal max-w-2xl mx-auto leading-relaxed">
+          Present your most complex questions—those that resist simple answers. 
+          Our multi-perspective analysis transforms intellectual knots into breakthrough insights.
         </p>
         
         {customArchetypes && (
-          <div className="bg-green-100 border-2 border-green-300 rounded-xl p-4 inline-block">
-            <div className="flex items-center space-x-2">
-              <PixelRobot size={24} mood="happy" />
-              <span className="text-sm font-medium text-green-800">
-                Using {customArchetypes.length} of your custom AI personalities
-              </span>
-            </div>
+          <div className="bg-zen-whisper border border-zen-light rounded-md p-4 inline-block">
+            <span className="text-zen-mono text-sm text-zen-charcoal">
+              {customArchetypes.length} custom perspectives integrated
+            </span>
           </div>
         )}
         
         {enhancedMode && (
-          <div className="bg-purple-100 border-2 border-purple-300 rounded-xl p-4 inline-block">
-            <div className="flex items-center space-x-2">
-              <PixelRobot size={24} mood="working" />
-              <span className="text-sm font-medium text-purple-800">
-                Enhanced Mode: Extra assumption-challenging power activated!
-              </span>
-            </div>
+          <div className="bg-zen-whisper border border-zen-light rounded-md p-4 inline-block">
+            <span className="text-zen-mono text-sm text-zen-charcoal">
+              Enhanced assumption-challenging mode active
+            </span>
           </div>
         )}
       </div>
 
-      {/* Meta-Learning Status with Robot Charm */}
+      {/* Meta-Learning Status */}
       <MetaLearningStatusCard
         learningInsights={learningInsights}
         optimizationReasoning={optimizationReasoning}
         clearOptimizationReasoning={clearOptimizationReasoning}
       />
 
-      {/* Main Question Input Card with Playful Design */}
-      <Card className="border-3 border-gray-300 bg-white shadow-xl hover:shadow-2xl transition-all duration-300 rounded-xl">
+      {/* Main Question Input Card */}
+      <Card className="border border-zen-light bg-zen-paper shadow-zen-lg">
         <div className="p-8 space-y-8">
           <QuestionInputSection 
             question={question} 
@@ -118,7 +112,7 @@ export const ConsolidatedGeniusInterface = ({
             learningInsights={learningInsights}
           />
 
-          {/* Configuration with Friendly Styling */}
+          {/* Configuration */}
           <ProcessingConfigurationSection
             processingDepth={processingDepth}
             setProcessingDepth={setProcessingDepth}
@@ -130,13 +124,8 @@ export const ConsolidatedGeniusInterface = ({
             learningInsights={learningInsights}
           />
 
-          {/* Launch Button with Robot Celebration */}
-          <div className="pt-8 border-t-2 border-gray-200">
-            <div className="flex items-center justify-center space-x-4 mb-4">
-              <PixelRobot size={32} mood="excited" animate={true} />
-              <span className="text-lg font-medium text-gray-700">Ready to think together?</span>
-              <PixelRobot size={32} mood="celebrating" />
-            </div>
+          {/* Launch Section */}
+          <div className="pt-8 border-t border-zen-light">
             <LaunchSection 
               question={question}
               onStartGenius={onStartGenius}
@@ -145,35 +134,35 @@ export const ConsolidatedGeniusInterface = ({
         </div>
       </Card>
 
-      {/* Charming Info Cards */}
+      {/* Sophisticated Info Cards */}
       <div className="grid md:grid-cols-3 gap-8 mt-16">
-        <Card className="border-2 border-green-300 bg-green-50 p-8 text-center shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 rounded-xl">
-          <div className="flex justify-center mb-4">
-            <PixelRobot size={48} mood="thinking" />
+        <Card className="border border-zen-light bg-zen-paper p-8 text-center shadow-zen hover:shadow-zen-lg transition-all duration-300">
+          <div className="flex justify-center mb-6">
+            <KnotIcon size={32} className="text-zen-charcoal" />
           </div>
-          <h3 className="font-bold text-xl mb-4 text-green-800">Multi-Perspective Magic</h3>
-          <p className="text-sm text-green-700 leading-relaxed">
-            I gather different AI personalities to look at your problem from every angle
+          <h3 className="text-zen-heading text-xl font-light mb-4 text-zen-ink">Multi-Perspective Analysis</h3>
+          <p className="text-zen-body text-sm text-zen-medium leading-relaxed">
+            Multiple AI archetypes examine your question from distinct philosophical and analytical viewpoints
           </p>
         </Card>
         
-        <Card className="border-2 border-blue-300 bg-blue-50 p-8 text-center shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 rounded-xl">
-          <div className="flex justify-center mb-4">
-            <PixelRobot size={48} mood="working" />
+        <Card className="border border-zen-light bg-zen-paper p-8 text-center shadow-zen hover:shadow-zen-lg transition-all duration-300">
+          <div className="flex justify-center mb-6">
+            <KnotIcon size={32} className="text-zen-charcoal" />
           </div>
-          <h3 className="font-bold text-xl mb-4 text-blue-800">Breakthrough Insights</h3>
-          <p className="text-sm text-blue-700 leading-relaxed">
-            We don't just give answers - we discover breakthrough insights together
+          <h3 className="text-zen-heading text-xl font-light mb-4 text-zen-ink">Breakthrough Synthesis</h3>
+          <p className="text-zen-body text-sm text-zen-medium leading-relaxed">
+            Contradictory perspectives are synthesized into novel insights that transcend initial assumptions
           </p>
         </Card>
         
-        <Card className="border-2 border-purple-300 bg-purple-50 p-8 text-center shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 rounded-xl">
-          <div className="flex justify-center mb-4">
-            <PixelRobot size={48} mood="celebrating" />
+        <Card className="border border-zen-light bg-zen-paper p-8 text-center shadow-zen hover:shadow-zen-lg transition-all duration-300">
+          <div className="flex justify-center mb-6">
+            <KnotIcon size={32} className="text-zen-charcoal" />
           </div>
-          <h3 className="font-bold text-xl mb-4 text-purple-800">Friendly & Smart</h3>
-          <p className="text-sm text-purple-700 leading-relaxed">
-            Sophisticated AI power delivered with a smile and a helpful attitude
+          <h3 className="text-zen-heading text-xl font-light mb-4 text-zen-ink">Intellectual Precision</h3>
+          <p className="text-zen-body text-sm text-zen-medium leading-relaxed">
+            Rigorous analysis combined with creative insight to address the most challenging questions
           </p>
         </Card>
       </div>

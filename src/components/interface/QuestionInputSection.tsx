@@ -2,7 +2,7 @@
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Settings } from "lucide-react";
+import { Settings, Brain } from "lucide-react";
 import { Link } from "react-router-dom";
 import { OutputType, OUTPUT_TYPE_CONFIGS } from "@/types/outputTypes";
 import { PixelRobot } from "../PixelRobot";
@@ -22,38 +22,38 @@ export const QuestionInputSection = ({
 }: QuestionInputSectionProps) => {
   return (
     <div className="space-y-6">
-      {/* Question Input with Playful Design */}
+      {/* Refined Question Input */}
       <div className="space-y-6">
         <Textarea
-          placeholder="Type your most puzzling question here... I'm ready for anything! 🚀"
+          placeholder="Present your most challenging question—one that resists simple answers and demands deeper investigation..."
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
-          className="min-h-[180px] text-xl border-2 border-gray-300 bg-white resize-none focus-visible:ring-0 focus-visible:border-blue-400 p-6 rounded-xl shadow-md transition-all duration-300 placeholder:text-gray-400"
+          className="min-h-[180px] text-lg border border-zen-light bg-zen-paper resize-none focus-visible:ring-0 focus-visible:border-zen-charcoal p-6 transition-all duration-300 placeholder:text-zen-medium"
         />
 
-        {/* Friendly Control Row */}
-        <div className="border-t-2 border-gray-200 pt-4">
+        {/* Sophisticated Control Row */}
+        <div className="border-t border-zen-light pt-6">
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-            <div className="flex flex-wrap items-center gap-4">
-              <div className="flex items-center space-x-2">
-                <PixelRobot size={20} mood="working" />
-                <span className="text-sm font-medium text-gray-600">
-                  {question.length} characters ready for analysis
+            <div className="flex flex-wrap items-center gap-6">
+              <div className="flex items-center space-x-3">
+                <PixelRobot size={16} mood="working" />
+                <span className="text-zen-mono text-sm text-zen-medium">
+                  {question.length} characters
                 </span>
               </div>
 
               <div className="flex items-center space-x-3">
-                <span className="text-sm font-medium text-gray-600">Answer Style:</span>
+                <span className="text-zen-mono text-sm text-zen-charcoal">Output Format:</span>
                 <Select value={outputType} onValueChange={(value) => setOutputType(value as OutputType)}>
-                  <SelectTrigger className="w-[160px] h-10 border-2 border-gray-300 bg-white text-gray-700 font-medium rounded-lg hover:border-gray-400 transition-colors">
+                  <SelectTrigger className="w-[160px] h-10 border border-zen-light bg-zen-paper text-zen-charcoal">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-white border-2 border-gray-300 shadow-xl rounded-lg">
+                  <SelectContent className="bg-zen-paper border border-zen-light shadow-zen-lg">
                     {OUTPUT_TYPE_CONFIGS.map((config) => (
                       <SelectItem 
                         key={config.id} 
                         value={config.id}
-                        className="font-medium text-gray-700 hover:bg-blue-50 focus:bg-blue-50 rounded-md"
+                        className="text-zen-charcoal hover:bg-zen-whisper focus:bg-zen-whisper"
                       >
                         {config.label}
                       </SelectItem>
@@ -66,7 +66,7 @@ export const QuestionInputSection = ({
                 <Button 
                   variant="outline"
                   size="sm"
-                  className="border-2 border-blue-300 hover:bg-blue-50 text-blue-700 hover:text-blue-800 flex items-center gap-2 font-medium rounded-lg transition-all duration-300 px-4 py-2"
+                  className="border border-zen-light hover:bg-zen-whisper text-zen-charcoal flex items-center gap-2 transition-all duration-300"
                 >
                   <Settings className="w-4 h-4" />
                   <span>Configure</span>
