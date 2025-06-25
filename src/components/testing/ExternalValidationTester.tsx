@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,13 +20,21 @@ export const ExternalValidationTester = () => {
   const [selectedTestSet, setSelectedTestSet] = useState<string>("benchmark");
   const { toast } = useToast();
 
-  // Load results on component mount
+  // Load results on component mount with detailed logging
   useEffect(() => {
+    console.log("🔄 ExternalValidationTester: Loading results on mount...");
     const loadedResults = externalValidationFramework.loadResults();
+    console.log("📊 Loaded results:", loadedResults.length, loadedResults);
     setResults(loadedResults);
     
     if (loadedResults.length > 0) {
-      console.log(`Loaded ${loadedResults.length} previous results on mount`);
+      console.log(`✅ Successfully loaded ${loadedResults.length} previous results on mount`);
+      toast({
+        title: "Previous Results Found",
+        description: `Loaded ${loadedResults.length} previous validation test results.`,
+      });
+    } else {
+      console.log("ℹ️ No previous results found on mount");
     }
   }, []);
 
@@ -33,17 +42,33 @@ export const ExternalValidationTester = () => {
   const benchmarkQuestions = questions.filter(q => q.category === 'philosophical' || q.difficulty === 'hard');
 
   const debugFrameworkState = () => {
+    console.log("🔍 DEBUG: Framework state check initiated");
     externalValidationFramework.debugState();
+    
+    // Also check the current state in this component
+    console.log("🔍 DEBUG: Component state:");
+    console.log("- Results in component state:", results.length);
+    console.log("- Results details:", results);
+    
+    // Force reload from localStorage
+    const freshResults = externalValidationFramework.loadResults();
+    console.log("🔍 DEBUG: Fresh load results:", freshResults.length);
+    
+    if (freshResults.length !== results.length) {
+      console.log("⚠️ DEBUG: Mismatch detected, updating component state");
+      setResults(freshResults);
+    }
+    
     toast({
       title: "Debug Info",
-      description: "Check console for detailed framework state information.",
+      description: `Component: ${results.length} results, Storage: ${freshResults.length} results. Check console for details.`,
     });
   };
 
   const runValidationTest = async () => {
     setIsRunning(true);
     setProgress({ current: 0, total: 0 });
-    setCurrentTest("");
+    setCurrentTest("Initializing validation test...");
     
     try {
       let testQuestions: TestQuestion[] = [];
@@ -72,13 +97,16 @@ export const ExternalValidationTester = () => {
       }
 
       setProgress({ current: 0, total: testQuestions.length });
+      setCurrentTest(`Starting validation test with ${testQuestions.length} questions...`);
       console.log(`🎯 Starting External Validation Test with ${testQuestions.length} questions`);
 
       // Actually run the validation test
       const testResults = await externalValidationFramework.runComparisonTest(testQuestions);
       
+      console.log("✅ Test completed, setting results:", testResults.length);
       setResults(testResults);
       setProgress({ current: testQuestions.length, total: testQuestions.length });
+      setCurrentTest("");
 
       toast({
         title: "External Validation Complete",
@@ -86,7 +114,8 @@ export const ExternalValidationTester = () => {
       });
 
     } catch (error) {
-      console.error('Validation test failed:', error);
+      console.error('❌ Validation test failed:', error);
+      setCurrentTest("");
       toast({
         title: "Validation Test Failed",
         description: `Test failed: ${error.message}. Check console for details.`,
@@ -94,12 +123,13 @@ export const ExternalValidationTester = () => {
       });
     } finally {
       setIsRunning(false);
-      setCurrentTest("");
     }
   };
 
   const loadPreviousResults = () => {
+    console.log("🔄 Manual load previous results triggered");
     const stored = externalValidationFramework.loadResults();
+    console.log("📊 Manually loaded results:", stored.length, stored);
     setResults(stored);
     
     if (stored.length > 0) {
@@ -117,6 +147,7 @@ export const ExternalValidationTester = () => {
   };
 
   const clearAllResults = () => {
+    console.log("🗑️ Clearing all results");
     externalValidationFramework.clearResults();
     setResults([]);
     toast({
@@ -160,6 +191,8 @@ export const ExternalValidationTester = () => {
   };
 
   const metrics = results.length > 0 ? externalValidationFramework.calculateValidationMetrics(results) : null;
+
+  console.log("🖼️ Rendering component with", results.length, "results");
 
   return (
     <div className="space-y-6">
@@ -240,15 +273,24 @@ export const ExternalValidationTester = () => {
             </Button>
           </div>
 
-          {/* Results Preview */}
-          {results.length > 0 && (
+          {/* Results Preview - Enhanced with debugging */}
+          {results.length > 0 ? (
             <div className="p-4 bg-green-50 rounded-lg">
               <h4 className="font-medium text-green-800 mb-2">
-                ✅ Validation Results Available
+                ✅ Validation Results Available ({results.length} tests)
               </h4>
               <p className="text-sm text-green-700">
                 {results.length} questions tested across {results.length > 0 ? results[0].externalResults.length + 1 : 4} AI systems. 
                 View detailed results in the tabs below.
+              </p>
+            </div>
+          ) : (
+            <div className="p-4 bg-gray-50 rounded-lg">
+              <h4 className="font-medium text-gray-600 mb-2">
+                📋 No Results Available
+              </h4>
+              <p className="text-sm text-gray-600">
+                Run a validation test or load previous results to see comparisons.
               </p>
             </div>
           )}
@@ -298,10 +340,10 @@ export const ExternalValidationTester = () => {
                               )}
                             </div>
                           </div>
-                          <p className="text-sm text-gray-700">
+                          <p className="text-sm text-gray-700 mb-2">
                             {result.geniusMachineResult.insight.substring(0, 150)}...
                           </p>
-                          <div className="mt-2 text-xs text-gray-500">
+                          <div className="text-xs text-gray-500">
                             {result.geniusMachineResult.processingDepth} layers, {Math.round(result.geniusMachineResult.confidence * 100)}% confidence
                           </div>
                         </div>
@@ -318,13 +360,13 @@ export const ExternalValidationTester = () => {
                               </Badge>
                             </div>
                             {ext.error ? (
-                              <p className="text-sm text-red-600">Error: {ext.error}</p>
+                              <p className="text-sm text-red-600 mb-2">Error: {ext.error}</p>
                             ) : (
-                              <p className="text-sm text-gray-700">
+                              <p className="text-sm text-gray-700 mb-2">
                                 {ext.response.substring(0, 150)}...
                               </p>
                             )}
-                            <div className="mt-2 text-xs text-gray-500">
+                            <div className="text-xs text-gray-500">
                               Single-pass processing
                             </div>
                           </div>
@@ -362,6 +404,10 @@ export const ExternalValidationTester = () => {
                         <div className="flex justify-between">
                           <span className="text-sm">Emergence Rate:</span>
                           <Badge>{(metrics.averageGeniusMetrics.emergenceRate * 100).toFixed(1)}%</Badge>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm">Avg Processing Depth:</span>
+                          <Badge>{metrics.averageGeniusMetrics.averageProcessingDepth.toFixed(1)} layers</Badge>
                         </div>
                       </div>
                     </div>
