@@ -1,6 +1,10 @@
+
 export interface ArchetypeResponse {
   archetype: string;
-  contribution: string;
+  response: string;
+  contribution?: string;
+  processingTime: number;
+  timestamp: number;
 }
 
 export interface TensionMetrics {
@@ -32,13 +36,14 @@ export interface AssumptionChallenge {
 
 export interface LayerResult {
   layerNumber: number;
-  circuitType: string;
+  circuitType?: string;
   archetypeResponses: ArchetypeResponse[];
   synthesis: SynthesisResult;
   assumptionAnalysis?: AssumptionAnalysis;
   assumptionChallenge?: AssumptionChallenge;
   tensionMetrics?: TensionMetrics;
-  enhancedMode: boolean;
+  enhancedMode?: boolean;
+  timestamp: number;
 }
 
 export interface QuestionQualityMetrics {

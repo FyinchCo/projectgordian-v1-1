@@ -311,54 +311,56 @@ function extractInsightFromResponses(archetypeResponses: ArchetypeResponse[]): s
 }
 
 export async function synthesizeInsight(
-  question: string, 
-  archetypeResponses: ArchetypeResponse[], 
-  previousLayers?: LayerResult[], 
-  layerNumber?: number, 
-  tensionMetrics?: TensionMetrics
-): Promise<SynthesisResult & { questionQuality?: QuestionQualityMetrics; compressionFormats?: CompressionFormats }> {
-  console.log(`Layer ${layerNumber || 1} starting enhanced multi-stage synthesis...`);
+  archetypeResponses: ArchetypeResponse[],
+  question: string,
+  previousInsights: string[] = [],
+  enhancedMode: boolean = false
+): Promise<SynthesisResult> {
+  console.log('Starting enhanced multi-stage synthesis...');
   
   // Add tension tags to responses
   const taggedResponses = await addTensionTags(archetypeResponses);
   
   // Stage 1: Initial Pattern Recognition and Analysis
-  console.log(`Layer ${layerNumber || 1} performing initial synthesis analysis...`);
-  const initialSynthesis = await performInitialSynthesis(taggedResponses, question);
+  console.log('Performing initial synthesis analysis...');
+  const initialSynthesis = await performInitialSynthesis(taggedResponses, question, previousInsights);
   
   // Stage 2: Final Breakthrough Synthesis
-  console.log(`Layer ${layerNumber || 1} performing final breakthrough synthesis...`);
+  console.log('Performing final breakthrough synthesis...');
   const synthesisResult = await performFinalSynthesis(
     taggedResponses, 
     initialSynthesis, 
-    question
+    question, 
+    previousInsights
   );
 
   // Generate compression formats
   let compressionFormats: CompressionFormats | undefined;
   try {
+    const { generateCompressionFormats } = await import('./compression.ts');
     compressionFormats = await generateCompressionFormats(
       synthesisResult.insight,
       synthesisResult,
       question
     );
-    console.log(`Layer ${layerNumber || 1} compression formats generated`);
+    console.log('Compression formats generated');
   } catch (error) {
-    console.error(`Layer ${layerNumber || 1} compression generation failed:`, error);
+    console.error('Compression generation failed:', error);
   }
 
   // Evaluate question quality only for final synthesis
   let questionQuality: QuestionQualityMetrics | undefined;
-  if (!previousLayers || !layerNumber || layerNumber === 1) {
+  try {
     questionQuality = await evaluateQuestionQuality(
       question,
       synthesisResult,
-      taggedResponses,
-      tensionMetrics
+      taggedResponses
     );
+  } catch (error) {
+    console.error('Question quality evaluation failed:', error);
   }
 
-  console.log(`Layer ${layerNumber || 1} enhanced synthesis completed with quality improvements`);
+  console.log('Enhanced synthesis completed with quality improvements');
 
   return {
     ...synthesisResult,

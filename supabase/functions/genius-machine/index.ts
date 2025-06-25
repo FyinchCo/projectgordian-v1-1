@@ -3,11 +3,37 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { processLayer } from './layer-processor.ts';
 import { evaluateQuestionQuality } from './question-quality.ts';
+import { defaultArchetypes } from './archetypes.ts';
+import { detectAssumptions } from './analysis.ts';
+import { LayerResult } from './types.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+function getArchetypes(customArchetypes: string) {
+  // Handle different archetype configurations
+  switch (customArchetypes) {
+    case 'default':
+      return defaultArchetypes;
+    default:
+      return defaultArchetypes;
+  }
+}
+
+async function analyzeAssumptions(question: string) {
+  try {
+    return await detectAssumptions(question);
+  } catch (error) {
+    console.error('Assumption analysis failed:', error);
+    return {
+      assumptions: ["Analysis temporarily unavailable"],
+      challengingQuestions: ["What underlying assumptions might we be missing?"],
+      resistanceScore: 5
+    };
+  }
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
