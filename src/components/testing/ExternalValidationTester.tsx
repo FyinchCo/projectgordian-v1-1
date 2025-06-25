@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -481,9 +480,9 @@ export const ExternalValidationTester = () => {
                     📋 No Results Available
                   </h4>
                   <p className="text-sm text-gray-600">
-                    {debugInfo.message || "Run a validation test to see comparisons."}
+                    {!isDetailedAnalysis(debugInfo) ? debugInfo.message : "Run a validation test to see comparisons."}
                   </p>
-                  {'error' in debugInfo && debugInfo.error && (
+                  {!isDetailedAnalysis(debugInfo) && debugInfo.error && (
                     <p className="text-sm text-red-600 mt-2">
                       Error: {debugInfo.error}
                     </p>
