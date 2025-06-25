@@ -1,4 +1,3 @@
-
 import { Card } from "@/components/ui/card";
 import { OutputType } from "@/types/outputTypes";
 import { useEnhancedAIConfigOptimization } from "@/hooks/useEnhancedAIConfigOptimization";
@@ -7,7 +6,6 @@ import { MetaLearningStatusCard } from "./interface/MetaLearningStatusCard";
 import { AssessmentDisplay } from "./interface/AssessmentDisplay";
 import { ProcessingConfigurationSection } from "./interface/ProcessingConfigurationSection";
 import { LaunchSection } from "./interface/LaunchSection";
-
 interface ConsolidatedGeniusInterfaceProps {
   question: string;
   setQuestion: (question: string) => void;
@@ -24,7 +22,6 @@ interface ConsolidatedGeniusInterfaceProps {
   setCurrentAssessment: (assessment: any) => void;
   onStartGenius: () => void;
 }
-
 export const ConsolidatedGeniusInterface = ({
   question,
   setQuestion,
@@ -46,53 +43,25 @@ export const ConsolidatedGeniusInterface = ({
     clearOptimizationReasoning,
     getLearningInsights
   } = useEnhancedAIConfigOptimization();
-
   const learningInsights = getLearningInsights();
-
-  return (
-    <div className="space-zen-lg max-w-4xl mx-auto">
+  return <div className="space-zen-lg max-w-4xl mx-auto">
       {/* Meta-Learning Status and Optimization Reasoning */}
-      <MetaLearningStatusCard
-        learningInsights={learningInsights}
-        optimizationReasoning={optimizationReasoning}
-        clearOptimizationReasoning={clearOptimizationReasoning}
-      />
+      <MetaLearningStatusCard learningInsights={learningInsights} optimizationReasoning={optimizationReasoning} clearOptimizationReasoning={clearOptimizationReasoning} />
 
       {/* Main Question Input and Configuration */}
       <Card className="border border-zen-light bg-zen-paper shadow-zen-lg rounded-md">
-        <div className="p-8 space-zen">
-          <QuestionInputSection 
-            question={question} 
-            setQuestion={setQuestion} 
-            outputType={outputType} 
-            setOutputType={setOutputType} 
-          />
+        <div className="p-8 space-zen bg-[#3c3d37]">
+          <QuestionInputSection question={question} setQuestion={setQuestion} outputType={outputType} setOutputType={setOutputType} />
 
           {/* Assessment Display */}
-          <AssessmentDisplay 
-            currentAssessment={currentAssessment}
-            learningInsights={learningInsights}
-          />
+          <AssessmentDisplay currentAssessment={currentAssessment} learningInsights={learningInsights} />
 
           {/* Manual Configuration Section */}
-          <ProcessingConfigurationSection
-            processingDepth={processingDepth}
-            setProcessingDepth={setProcessingDepth}
-            circuitType={circuitType}
-            setCircuitType={setCircuitType}
-            enhancedMode={enhancedMode}
-            setEnhancedMode={setEnhancedMode}
-            customArchetypes={customArchetypes}
-            learningInsights={learningInsights}
-          />
+          <ProcessingConfigurationSection processingDepth={processingDepth} setProcessingDepth={setProcessingDepth} circuitType={circuitType} setCircuitType={setCircuitType} enhancedMode={enhancedMode} setEnhancedMode={setEnhancedMode} customArchetypes={customArchetypes} learningInsights={learningInsights} />
 
           {/* Launch Button */}
-          <LaunchSection 
-            question={question}
-            onStartGenius={onStartGenius}
-          />
+          <LaunchSection question={question} onStartGenius={onStartGenius} />
         </div>
       </Card>
-    </div>
-  );
+    </div>;
 };
