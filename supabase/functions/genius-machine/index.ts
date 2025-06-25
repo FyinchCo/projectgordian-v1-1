@@ -47,7 +47,7 @@ serve(async (req) => {
       circuitType = 'sequential',
       customArchetypes = 'default',
       enhancedMode = false,
-      previousLayers = 0,
+      previousLayers = [],
       startFromLayer = 1
     } = await req.json();
 
@@ -57,7 +57,7 @@ serve(async (req) => {
       circuitType,
       enhancedMode,
       customArchetypes,
-      previousLayers,
+      previousLayersCount: Array.isArray(previousLayers) ? previousLayers.length : 0,
       startFromLayer
     });
 
@@ -74,12 +74,18 @@ serve(async (req) => {
     console.log('Running assumption analysis...');
     const assumptionAnalysis = await analyzeAssumptions(question);
     
-    // Process layers
-    const layers: LayerResult[] = [];
-    let currentDepth = Math.max(1, Math.min(processingDepth, 3)); // Clamp between 1-3
+    // Process layers - ensure we actually process the requested depth
+    const layers: LayerResult[] = Array.isArray(previousLayers) ? [...previousLayers] : [];
+    const requestedDepth = Math.max(1, Math.min(processingDepth, 10)); // Cap at 10 for safety
+    const actualStartLayer = Math.max(startFromLayer, layers.length + 1);
     
-    for (let i = startFromLayer; i <= currentDepth; i++) {
+    console.log(`Processing layers from ${actualStartLayer} to ${requestedDepth} (${requestedDepth - actualStartLayer + 1} new layers)`);
+    
+    // Process each layer individually to ensure completion
+    for (let i = actualStartLayer; i <= requestedDepth; i++) {
       try {
+        console.log(`Starting layer ${i} of ${requestedDepth}...`);
+        
         const layer = await processLayer(
           i, 
           question, 
@@ -88,37 +94,46 @@ serve(async (req) => {
           layers,
           enhancedMode
         );
+        
         layers.push(layer);
+        console.log(`Layer ${i} completed successfully. Total layers: ${layers.length}`);
+        
       } catch (layerError) {
         console.error(`Layer ${i} failed:`, layerError);
         
-        // Add a fallback layer result
+        // Add a fallback layer result to maintain processing continuity
         layers.push({
           layerNumber: i,
           archetypeResponses: [],
           synthesis: {
             insight: `Layer ${i} encountered processing challenges but the analysis continued. Key insights were preserved from previous layers.`,
-            confidence: 0.3,
+            confidence: Math.max(0.3, layers.length > 0 ? layers[layers.length - 1].synthesis.confidence - 0.1 : 0.3),
             tensionPoints: 1,
             noveltyScore: 2,
             emergenceDetected: false
           },
           timestamp: Date.now()
         });
+        
+        console.log(`Added fallback result for layer ${i}, continuing...`);
       }
     }
 
     // Get the final synthesis from the last layer
     const finalLayer = layers[layers.length - 1];
+    if (!finalLayer || !finalLayer.synthesis) {
+      throw new Error('No valid layers were processed');
+    }
+    
     const finalSynthesis = finalLayer.synthesis;
     
-    // Evaluate question quality if we have a valid synthesis
+    // Evaluate question quality with proper error handling
     let questionQuality = null;
-    if (finalSynthesis.confidence > 0.3) {
+    if (finalSynthesis.confidence > 0.2) {
       try {
         console.log('Evaluating question quality...');
         questionQuality = await evaluateQuestionQuality(question, finalSynthesis, layers);
-        console.log('Question quality evaluation completed:', questionQuality);
+        console.log('Question quality evaluation completed:', questionQuality ? 'Success' : 'Failed');
       } catch (qualityError) {
         console.error('Question quality evaluation failed:', qualityError);
         questionQuality = {
@@ -129,7 +144,7 @@ serve(async (req) => {
       }
     }
 
-    console.log(`Successfully processed ${layers.length} layers with question quality assessment`);
+    console.log(`Successfully processed ${layers.length} layers (requested: ${requestedDepth})`);
 
     const response = {
       insight: finalSynthesis.insight,
@@ -141,9 +156,11 @@ serve(async (req) => {
       layers: layers,
       questionQuality: questionQuality,
       assumptionAnalysis: assumptionAnalysis,
+      logicTrail: finalLayer.archetypeResponses || [],
       metadata: {
         timestamp: Date.now(),
-        processingTime: Date.now() - Date.now(),
+        requestedDepth: requestedDepth,
+        actualDepth: layers.length,
         version: '1.0'
       }
     };

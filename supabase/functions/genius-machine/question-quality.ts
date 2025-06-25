@@ -1,90 +1,66 @@
 
-import { ArchetypeResponse, SynthesisResult } from './types.ts';
-
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 
-export interface QuestionQualityMetrics {
-  geniusYield: number; // 0-10
-  constraintBalance: number; // 0-10 (5 is optimal balance)
-  metaPotential: number; // 0-10
-  effortVsEmergence: number; // 0-10 (higher = easier emergence)
-  overallScore: number; // 0-10
-  feedback: string;
-  recommendations: string[];
-}
-
 export async function evaluateQuestionQuality(
-  question: string,
-  synthesis: SynthesisResult,
-  archetypeResponses: ArchetypeResponse[],
-  tensionMetrics?: any
-): Promise<QuestionQualityMetrics> {
-  const systemPrompt = `You are the Question Quality Evaluator. Assess how well this question enabled deep, emergent insights.
+  question: string, 
+  synthesis: any, 
+  layers: any[]
+): Promise<any> {
+  try {
+    console.log('Starting question quality evaluation...');
+    
+    // Ensure we have valid inputs
+    if (!question || !synthesis) {
+      console.warn('Missing required inputs for question quality evaluation');
+      return createFallbackQuality(question);
+    }
 
-Evaluate on these dimensions (0-10 scale):
+    // Safely extract layer information
+    const layerInsights = layers && Array.isArray(layers) 
+      ? layers.map(layer => {
+          if (layer && layer.synthesis && layer.synthesis.insight) {
+            return layer.synthesis.insight;
+          } else if (layer && layer.insight) {
+            return layer.insight;
+          }
+          return `Layer ${layer?.layerNumber || 'unknown'} insight not available`;
+        })
+      : [`Single layer insight: ${synthesis.insight || 'Not available'}`];
 
-1. GENIUS YIELD: How much high-value insight did this question unlock?
-   - 9-10: Profound, paradigm-shifting insights emerged
-   - 7-8: Strong insights with clear breakthrough moments
-   - 5-6: Decent insights but predictable
-   - 3-4: Shallow insights, mostly conventional wisdom
-   - 1-2: Little insight generated, question was limiting
+    console.log(`Evaluating question quality with ${layerInsights.length} layer insights`);
 
-2. CONSTRAINT BALANCE: Question scope optimization (5 is perfect balance)
-   - 8-10: Too vague, unfocused, hard to anchor insights
-   - 5-7: Well-scoped, specific enough to generate focused insights
-   - 1-4: Too narrow/constrained, limited insight potential
+    const evaluationPrompt = `Evaluate this question and its processing results for breakthrough potential:
 
-3. META-POTENTIAL: Layers, paradoxes, tensions that invite synthesis
-   - 9-10: Rich with paradoxes and multi-layered tensions
-   - 7-8: Good conceptual depth and inherent tensions
-   - 5-6: Some depth but relatively straightforward
-   - 3-4: Mostly surface-level, few hidden layers
-   - 1-2: One-dimensional, no deeper complexity
+QUESTION: ${question}
 
-4. EFFORT VS EMERGENCE: How easily did genius emerge?
-   - 9-10: Question naturally facilitated breakthrough thinking
-   - 7-8: Good question structure helped emergence
-   - 5-6: Neutral - didn't help or hinder
-   - 3-4: Had to work against question structure
-   - 1-2: Question actively inhibited insight generation
+FINAL INSIGHT: ${synthesis.insight || 'No insight available'}
 
-Calculate overall score as weighted average: (GeniusYield * 0.4) + (ConstraintBalance_normalized * 0.2) + (MetaPotential * 0.25) + (EffortVsEmergence * 0.15)
+LAYER INSIGHTS:
+${layerInsights.map((insight, i) => `Layer ${i + 1}: ${insight.substring(0, 200)}...`).join('\n')}
 
-For ConstraintBalance normalization: if score >= 5, use (10 - abs(score - 5)) * 2. If score < 5, use score * 2.
+PROCESSING METRICS:
+- Confidence: ${synthesis.confidence || 0}
+- Tension Points: ${synthesis.tensionPoints || 0}
+- Novelty Score: ${synthesis.noveltyScore || 0}
+- Emergence Detected: ${synthesis.emergenceDetected || false}
 
-Provide 2-3 specific recommendations for improving question quality.
+Rate this question on a scale of 1-10 for:
+1. Genius Yield: How much breakthrough potential does this question have?
+2. Constraint Balance: How well does it balance specificity with openness?
+3. Meta Potential: How likely is it to generate paradigm shifts?
+4. Effort vs Emergence: How efficiently does it produce novel insights?
 
-Respond with JSON only:
+Provide your assessment as JSON:
 {
   "geniusYield": number,
-  "constraintBalance": number,
+  "constraintBalance": number, 
   "metaPotential": number,
   "effortVsEmergence": number,
   "overallScore": number,
-  "feedback": "Brief explanation of the overall score and what made this question effective/ineffective",
-  "recommendations": ["specific tip 1", "specific tip 2", "specific tip 3"]
+  "feedback": "detailed explanation",
+  "recommendations": ["recommendation1", "recommendation2"]
 }`;
 
-  const analysisData = {
-    question,
-    synthesisInsight: synthesis.insight,
-    synthesisMetrics: {
-      confidence: synthesis.confidence,
-      noveltyScore: synthesis.noveltyScore,
-      emergenceDetected: synthesis.emergenceDetected,
-      tensionPoints: synthesis.tensionPoints
-    },
-    archetypeEngagement: archetypeResponses.map(r => ({
-      archetype: r.archetype,
-      contributionLength: r.contribution.length,
-      hasNovelty: r.contribution.includes('[novel insight surfaced here]'),
-      hasContradiction: r.contribution.includes('[contradiction emerged here]')
-    })),
-    tensionMetrics: tensionMetrics || {}
-  };
-
-  try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -94,45 +70,50 @@ Respond with JSON only:
       body: JSON.stringify({
         model: 'gpt-4o-mini',
         messages: [
-          { role: 'system', content: systemPrompt },
           { 
-            role: 'user', 
-            content: `Evaluate this question's quality based on the results it produced:\n\nQUESTION: "${question}"\n\nRESULTS DATA: ${JSON.stringify(analysisData, null, 2)}`
-          }
+            role: 'system', 
+            content: 'You are an expert evaluator of question quality for breakthrough thinking systems. Provide precise, actionable assessments.' 
+          },
+          { role: 'user', content: evaluationPrompt }
         ],
-        max_tokens: 400,
+        max_tokens: 500,
         temperature: 0.3,
       }),
     });
 
+    if (!response.ok) {
+      throw new Error(`OpenAI API error: ${response.status}`);
+    }
+
     const data = await response.json();
-    const evaluation = JSON.parse(data.choices[0].message.content);
+    const result = JSON.parse(data.choices[0].message.content);
     
-    return evaluation;
+    console.log('Question quality evaluation completed successfully');
+    return result;
+
   } catch (error) {
-    console.error('Question quality evaluation error:', error);
-    
-    // Fallback evaluation based on synthesis metrics
-    const geniusYield = synthesis.noveltyScore || 5;
-    const constraintBalance = question.length > 200 ? 8 : question.length < 20 ? 2 : 6;
-    const metaPotential = synthesis.tensionPoints > 3 ? 8 : synthesis.tensionPoints > 1 ? 6 : 4;
-    const effortVsEmergence = synthesis.emergenceDetected ? 8 : synthesis.confidence > 0.8 ? 7 : 5;
-    
-    const normalizedConstraint = constraintBalance >= 5 ? (10 - Math.abs(constraintBalance - 5)) * 2 : constraintBalance * 2;
-    const overallScore = Math.round((geniusYield * 0.4) + (normalizedConstraint * 0.2) + (metaPotential * 0.25) + (effortVsEmergence * 0.15));
-    
-    return {
-      geniusYield,
-      constraintBalance,
-      metaPotential,
-      effortVsEmergence,
-      overallScore,
-      feedback: `Question scored ${overallScore}/10. Analysis based on synthesis metrics.`,
-      recommendations: [
-        "Consider adding more specific constraints to focus the inquiry",
-        "Try introducing paradoxes or tensions to increase depth",
-        "Frame questions that invite multiple perspectives"
-      ]
-    };
+    console.error('Question quality evaluation failed:', error);
+    return createFallbackQuality(question);
   }
+}
+
+function createFallbackQuality(question: string) {
+  // Create intelligent fallback based on question characteristics
+  const questionLength = question?.length || 0;
+  const complexityIndicators = question?.toLowerCase().match(/\b(complex|system|design|multiple|balance|maximize|simultaneously)\b/g)?.length || 0;
+  
+  const baseScore = Math.min(8, 5 + (complexityIndicators * 0.5) + (questionLength > 100 ? 1 : 0));
+  
+  return {
+    geniusYield: baseScore,
+    constraintBalance: Math.max(6, baseScore - 1),
+    metaPotential: baseScore,
+    effortVsEmergence: Math.max(6, baseScore - 0.5),
+    overallScore: baseScore,
+    feedback: `Question shows ${complexityIndicators > 2 ? 'high' : 'moderate'} complexity with good breakthrough potential. Assessment completed using intelligent fallback due to evaluation service constraints.`,
+    recommendations: [
+      "Consider refining question specificity for enhanced insights",
+      "Explore multi-layered processing for deeper breakthrough potential"
+    ]
+  };
 }
