@@ -34,7 +34,7 @@ export const QuestionInputSection = ({
       {/* Question Input with Zen aesthetics */}
       <div className="space-y-6">
         <Textarea
-          placeholder="Enter your question here..."
+          placeholder="deep questions only"
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
           className="min-h-[120px] text-lg text-zen-body border border-zen-light bg-zen-paper resize-none focus-visible:ring-0 focus-visible:border-zen-medium p-6 rounded-md transition-all duration-300"
