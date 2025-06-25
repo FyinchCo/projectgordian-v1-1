@@ -19,20 +19,12 @@ export const MetaLearningStatusCard = ({
 }: MetaLearningStatusCardProps) => {
   const [showLearningDashboard, setShowLearningDashboard] = useState(false);
 
-  if (!learningInsights?.isSystemLearning && !optimizationReasoning) {
-    return (
-      <Card className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 mb-6">
-        <div className="flex items-center space-x-3">
-          <Brain className="w-5 h-5 text-blue-600" />
-          <div>
-            <h3 className="text-sm font-semibold text-blue-800">Meta-Learning System Ready</h3>
-            <p className="text-xs text-blue-600">
-              System is ready to learn. Process your first question to begin building intelligence.
-            </p>
-          </div>
-        </div>
-      </Card>
-    );
+  // Only show if we have actual learning data or optimization reasoning
+  const hasLearningData = learningInsights?.totalExperience > 0;
+  const hasOptimizationReasoning = !!optimizationReasoning;
+
+  if (!hasLearningData && !hasOptimizationReasoning) {
+    return null; // Hide completely when no meaningful data
   }
 
   return (
