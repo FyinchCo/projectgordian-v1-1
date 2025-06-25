@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useChunkedProcessor } from "@/components/processing/ChunkedProcessor";
@@ -74,13 +73,13 @@ export const ProcessingLogic = ({
       
       console.log(`Requested processing depth: ${requestedDepth}`);
       
-      // Use chunked processing for depths > 3, simple processing for 1-3
-      if (requestedDepth > 3) {
+      // Use chunked processing for depths > 2 (reduced threshold), simple processing for 1-2
+      if (requestedDepth > 2) {
         console.log(`Using chunked processing for depth ${requestedDepth}`);
         
         toast({
-          title: "Deep Processing Mode",
-          description: `Processing ${requestedDepth} layers in optimized chunks for best performance.`,
+          title: "Optimized Deep Processing",
+          description: `Processing ${requestedDepth} layers with improved chunking (2-layer chunks + context optimization).`,
           variant: "default",
         });
         
@@ -88,7 +87,7 @@ export const ProcessingLogic = ({
           finalResults = await processChunkedLayers({
             baseConfig,
             totalDepth: requestedDepth,
-            chunkSize: 3, // Process 3 layers at a time
+            chunkSize: 2, // REDUCED chunk size
             onChunkProgressChange,
             onCurrentLayerChange
           });
@@ -101,7 +100,6 @@ export const ProcessingLogic = ({
             processingSuccess: (finalResults.layers?.length || 0) === requestedDepth
           });
           
-          // Validate that we got the expected number of layers
           if (finalResults.layers && finalResults.layers.length !== requestedDepth) {
             console.warn(`LAYER MISMATCH: Requested ${requestedDepth} layers but got ${finalResults.layers.length}`);
             
@@ -117,8 +115,7 @@ export const ProcessingLogic = ({
         } catch (chunkError: any) {
           console.error('Chunked processing failed:', chunkError);
           
-          // If chunked processing fails, try simple processing with reduced depth
-          console.log('Falling back to simple processing with depth 3');
+          console.log('Falling back to simple processing with depth 2');
           
           toast({
             title: "Switching to Standard Processing",
@@ -126,7 +123,7 @@ export const ProcessingLogic = ({
             variant: "default",
           });
           
-          const fallbackConfig = { ...baseConfig, processingDepth: 3 };
+          const fallbackConfig = { ...baseConfig, processingDepth: 2 };
           
           const timeoutPromise = new Promise<never>((_, reject) => {
             setTimeout(() => reject(new Error('Processing timeout after 3 minutes')), 180000);
@@ -144,7 +141,7 @@ export const ProcessingLogic = ({
           finalResults = result.data;
         }
       } else {
-        // Simple processing for depth 1-3
+        // Simple processing for depth 1-2
         console.log(`Using simple processing for depth ${requestedDepth}`);
         const config = { ...baseConfig, processingDepth: requestedDepth };
         
@@ -163,13 +160,11 @@ export const ProcessingLogic = ({
         
         finalResults = result.data;
         
-        // Validate simple processing results too
         if (finalResults.layers && finalResults.layers.length !== requestedDepth) {
           console.warn(`SIMPLE PROCESSING LAYER MISMATCH: Requested ${requestedDepth} layers but got ${finalResults.layers.length}`);
         }
       }
       
-      // Ensure we have valid results before completing
       if (!finalResults || !finalResults.insight) {
         throw new Error('Invalid results: No insight generated');
       }
@@ -185,10 +180,8 @@ export const ProcessingLogic = ({
         hasCompressionFormats: !!finalResults.compressionFormats
       });
       
-      // Complete processing with results
       onProcessingComplete(finalResults);
       
-      // Show completion message with processing validation
       const actualLayers = finalResults.layers?.length || 0;
       if (finalResults.partialResults) {
         toast({
@@ -210,7 +203,6 @@ export const ProcessingLogic = ({
         });
       }
       
-      // Record learning data if available
       if (finalResults.questionQuality) {
         console.log('Recording learning cycle...');
         try {
@@ -249,7 +241,6 @@ export const ProcessingLogic = ({
       console.error('=== PROCESSING ERROR ===');
       console.error('Error details:', error);
       
-      // Enhanced error handling
       let userTitle = "Processing Error";
       let userDescription = "Analysis encountered an issue. Please try again.";
       

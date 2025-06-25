@@ -49,7 +49,7 @@ export const useChunkedProcessor = () => {
   const processChunkedLayers = async ({
     baseConfig,
     totalDepth,
-    chunkSize = 3,
+    chunkSize = 2, // REDUCED from 3 to 2 layers per chunk
     onChunkProgressChange,
     onCurrentLayerChange,
   }: ChunkedProcessorProps): Promise<ProcessingResult> => {
@@ -59,6 +59,7 @@ export const useChunkedProcessor = () => {
     console.log(`=== CHUNKED PROCESSING START ===`);
     console.log(`Total depth: ${totalDepth}, Chunk size: ${chunkSize}, Total chunks: ${chunks}`);
     console.log(`Expected timing: ~${chunkSize * 30}s per chunk (30s per layer average)`);
+    console.log(`🔧 OPTIMIZATION: Using reduced chunk size (2) and limited context window`);
     onChunkProgressChange({ current: 0, total: chunks });
     
     for (let chunkIndex = 0; chunkIndex < chunks; chunkIndex++) {
@@ -69,19 +70,26 @@ export const useChunkedProcessor = () => {
       console.log(`=== CHUNK ${chunkIndex + 1}/${chunks} START ===`);
       console.log(`Processing layers ${startLayer}-${endLayer} (${actualChunkSize} layers)`);
       console.log(`Expected chunk duration: ~${actualChunkSize * 30}s`);
-      console.log(`Previous accumulated layers: ${accumulatedLayers.length}`);
+      
+      // CONTEXT WINDOW LIMITING: Only pass last 3 layers to prevent exponential growth
+      const contextLayers = accumulatedLayers.length > 3 
+        ? accumulatedLayers.slice(-3) 
+        : accumulatedLayers;
+      
+      console.log(`Context optimization: Using ${contextLayers.length} layers (total accumulated: ${accumulatedLayers.length})`);
       
       const chunkConfig = {
         ...baseConfig,
         processingDepth: actualChunkSize,
-        previousLayers: accumulatedLayers,
+        previousLayers: contextLayers, // LIMITED CONTEXT WINDOW
         startFromLayer: startLayer
       };
       
       console.log(`Chunk config:`, {
         processingDepth: actualChunkSize,
         startFromLayer: startLayer,
-        previousLayersCount: accumulatedLayers.length,
+        contextLayersCount: contextLayers.length,
+        totalAccumulatedCount: accumulatedLayers.length,
         questionLength: baseConfig.question?.length || 0
       });
       
@@ -98,10 +106,9 @@ export const useChunkedProcessor = () => {
         
         console.log(`Calling genius-machine for chunk ${chunkIndex + 1} at ${new Date().toISOString()}...`);
         
-        // 8 minute timeout for deep chunks
-        const timeoutPromise = createProcessingTimeout(chunkIndex, 480000);
+        // Reduced timeout for smaller chunks (6 minutes instead of 8)
+        const timeoutPromise = createProcessingTimeout(chunkIndex, 360000);
         
-        // Make the supabase call with fixed property access
         const requestPromise = supabase.functions.invoke('genius-machine', {
           body: chunkConfig
         }).then(result => {
@@ -111,7 +118,6 @@ export const useChunkedProcessor = () => {
             errorMessage: result.error?.message
           });
           
-          // Handle supabase client errors
           if (result.error) {
             throw new Error(`Supabase function error: ${result.error.message}`);
           }
@@ -124,7 +130,7 @@ export const useChunkedProcessor = () => {
         const chunkDuration = Date.now() - chunkStartTime;
         console.log(`Chunk ${chunkIndex + 1} completed in ${Math.round(chunkDuration/1000)}s (expected: ~${actualChunkSize * 30}s)`);
         
-        if (chunkDuration > actualChunkSize * 45000) { // More than 45s per layer
+        if (chunkDuration > actualChunkSize * 45000) {
           console.warn(`⚠️ CHUNK ${chunkIndex + 1} TOOK LONGER THAN EXPECTED: ${Math.round(chunkDuration/1000)}s vs expected ~${actualChunkSize * 30}s`);
         }
         
@@ -140,7 +146,6 @@ export const useChunkedProcessor = () => {
           layerProcessingSuccess: data.metadata?.layerProcessingSuccess
         });
         
-        // Validate that we got the expected layers
         if (!data.layers || data.layers.length === 0) {
           console.error(`Chunk ${chunkIndex + 1} returned no layers!`);
           throw new Error(`Chunk ${chunkIndex + 1} processing failed: No layers returned`);
@@ -150,12 +155,10 @@ export const useChunkedProcessor = () => {
           console.warn(`Chunk ${chunkIndex + 1} expected ${actualChunkSize} layers but got ${data.layers.length}`);
         }
         
-        // Normalize and accumulate layers properly
         const normalizedLayers = data.layers
           .map(normalizeLayerStructure)
           .sort((a, b) => a.layerNumber - b.layerNumber);
         
-        // Validate layer numbers are in expected range
         const expectedLayerNumbers = [];
         for (let i = startLayer; i <= endLayer; i++) {
           expectedLayerNumbers.push(i);
@@ -172,9 +175,7 @@ export const useChunkedProcessor = () => {
         console.log(`Chunk progress: ${chunkIndex + 1}/${chunks}`);
         console.log(`Processing efficiency: ${Math.round(chunkDuration/(actualChunkSize * 1000))}s per layer`);
         
-        // Handle final vs intermediate chunks
         if (chunkIndex === chunks - 1) {
-          // Final chunk - create and return final result
           const finalResult = createFinalResult(data, accumulatedLayers, totalDepth);
           
           console.log(`=== FINAL CHUNKED PROCESSING COMPLETE ===`);
@@ -196,12 +197,14 @@ export const useChunkedProcessor = () => {
           
           return finalResult;
         } else {
-          // Intermediate chunk - show progress and continue
           const progressData = createProgressToast(chunkIndex, chunks, startLayer, endLayer);
           toast(progressData);
           
           console.log(`Chunk ${chunkIndex + 1} complete, continuing to next chunk...`);
-          await new Promise(resolve => setTimeout(resolve, 1000)); // Brief pause between chunks
+          
+          // INTER-CHUNK DELAY: Let backend recover between chunks
+          console.log(`⏱️ Adding 2-second delay before next chunk for backend stability...`);
+          await new Promise(resolve => setTimeout(resolve, 2000));
         }
         
       } catch (chunkError: any) {
@@ -220,7 +223,7 @@ export const useChunkedProcessor = () => {
         const isConnectionError = chunkError.message?.includes('Failed to send a request') || chunkError.message?.includes('connection');
         
         if (isTimeoutError) {
-          console.log(`🚨 TIMEOUT ISSUE: Chunk ${chunkIndex + 1} exceeded 8 minutes - this suggests backend processing issues`);
+          console.log(`🚨 TIMEOUT ISSUE: Chunk ${chunkIndex + 1} exceeded 6 minutes - this suggests backend processing issues`);
           toast({
             title: "Processing Timeout",
             description: `Chunk ${chunkIndex + 1} exceeded timeout. Backend may be overloaded or question too complex.`,
@@ -235,7 +238,6 @@ export const useChunkedProcessor = () => {
           });
         }
         
-        // If we have accumulated layers, return partial results
         if (accumulatedLayers.length > 0) {
           const lastValidLayer = accumulatedLayers[accumulatedLayers.length - 1];
           
@@ -259,7 +261,6 @@ export const useChunkedProcessor = () => {
             compressionFormats: lastValidLayer?.compressionFormats
           };
         } else {
-          // No accumulated layers, throw error
           throw chunkError;
         }
       }

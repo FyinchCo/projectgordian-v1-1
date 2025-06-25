@@ -1,6 +1,6 @@
 import { ProcessingResult } from './types';
 
-export const createProcessingTimeout = (chunkIndex: number, timeoutMs: number = 480000) => {
+export const createProcessingTimeout = (chunkIndex: number, timeoutMs: number = 360000) => {
   return new Promise((_, reject) => 
     setTimeout(() => reject(new Error(`Chunk ${chunkIndex + 1} timed out after ${Math.round(timeoutMs/60000)} minutes`)), timeoutMs)
   );
@@ -19,7 +19,6 @@ export const validateChunkResult = (result: any, chunkIndex: number) => {
     throw new Error(`Chunk ${chunkIndex + 1} returned null result`);
   }
   
-  // Handle Supabase function invoke errors
   if (result.error) {
     console.error(`Chunk ${chunkIndex + 1} supabase error:`, result.error);
     throw new Error(`Chunk ${chunkIndex + 1} error: ${result.error.message || 'Unknown supabase error'}`);
