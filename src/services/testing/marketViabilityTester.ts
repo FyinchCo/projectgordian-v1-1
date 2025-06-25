@@ -22,7 +22,19 @@ export class MarketViabilityTester {
   }> {
     
     const configurations = archetypeTestingFramework.getConfigurations();
-    const bestConfig = configurations.find(c => c.name.includes('Balanced Default')) || configurations[0];
+    console.log('Available configurations:', configurations.length, configurations.map(c => c.name));
+    
+    if (!configurations || configurations.length === 0) {
+      throw new Error('No test configurations available. Please ensure the archetype testing framework is properly initialized.');
+    }
+    
+    const bestConfig = configurations.find(c => c.name.includes('Balanced Default')) || 
+                      configurations.find(c => c.name.includes('Default')) ||
+                      configurations[0];
+    
+    if (!bestConfig) {
+      throw new Error('No suitable configuration found for market viability testing.');
+    }
     
     // Filter questions by segment if specified
     const testQuestions = segmentFocus 
@@ -112,6 +124,11 @@ export class MarketViabilityTester {
     if (!question) return null;
     
     const configurations = archetypeTestingFramework.getConfigurations();
+    if (!configurations || configurations.length === 0) {
+      console.error('No configurations available for single question test');
+      return null;
+    }
+    
     const bestConfig = configurations.find(c => c.name.includes('Balanced Default')) || configurations[0];
     
     try {
