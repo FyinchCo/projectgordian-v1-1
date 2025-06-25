@@ -74,12 +74,13 @@ serve(async (req) => {
     console.log('Running assumption analysis...');
     const assumptionAnalysis = await analyzeAssumptions(question);
     
-    // Process layers - ensure we actually process the requested depth
+    // Process layers - REMOVED HARD CAP, now supports up to 50 layers for safety
     const layers: LayerResult[] = Array.isArray(previousLayers) ? [...previousLayers] : [];
-    const requestedDepth = Math.max(1, Math.min(processingDepth, 10)); // Cap at 10 for safety
+    const requestedDepth = Math.max(1, Math.min(processingDepth, 50)); // Increased from 10 to 50
     const actualStartLayer = Math.max(startFromLayer, layers.length + 1);
     
     console.log(`Processing layers from ${actualStartLayer} to ${requestedDepth} (${requestedDepth - actualStartLayer + 1} new layers)`);
+    console.log(`Previous layers: ${layers.length}, Starting from layer: ${actualStartLayer}`);
     
     // Process each layer individually to ensure completion
     for (let i = actualStartLayer; i <= requestedDepth; i++) {
@@ -97,6 +98,7 @@ serve(async (req) => {
         
         layers.push(layer);
         console.log(`Layer ${i} completed successfully. Total layers: ${layers.length}`);
+        console.log(`Layer ${i} insight preview: ${layer.synthesis.insight.substring(0, 100)}...`);
         
       } catch (layerError) {
         console.error(`Layer ${i} failed:`, layerError);
@@ -117,6 +119,13 @@ serve(async (req) => {
         
         console.log(`Added fallback result for layer ${i}, continuing...`);
       }
+    }
+
+    // Validate that we actually processed the requested layers
+    if (layers.length < requestedDepth) {
+      console.warn(`WARNING: Only processed ${layers.length} layers out of ${requestedDepth} requested`);
+    } else {
+      console.log(`SUCCESS: Processed all ${layers.length} layers as requested`);
     }
 
     // Get the final synthesis from the last layer
@@ -161,6 +170,7 @@ serve(async (req) => {
         timestamp: Date.now(),
         requestedDepth: requestedDepth,
         actualDepth: layers.length,
+        layerProcessingSuccess: layers.length === requestedDepth,
         version: '1.0'
       }
     };

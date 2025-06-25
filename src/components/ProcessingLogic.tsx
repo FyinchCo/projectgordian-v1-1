@@ -46,7 +46,7 @@ export const ProcessingLogic = ({
     console.log('=== PROCESSING START ===');
     console.log('Configuration:', {
       question: question.trim().substring(0, 100) + '...',
-      processingDepth: processingDepth[0],
+      requestedDepth: processingDepth[0],
       circuitType,
       customArchetypes: customArchetypes ? customArchetypes.length : 0,
       enhancedMode
@@ -72,6 +72,8 @@ export const ProcessingLogic = ({
       let finalResults;
       const requestedDepth = processingDepth[0];
       
+      console.log(`Requested processing depth: ${requestedDepth}`);
+      
       // Use chunked processing for depths > 3, simple processing for 1-3
       if (requestedDepth > 3) {
         console.log(`Using chunked processing for depth ${requestedDepth}`);
@@ -94,8 +96,23 @@ export const ProcessingLogic = ({
           console.log('Chunked processing completed:', {
             totalLayers: finalResults.layers?.length || 0,
             hasInsight: !!finalResults.insight,
-            confidence: finalResults.confidence
+            confidence: finalResults.confidence,
+            requestedVsActual: `${requestedDepth} → ${finalResults.layers?.length || 0}`,
+            processingSuccess: (finalResults.layers?.length || 0) === requestedDepth
           });
+          
+          // Validate that we got the expected number of layers
+          if (finalResults.layers && finalResults.layers.length !== requestedDepth) {
+            console.warn(`LAYER MISMATCH: Requested ${requestedDepth} layers but got ${finalResults.layers.length}`);
+            
+            if (finalResults.layers.length < requestedDepth) {
+              toast({
+                title: "Partial Processing Complete",
+                description: `Processed ${finalResults.layers.length} of ${requestedDepth} requested layers. Some layers may have encountered processing limits.`,
+                variant: "default",
+              });
+            }
+          }
           
         } catch (chunkError: any) {
           console.error('Chunked processing failed:', chunkError);
@@ -145,6 +162,11 @@ export const ProcessingLogic = ({
         if (!result.data) throw new Error('No data returned from processing');
         
         finalResults = result.data;
+        
+        // Validate simple processing results too
+        if (finalResults.layers && finalResults.layers.length !== requestedDepth) {
+          console.warn(`SIMPLE PROCESSING LAYER MISMATCH: Requested ${requestedDepth} layers but got ${finalResults.layers.length}`);
+        }
       }
       
       // Ensure we have valid results before completing
@@ -156,24 +178,34 @@ export const ProcessingLogic = ({
       console.log('Final results summary:', {
         hasInsight: !!finalResults.insight,
         confidence: finalResults.confidence,
-        layerCount: finalResults.layers?.length || 0,
-        partialResults: finalResults.partialResults || false
+        requestedLayers: requestedDepth,
+        actualLayers: finalResults.layers?.length || 0,
+        layerProcessingSuccess: (finalResults.layers?.length || 0) === requestedDepth,
+        partialResults: finalResults.partialResults || false,
+        hasCompressionFormats: !!finalResults.compressionFormats
       });
       
       // Complete processing with results
       onProcessingComplete(finalResults);
       
-      // Show completion message
+      // Show completion message with processing validation
+      const actualLayers = finalResults.layers?.length || 0;
       if (finalResults.partialResults) {
         toast({
           title: "Partial Results Generated",
-          description: `Generated insights from ${finalResults.processingDepth || requestedDepth} layers.`,
+          description: `Generated insights from ${actualLayers} layers (${requestedDepth} requested).`,
+          variant: "default",
+        });
+      } else if (actualLayers === requestedDepth) {
+        toast({
+          title: "Analysis Complete - All Layers Processed",
+          description: `Successfully processed all ${actualLayers} layers with ${Math.round((finalResults.confidence || 0) * 100)}% confidence.`,
           variant: "default",
         });
       } else {
         toast({
-          title: "Analysis Complete",
-          description: `Successfully processed ${finalResults.processingDepth || requestedDepth} layers with ${Math.round((finalResults.confidence || 0) * 100)}% confidence.`,
+          title: "Analysis Complete - Layer Processing Issue",
+          description: `Processed ${actualLayers} of ${requestedDepth} requested layers. Check logs for details.`,
           variant: "default",
         });
       }

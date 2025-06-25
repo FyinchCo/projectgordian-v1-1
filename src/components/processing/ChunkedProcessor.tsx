@@ -57,7 +57,8 @@ export const useChunkedProcessor = () => {
     const chunks = Math.ceil(totalDepth / chunkSize);
     let accumulatedLayers: any[] = [];
     
-    console.log(`Starting chunked processing: ${totalDepth} layers in ${chunks} chunks of size ${chunkSize}`);
+    console.log(`=== CHUNKED PROCESSING START ===`);
+    console.log(`Total depth: ${totalDepth}, Chunk size: ${chunkSize}, Total chunks: ${chunks}`);
     onChunkProgressChange({ current: 0, total: chunks });
     
     for (let chunkIndex = 0; chunkIndex < chunks; chunkIndex++) {
@@ -65,7 +66,9 @@ export const useChunkedProcessor = () => {
       const endLayer = Math.min(startLayer + chunkSize - 1, totalDepth);
       const actualChunkSize = endLayer - startLayer + 1;
       
-      console.log(`Processing chunk ${chunkIndex + 1}/${chunks}: layers ${startLayer}-${endLayer} (${actualChunkSize} layers)`);
+      console.log(`=== CHUNK ${chunkIndex + 1}/${chunks} START ===`);
+      console.log(`Processing layers ${startLayer}-${endLayer} (${actualChunkSize} layers)`);
+      console.log(`Previous accumulated layers: ${accumulatedLayers.length}`);
       
       const chunkConfig = {
         ...baseConfig,
@@ -73,6 +76,12 @@ export const useChunkedProcessor = () => {
         previousLayers: accumulatedLayers,
         startFromLayer: startLayer
       };
+      
+      console.log(`Chunk config:`, {
+        processingDepth: actualChunkSize,
+        startFromLayer: startLayer,
+        previousLayersCount: accumulatedLayers.length
+      });
       
       onChunkProgressChange({ current: chunkIndex + 1, total: chunks });
       
@@ -85,13 +94,9 @@ export const useChunkedProcessor = () => {
       try {
         const chunkStartTime = Date.now();
         
-        console.log(`Calling genius-machine for chunk ${chunkIndex + 1} with config:`, {
-          processingDepth: actualChunkSize,
-          startFromLayer: startLayer,
-          previousLayersCount: accumulatedLayers.length
-        });
+        console.log(`Calling genius-machine for chunk ${chunkIndex + 1}...`);
         
-        const timeoutPromise = createProcessingTimeout(chunkIndex, 240000);
+        const timeoutPromise = createProcessingTimeout(chunkIndex, 300000); // Increased timeout to 5 minutes
         const requestPromise = supabase.functions.invoke('genius-machine', {
           body: chunkConfig
         });
@@ -103,43 +108,61 @@ export const useChunkedProcessor = () => {
         
         const { data } = validateChunkResult(result, chunkIndex);
         
-        console.log(`Chunk ${chunkIndex + 1} result:`, {
+        console.log(`Chunk ${chunkIndex + 1} result validation:`, {
+          hasData: !!data,
           hasLayers: !!data.layers,
           layerCount: data.layers?.length || 0,
           hasInsight: !!data.insight,
-          expectedLayers: actualChunkSize
+          expectedLayers: actualChunkSize,
+          actualDepth: data.processingDepth || 0,
+          layerProcessingSuccess: data.metadata?.layerProcessingSuccess
         });
         
-        // Normalize and accumulate layers properly
-        if (data.layers && data.layers.length > 0) {
-          const normalizedLayers = data.layers
-            .map(normalizeLayerStructure)
-            .sort((a, b) => a.layerNumber - b.layerNumber);
-          
-          accumulatedLayers = [...accumulatedLayers, ...normalizedLayers];
-          
-          console.log(`Total accumulated layers: ${accumulatedLayers.length}/${totalDepth}`);
-          console.log('Sample layer structure:', {
-            layerNumber: normalizedLayers[0]?.layerNumber,
-            hasInsight: !!normalizedLayers[0]?.insight,
-            insightPreview: normalizedLayers[0]?.insight?.substring(0, 50) + '...'
-          });
-        } else {
-          console.warn(`Chunk ${chunkIndex + 1} returned no layers!`);
-          if (accumulatedLayers.length === 0) {
-            throw new Error(`No layers returned from chunk ${chunkIndex + 1}`);
-          }
+        // Validate that we got the expected layers
+        if (!data.layers || data.layers.length === 0) {
+          console.error(`Chunk ${chunkIndex + 1} returned no layers!`);
+          throw new Error(`Chunk ${chunkIndex + 1} processing failed: No layers returned`);
         }
+        
+        if (data.layers.length !== actualChunkSize) {
+          console.warn(`Chunk ${chunkIndex + 1} expected ${actualChunkSize} layers but got ${data.layers.length}`);
+        }
+        
+        // Normalize and accumulate layers properly
+        const normalizedLayers = data.layers
+          .map(normalizeLayerStructure)
+          .sort((a, b) => a.layerNumber - b.layerNumber);
+        
+        // Validate layer numbers are in expected range
+        const expectedLayerNumbers = [];
+        for (let i = startLayer; i <= endLayer; i++) {
+          expectedLayerNumbers.push(i);
+        }
+        
+        const actualLayerNumbers = normalizedLayers.map(l => l.layerNumber);
+        console.log(`Expected layer numbers:`, expectedLayerNumbers);
+        console.log(`Actual layer numbers:`, actualLayerNumbers);
+        
+        accumulatedLayers = [...accumulatedLayers, ...normalizedLayers];
+        
+        console.log(`=== CHUNK ${chunkIndex + 1} COMPLETE ===`);
+        console.log(`Total accumulated layers: ${accumulatedLayers.length}/${totalDepth}`);
+        console.log(`Chunk progress: ${chunkIndex + 1}/${chunks}`);
         
         // Handle final vs intermediate chunks
         if (chunkIndex === chunks - 1) {
+          // Final chunk - create and return final result
           const finalResult = createFinalResult(data, accumulatedLayers, totalDepth);
           
-          console.log('Final chunked processing result:', {
+          console.log(`=== FINAL CHUNKED PROCESSING COMPLETE ===`);
+          console.log('Final result summary:', {
             totalLayers: finalResult.layers?.length || 0,
             hasInsight: !!finalResult.insight,
             confidence: finalResult.confidence,
-            layersWithInsights: accumulatedLayers.filter(l => l.insight && l.insight !== `Layer ${l.layerNumber} insight not available`).length
+            layersWithInsights: accumulatedLayers.filter(l => l.insight && l.insight !== `Layer ${l.layerNumber} insight not available`).length,
+            requestedDepth: totalDepth,
+            actualDepth: accumulatedLayers.length,
+            processingSuccess: accumulatedLayers.length === totalDepth
           });
           
           toast({
@@ -150,15 +173,25 @@ export const useChunkedProcessor = () => {
           
           return finalResult;
         } else {
+          // Intermediate chunk - show progress and continue
           const progressData = createProgressToast(chunkIndex, chunks, startLayer, endLayer);
           toast(progressData);
           
+          console.log(`Chunk ${chunkIndex + 1} complete, continuing to next chunk...`);
           await new Promise(resolve => setTimeout(resolve, 1000));
         }
         
       } catch (chunkError: any) {
-        console.error(`Error in chunk ${chunkIndex + 1}:`, chunkError);
+        console.error(`=== CHUNK ${chunkIndex + 1} ERROR ===`);
+        console.error('Error details:', {
+          message: chunkError.message,
+          accumulatedLayers: accumulatedLayers.length,
+          hasValidLayers: accumulatedLayers.some(l => l?.insight),
+          chunkIndex,
+          totalChunks: chunks
+        });
         
+        // If we have accumulated layers, return partial results
         if (accumulatedLayers.length > 0) {
           const lastValidLayer = accumulatedLayers[accumulatedLayers.length - 1];
           
@@ -182,12 +215,13 @@ export const useChunkedProcessor = () => {
             compressionFormats: lastValidLayer?.compressionFormats
           };
         } else {
+          // No accumulated layers, throw error
           throw chunkError;
         }
       }
     }
 
-    throw new Error('Unexpected end of processing loop');
+    throw new Error('Unexpected end of processing loop - this should never happen');
   };
 
   return { processChunkedLayers };
