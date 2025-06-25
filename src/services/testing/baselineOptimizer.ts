@@ -130,10 +130,8 @@ export class BaselineOptimizer {
       archetypes: optimizedArchetypes,
       metadata: {
         version: '1.0',
-        basedOn: 'current-default',
-        optimizationConfidence: recommendations.confidence,
-        expectedImprovements: recommendations.archetypeAdjustments.flatMap((adj: any) => adj.expectedImprovements),
-        testDataSample: recommendations.archetypeAdjustments.length
+        hypothesis: `Performance optimization based on ${recommendations.archetypeAdjustments.length} archetype adjustments`,
+        expectedImprovements: recommendations.archetypeAdjustments.flatMap((adj: any) => adj.expectedImprovements)
       }
     };
   }

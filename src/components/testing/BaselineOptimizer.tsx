@@ -198,7 +198,7 @@ export const BaselineOptimizer = () => {
                         <h5 className="font-medium text-gray-700">Current Settings</h5>
                         <ul className="mt-1 space-y-1">
                           {Object.entries(adjustment.currentSettings).map(([key, value]) => (
-                            <li key={key}>{key}: {value}</li>
+                            <li key={key}>{key}: {String(value)}</li>
                           ))}
                         </ul>
                       </div>
@@ -207,7 +207,7 @@ export const BaselineOptimizer = () => {
                         <ul className="mt-1 space-y-1">
                           {Object.entries(adjustment.recommendedSettings).filter(([key]) => key !== 'reasoning').map(([key, value]) => (
                             <li key={key} className="text-green-600">
-                              {key}: {adjustment.currentSettings[key]} → {value}
+                              {key}: {String(adjustment.currentSettings[key])} → {String(value)}
                             </li>
                           ))}
                         </ul>
