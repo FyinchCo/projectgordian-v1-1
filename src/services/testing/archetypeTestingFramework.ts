@@ -28,8 +28,8 @@ export interface TestQuestion {
   expectedOutcomes: string[];
   difficulty: 'easy' | 'medium' | 'hard' | 'expert';
   category: 'philosophical' | 'technical' | 'creative' | 'social' | 'business' | 'scientific';
-  archetypeTarget?: string; // Which archetype this question is designed to test
-  measuresQualities?: string[]; // What specific qualities this question measures
+  archetypeTarget?: string;
+  measuresQualities?: string[];
 }
 
 export interface TestResult {
@@ -47,12 +47,12 @@ export interface TestResult {
     layers: any[];
   };
   qualityMetrics: {
-    insightQuality: number; // 1-10
-    noveltyScore: number; // 1-10
-    coherenceScore: number; // 1-10
-    breakthroughPotential: number; // 1-10
-    practicalValue: number; // 1-10
-    overallScore: number; // 1-10
+    insightQuality: number;
+    noveltyScore: number;
+    coherenceScore: number;
+    breakthroughPotential: number;
+    practicalValue: number;
+    overallScore: number;
   };
 }
 
@@ -106,11 +106,12 @@ export class ArchetypeTestingFramework {
     return this.testQuestions;
   }
 
-  // Core Testing Function
+  // Enhanced Core Testing Function with Better Error Handling
   async runTest(
     configurationId: string, 
     questionId: string, 
-    processingDepth: number = 3
+    processingDepth: number = 1,
+    maxRetries: number = 3
   ): Promise<TestResult> {
     const configuration = this.configurations.find(c => c.id === configurationId);
     const question = this.testQuestions.find(q => q.id === questionId);
@@ -119,47 +120,110 @@ export class ArchetypeTestingFramework {
       throw new Error('Configuration or question not found');
     }
 
+    console.log(`Starting test: ${configuration.name} × ${question.question.substring(0, 50)}...`);
     const startTime = Date.now();
     
-    try {
-      // Run the genius machine with the specific configuration
-      const { data, error } = await supabase.functions.invoke('genius-machine', {
-        body: {
-          question: question.question,
-          processingDepth,
-          circuitType: 'sequential',
-          customArchetypes: configuration.archetypes,
-          enhancedMode: true
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`Test attempt ${attempt}/${maxRetries} for ${configurationId} + ${questionId}`);
+        
+        // Run the genius machine with enhanced error handling
+        const { data, error } = await supabase.functions.invoke('genius-machine', {
+          body: {
+            question: question.question,
+            processingDepth: Math.min(processingDepth, 2), // Limit depth to reduce timeout risk
+            circuitType: 'sequential',
+            customArchetypes: configuration.archetypes,
+            enhancedMode: true
+          }
+        });
+
+        if (error) {
+          console.error(`Test attempt ${attempt} failed with error:`, error);
+          if (attempt === maxRetries) {
+            throw new Error(`Test failed after ${maxRetries} attempts: ${error.message}`);
+          }
+          
+          // Wait before retry with exponential backoff
+          const delay = Math.min(1000 * Math.pow(2, attempt - 1), 10000);
+          console.log(`Waiting ${delay}ms before retry...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          continue;
         }
-      });
 
-      if (error) throw error;
+        if (!data) {
+          console.error(`Test attempt ${attempt} returned no data`);
+          if (attempt === maxRetries) {
+            throw new Error('Test returned no data after all retry attempts');
+          }
+          continue;
+        }
 
-      const processingTime = Date.now() - startTime;
-      
-      // Calculate quality metrics
-      const qualityMetrics = this.calculateQualityMetrics(data, question);
-      
-      const testResult: TestResult = {
-        configurationId,
-        questionId,
-        timestamp: Date.now(),
-        processingTime,
-        results: data,
-        qualityMetrics
-      };
+        const processingTime = Date.now() - startTime;
+        console.log(`Test completed successfully in ${processingTime}ms after ${attempt} attempts`);
+        
+        // Calculate quality metrics
+        const qualityMetrics = this.calculateQualityMetrics(data, question);
+        
+        const testResult: TestResult = {
+          configurationId,
+          questionId,
+          timestamp: Date.now(),
+          processingTime,
+          results: data,
+          qualityMetrics
+        };
 
-      this.testResults.push(testResult);
-      this.saveData();
-      
-      return testResult;
-    } catch (error) {
-      console.error('Test execution failed:', error);
-      throw error;
+        this.testResults.push(testResult);
+        this.saveData();
+        
+        return testResult;
+
+      } catch (error) {
+        console.error(`Test attempt ${attempt} failed:`, error);
+        
+        if (attempt === maxRetries) {
+          // Create a fallback result for failed tests
+          console.log(`Creating fallback result after ${maxRetries} failed attempts`);
+          const fallbackResult: TestResult = {
+            configurationId,
+            questionId,
+            timestamp: Date.now(),
+            processingTime: Date.now() - startTime,
+            results: {
+              insight: `Test failed after ${maxRetries} attempts: ${error.message}`,
+              confidence: 0.1,
+              tensionPoints: 0,
+              noveltyScore: 0,
+              emergenceDetected: false,
+              questionQuality: null,
+              layers: []
+            },
+            qualityMetrics: {
+              insightQuality: 0,
+              noveltyScore: 0,
+              coherenceScore: 0,
+              breakthroughPotential: 0,
+              practicalValue: 0,
+              overallScore: 0
+            }
+          };
+          
+          this.testResults.push(fallbackResult);
+          this.saveData();
+          throw error;
+        }
+        
+        // Wait before retry
+        const delay = Math.min(1000 * Math.pow(2, attempt - 1), 10000);
+        console.log(`Waiting ${delay}ms before retry attempt ${attempt + 1}...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
     }
+
+    throw new Error('Test failed after all retry attempts');
   }
 
-  // Quality Metrics Calculation
   private calculateQualityMetrics(results: any, question: TestQuestion): TestResult['qualityMetrics'] {
     // Insight Quality (based on length, depth, specificity)
     const insightQuality = Math.min(10, Math.max(1, 
@@ -214,7 +278,6 @@ export class ArchetypeTestingFramework {
     };
   }
 
-  // Comparison and Analysis
   compareConfigurations(configIdA: string, configIdB: string): ComparisonResult {
     const resultsA = this.testResults.filter(r => r.configurationId === configIdA);
     const resultsB = this.testResults.filter(r => r.configurationId === configIdB);
@@ -328,7 +391,6 @@ export class ArchetypeTestingFramework {
     return { strengths, weaknesses, recommendations };
   }
 
-  // Batch Testing
   async runBatchTest(
     configurationIds: string[], 
     questionIds: string[], 
@@ -337,29 +399,38 @@ export class ArchetypeTestingFramework {
     const results: TestResult[] = [];
     const total = configurationIds.length * questionIds.length;
     let current = 0;
+    let successfulTests = 0;
+    let failedTests = 0;
+
+    console.log(`Starting batch test: ${total} total tests`);
 
     for (const configId of configurationIds) {
       for (const questionId of questionIds) {
         try {
-          const result = await this.runTest(configId, questionId);
+          console.log(`Running test ${current + 1}/${total}: ${configId} + ${questionId}`);
+          const result = await this.runTest(configId, questionId, 1, 2); // Reduced retry attempts for batch
           results.push(result);
+          successfulTests++;
+          console.log(`Test ${current + 1} successful`);
+        } catch (error) {
+          console.error(`Test ${current + 1} failed for config ${configId}, question ${questionId}:`, error);
+          failedTests++;
+        } finally {
           current++;
           onProgress?.(current, total);
           
-          // Add small delay to prevent overwhelming the API
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        } catch (error) {
-          console.error(`Test failed for config ${configId}, question ${questionId}:`, error);
-          current++;
-          onProgress?.(current, total);
+          // Shorter delay for batch processing
+          if (current < total) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
         }
       }
     }
 
+    console.log(`Batch test completed: ${successfulTests} successful, ${failedTests} failed out of ${total} total`);
     return results;
   }
 
-  // Enhanced testing with archetype-specific analysis
   async runArchetypeOptimizationTest(
     configurationIds: string[],
     includeArchetypeSpecificQuestions: boolean = true,
@@ -394,12 +465,12 @@ export class ArchetypeTestingFramework {
         try {
           onProgress?.(current, total, `Testing: ${question.question.substring(0, 50)}...`);
           
-          const result = await this.runTest(configId, question.id);
+          const result = await this.runTest(configId, question.id, 1, 2);
           results.push(result);
           current++;
           
           // Small delay to prevent API overwhelm
-          await new Promise(resolve => setTimeout(resolve, 1500));
+          await new Promise(resolve => setTimeout(resolve, 1000));
         } catch (error) {
           console.error(`Test failed for ${configId} + ${question.id}:`, error);
           current++;
@@ -426,7 +497,6 @@ export class ArchetypeTestingFramework {
     return { results, analysis, recommendations };
   }
 
-  // Get archetype-specific performance data
   getArchetypeSpecificInsights(configurationId: string): {
     archetypeName: string;
     targetedQuestions: number;
@@ -487,7 +557,6 @@ export class ArchetypeTestingFramework {
     });
   }
 
-  // New method to run automated baseline test
   async runBaselineOptimizationTest(): Promise<{
     results: TestResult[];
     analysis: any;
