@@ -1,19 +1,19 @@
 
 import React from 'react';
 
-interface PixelRobotProps {
+interface PixelRobotFrogProps {
   className?: string;
   size?: number;
-  mood?: 'happy' | 'thinking' | 'excited' | 'working' | 'celebrating';
   animate?: boolean;
 }
 
-export const PixelRobot = ({ 
+export const PixelRobotFrog = ({ 
   className = "", 
-  size = 32, 
-  mood = 'happy',
+  size = 64, 
   animate = false 
-}: PixelRobotProps) => {
+}: PixelRobotFrogProps) => {
+  const scale = size / 64; // Base size is 64x64
+
   return (
     <svg
       width={size}
