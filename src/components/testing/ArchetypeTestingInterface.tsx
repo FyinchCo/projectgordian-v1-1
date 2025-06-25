@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -16,6 +15,7 @@ import { OptimizedConfigurationLoader } from "./OptimizedConfigurationLoader";
 import { archetypeTestingFramework } from "@/services/testing/archetypeTestingFramework";
 import { initializeDefaultTestData } from "@/services/testing/defaultTestConfigurations";
 import { FlaskConical } from "lucide-react";
+import { BaselineOptimizer } from "./BaselineOptimizer";
 
 export const ArchetypeTestingInterface = () => {
   const [activeTab, setActiveTab] = useState("overview");
@@ -128,6 +128,8 @@ export const ArchetypeTestingInterface = () => {
       />
 
       <OptimizedConfigurationLoader />
+
+      <BaselineOptimizer />
 
       <BaselineResults baselineResults={baselineResults} />
 
