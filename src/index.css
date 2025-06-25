@@ -45,16 +45,6 @@
     --sidebar-accent-foreground: 0 0% 10%;
     --sidebar-border: 0 0% 92%;
     --sidebar-ring: 0 0% 0%;
-
-    /* Zen Color Palette */
-    --zen-paper: #FEFEFE;
-    --zen-off-white: #FCFCFC;  
-    --zen-whisper: #F8F8F8;
-    --zen-light: #F2F2F2;
-    --zen-medium: #A0A0A0;
-    --zen-charcoal: #404040;
-    --zen-ink: #1A1A1A;
-    --zen-pure-black: #000000;
   }
 
   .dark {
@@ -150,101 +140,16 @@
   .space-zen-lg {
     @apply space-y-12;
   }
+}
 
-  /* Zen color utilities */
-  .bg-zen-paper {
-    background-color: var(--zen-paper);
-  }
-
-  .bg-zen-off-white {
-    background-color: var(--zen-off-white);
-  }
-
-  .bg-zen-whisper {
-    background-color: var(--zen-whisper);
-  }
-
-  .bg-zen-light {
-    background-color: var(--zen-light);
-  }
-
-  .bg-zen-medium {
-    background-color: var(--zen-medium);
-  }
-
-  .bg-zen-charcoal {
-    background-color: var(--zen-charcoal);
-  }
-
-  .bg-zen-ink {
-    background-color: var(--zen-ink);
-  }
-
-  .bg-zen-pure-black {
-    background-color: var(--zen-pure-black);
-  }
-
-  .text-zen-paper {
-    color: var(--zen-paper);
-  }
-
-  .text-zen-off-white {
-    color: var(--zen-off-white);
-  }
-
-  .text-zen-whisper {
-    color: var(--zen-whisper);
-  }
-
-  .text-zen-light {
-    color: var(--zen-light);
-  }
-
-  .text-zen-medium {
-    color: var(--zen-medium);
-  }
-
-  .text-zen-charcoal {
-    color: var(--zen-charcoal);
-  }
-
-  .text-zen-ink {
-    color: var(--zen-ink);
-  }
-
-  .text-zen-pure-black {
-    color: var(--zen-pure-black);
-  }
-
-  .border-zen-paper {
-    border-color: var(--zen-paper);
-  }
-
-  .border-zen-off-white {
-    border-color: var(--zen-off-white);
-  }
-
-  .border-zen-whisper {
-    border-color: var(--zen-whisper);
-  }
-
-  .border-zen-light {
-    border-color: var(--zen-light);
-  }
-
-  .border-zen-medium {
-    border-color: var(--zen-medium);
-  }
-
-  .border-zen-charcoal {
-    border-color: var(--zen-charcoal);
-  }
-
-  .border-zen-ink {
-    border-color: var(--zen-ink);
-  }
-
-  .border-zen-pure-black {
-    border-color: var(--zen-pure-black);
-  }
+/* Updated mono color palette for Japanese minimalism */
+@layer utilities {
+  .mono-paper: #FEFEFE;
+  .mono-off-white: #FCFCFC;  
+  .mono-whisper: #F8F8F8;
+  .mono-light: #F2F2F2;
+  .mono-medium: #A0A0A0;
+  .mono-charcoal: #404040;
+  .mono-ink: #1A1A1A;
+  .mono-pure-black: #000000;
 }

@@ -14,125 +14,76 @@ export const PixelRobot = ({
   mood = 'happy',
   animate = false 
 }: PixelRobotProps) => {
+  const getMoodColor = () => {
+    switch (mood) {
+      case 'happy': return '#4ADE80'; // green-400
+      case 'thinking': return '#60A5FA'; // blue-400
+      case 'excited': return '#F472B6'; // pink-400
+      case 'working': return '#FBBF24'; // yellow-400
+      case 'celebrating': return '#A855F7'; // purple-500
+      default: return '#4ADE80';
+    }
+  };
+
+  const getEyeState = () => {
+    switch (mood) {
+      case 'thinking': return 'M14 12h2v2h-2zm4 0h2v2h-2z'; // focused eyes
+      case 'excited': return 'M13 11h4v4h-4z'; // wide eyes
+      case 'working': return 'M14 13h2v1h-2zm4 0h2v1h-2z'; // concentrated
+      case 'celebrating': return 'M13 11h1v1h1v1h1v1h1v1h-1v-1h-1v-1h-1v-1h-1zm4 0h1v1h1v1h1v1h1v1h-1v-1h-1v-1h-1v-1h-1z'; // star eyes
+      default: return 'M14 12h2v2h-2zm4 0h2v2h-2z'; // normal eyes
+    }
+  };
+
   return (
     <svg
       width={size}
       height={size}
-      viewBox="0 0 64 64"
+      viewBox="0 0 32 32"
       className={`${className} ${animate ? 'animate-bounce' : ''}`}
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       style={{ imageRendering: 'pixelated' }}
     >
-      {/* Red antenna */}
-      <rect x="30" y="4" width="4" height="4" fill="#FF0000" />
+      {/* Robot body */}
+      <rect x="8" y="6" width="16" height="20" fill={getMoodColor()} />
+      <rect x="6" y="8" width="20" height="16" fill={getMoodColor()} />
       
-      {/* Black antenna base */}
-      <rect x="30" y="8" width="4" height="4" fill="#000000" />
+      {/* Head outline */}
+      <rect x="10" y="8" width="12" height="8" fill="#1F2937" />
+      <rect x="8" y="10" width="16" height="4" fill="#1F2937" />
       
-      {/* Main body outline - black */}
-      <rect x="8" y="12" width="48" height="32" fill="#000000" />
-      <rect x="12" y="8" width="40" height="8" fill="#000000" />
-      <rect x="4" y="16" width="8" height="24" fill="#000000" />
-      <rect x="52" y="16" width="8" height="24" fill="#000000" />
-      <rect x="8" y="44" width="48" height="8" fill="#000000" />
+      {/* Screen/face */}
+      <rect x="11" y="9" width="10" height="6" fill="#0F172A" />
       
-      {/* Inner body - gray */}
-      <rect x="12" y="16" width="40" height="24" fill="#808080" />
-      <rect x="16" y="12" width="32" height="8" fill="#808080" />
-      <rect x="8" y="20" width="8" height="16" fill="#808080" />
-      <rect x="48" y="20" width="8" height="16" fill="#808080" />
-      <rect x="12" y="40" width="40" height="4" fill="#808080" />
+      {/* Eyes */}
+      <g fill="#22D3EE">
+        <path d={getEyeState()} />
+      </g>
       
-      {/* Screen/face area - darker gray */}
-      <rect x="16" y="16" width="32" height="20" fill="#404040" />
-      
-      {/* Left eye - red pixelated */}
-      <rect x="20" y="20" width="8" height="8" fill="#FF0000" />
-      <rect x="22" y="18" width="4" height="2" fill="#FF0000" />
-      <rect x="22" y="30" width="4" height="2" fill="#FF0000" />
-      <rect x="18" y="22" width="2" height="4" fill="#FF0000" />
-      <rect x="30" y="22" width="2" height="4" fill="#FF0000" />
-      
-      {/* Left eye inner details */}
-      <rect x="22" y="22" width="4" height="4" fill="#FFFFFF" />
-      <rect x="24" y="20" width="2" height="2" fill="#FFB3B3" />
-      <rect x="20" y="24" width="2" height="2" fill="#FFB3B3" />
-      <rect x="28" y="24" width="2" height="2" fill="#FFB3B3" />
-      <rect x="24" y="28" width="2" height="2" fill="#FFB3B3" />
-      
-      {/* Right eye - red pixelated */}
-      <rect x="36" y="20" width="8" height="8" fill="#FF0000" />
-      <rect x="38" y="18" width="4" height="2" fill="#FF0000" />
-      <rect x="38" y="30" width="4" height="2" fill="#FF0000" />
-      <rect x="34" y="22" width="2" height="4" fill="#FF0000" />
-      <rect x="46" y="22" width="2" height="4" fill="#FF0000" />
-      
-      {/* Right eye inner details */}
-      <rect x="38" y="22" width="4" height="4" fill="#FFFFFF" />
-      <rect x="40" y="20" width="2" height="2" fill="#FFB3B3" />
-      <rect x="36" y="24" width="2" height="2" fill="#FFB3B3" />
-      <rect x="44" y="24" width="2" height="2" fill="#FFB3B3" />
-      <rect x="40" y="28" width="2" height="2" fill="#FFB3B3" />
-      
-      {/* Checkered pattern mouth */}
-      <rect x="20" y="32" width="2" height="2" fill="#000000" />
-      <rect x="24" y="32" width="2" height="2" fill="#000000" />
-      <rect x="28" y="32" width="2" height="2" fill="#000000" />
-      <rect x="32" y="32" width="2" height="2" fill="#000000" />
-      <rect x="36" y="32" width="2" height="2" fill="#000000" />
-      <rect x="40" y="32" width="2" height="2" fill="#000000" />
-      <rect x="44" y="32" width="2" height="2" fill="#000000" />
-      
-      <rect x="22" y="32" width="2" height="2" fill="#FFFFFF" />
-      <rect x="26" y="32" width="2" height="2" fill="#FFFFFF" />
-      <rect x="30" y="32" width="2" height="2" fill="#FFFFFF" />
-      <rect x="34" y="32" width="2" height="2" fill="#FFFFFF" />
-      <rect x="38" y="32" width="2" height="2" fill="#FFFFFF" />
-      <rect x="42" y="32" width="2" height="2" fill="#FFFFFF" />
-      
-      <rect x="20" y="34" width="2" height="2" fill="#FFFFFF" />
-      <rect x="24" y="34" width="2" height="2" fill="#FFFFFF" />
-      <rect x="28" y="34" width="2" height="2" fill="#FFFFFF" />
-      <rect x="32" y="34" width="2" height="2" fill="#FFFFFF" />
-      <rect x="36" y="34" width="2" height="2" fill="#FFFFFF" />
-      <rect x="40" y="34" width="2" height="2" fill="#FFFFFF" />
-      <rect x="44" y="34" width="2" height="2" fill="#FFFFFF" />
-      
-      <rect x="22" y="34" width="2" height="2" fill="#000000" />
-      <rect x="26" y="34" width="2" height="2" fill="#000000" />
-      <rect x="30" y="34" width="2" height="2" fill="#000000" />
-      <rect x="34" y="34" width="2" height="2" fill="#000000" />
-      <rect x="38" y="34" width="2" height="2" fill="#000000" />
-      <rect x="42" y="34" width="2" height="2" fill="#000000" />
-      
-      {/* Side panels */}
-      <rect x="52" y="20" width="4" height="12" fill="#B3B3B3" />
-      <rect x="8" y="20" width="4" height="12" fill="#B3B3B3" />
-      
-      {/* Bottom details */}
-      <rect x="16" y="44" width="4" height="4" fill="#404040" />
-      <rect x="24" y="44" width="4" height="4" fill="#404040" />
-      <rect x="32" y="44" width="4" height="4" fill="#404040" />
-      <rect x="40" y="44" width="4" height="4" fill="#404040" />
+      {/* Antenna */}
+      <rect x="15" y="4" width="2" height="4" fill="#374151" />
+      <rect x="14" y="3" width="4" height="2" fill="#EF4444" />
       
       {/* Arms */}
-      <rect x="0" y="24" width="8" height="8" fill="#808080" />
-      <rect x="56" y="24" width="8" height="8" fill="#808080" />
-      <rect x="2" y="26" width="4" height="4" fill="#404040" />
-      <rect x="58" y="26" width="4" height="4" fill="#404040" />
+      <rect x="4" y="12" width="4" height="6" fill={getMoodColor()} />
+      <rect x="24" y="12" width="4" height="6" fill={getMoodColor()} />
+      
+      {/* Hands */}
+      <rect x="2" y="14" width="2" height="2" fill="#374151" />
+      <rect x="28" y="14" width="2" height="2" fill="#374151" />
       
       {/* Legs */}
-      <rect x="20" y="52" width="6" height="8" fill="#808080" />
-      <rect x="38" y="52" width="6" height="8" fill="#808080" />
-      <rect x="22" y="54" width="2" height="4" fill="#404040" />
-      <rect x="40" y="54" width="2" height="4" fill="#404040" />
+      <rect x="11" y="26" width="3" height="4" fill={getMoodColor()} />
+      <rect x="18" y="26" width="3" height="4" fill={getMoodColor()} />
       
       {/* Feet */}
-      <rect x="16" y="60" width="14" height="4" fill="#000000" />
-      <rect x="34" y="60" width="14" height="4" fill="#000000" />
-      <rect x="18" y="58" width="10" height="2" fill="#000000" />
-      <rect x="36" y="58" width="10" height="2" fill="#000000" />
+      <rect x="9" y="30" width="7" height="2" fill="#374151" />
+      <rect x="16" y="30" width="7" height="2" fill="#374151" />
+      
+      {/* Chest panel */}
+      <rect x="13" y="18" width="6" height="4" fill="#0F172A" />
+      <rect x="14" y="19" width="4" height="2" fill="#22D3EE" />
     </svg>
   );
 };

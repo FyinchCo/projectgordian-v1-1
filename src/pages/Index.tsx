@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { Header } from "@/components/Header";
 import { ProcessingSection } from "@/components/ProcessingSection";
@@ -7,6 +8,7 @@ import { ConsolidatedGeniusInterface } from "@/components/ConsolidatedGeniusInte
 import { PasswordGate } from "@/components/PasswordGate";
 import { useToast } from "@/hooks/use-toast";
 import { useOutputType } from "@/hooks/useOutputType";
+
 const Index = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [question, setQuestion] = useState("");
@@ -20,17 +22,10 @@ const Index = () => {
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [customArchetypes, setCustomArchetypes] = useState(null);
   const [currentAssessment, setCurrentAssessment] = useState(null);
-  const [chunkProgress, setChunkProgress] = useState({
-    current: 0,
-    total: 0
-  });
-  const {
-    toast
-  } = useToast();
-  const {
-    outputType,
-    setOutputType
-  } = useOutputType('practical');
+  const [chunkProgress, setChunkProgress] = useState({ current: 0, total: 0 });
+  const { toast } = useToast();
+
+  const { outputType, setOutputType } = useOutputType('practical');
 
   // Check authentication status on mount
   useEffect(() => {
@@ -58,20 +53,25 @@ const Index = () => {
       setCustomArchetypes(formattedArchetypes);
     }
   }, []);
+
   const handleProcessingStart = () => {
     setIsProcessing(true);
     setResults(null);
   };
+
   const handleProcessingComplete = (finalResults: any) => {
     setResults(finalResults);
     setIsProcessing(false);
   };
+
   const handleProcessingError = () => {
     setIsProcessing(false);
   };
+
   const handleExportInsight = () => {
     setIsExportModalOpen(true);
   };
+
   const handleReset = () => {
     setResults(null);
     setQuestion("");
@@ -98,16 +98,58 @@ const Index = () => {
   if (!isAuthenticated) {
     return <PasswordGate onAuthenticated={() => setIsAuthenticated(true)} />;
   }
-  return <div className="min-h-screen bg-zen-paper">
-      <Header customArchetypes={customArchetypes} enhancedMode={enhancedMode} />
 
-      <main className="px-zen-lg py-zen-xl max-w-7xl mx-auto bg-slate-900">
-        {!isProcessing && !results && <ConsolidatedGeniusInterface question={question} setQuestion={setQuestion} outputType={outputType} setOutputType={setOutputType} processingDepth={processingDepth} setProcessingDepth={setProcessingDepth} circuitType={circuitType} setCircuitType={setCircuitType} enhancedMode={enhancedMode} setEnhancedMode={setEnhancedMode} customArchetypes={customArchetypes} currentAssessment={currentAssessment} setCurrentAssessment={setCurrentAssessment} onStartGenius={processingLogicComponent.handleStartGenius} />}
+  return (
+    <div className="min-h-screen bg-zen-paper">
+      <Header 
+        customArchetypes={customArchetypes} 
+        enhancedMode={enhancedMode}
+      />
 
-        {isProcessing && <ProcessingSection currentArchetype={currentArchetype} question={question} currentLayer={currentLayer} processingDepth={processingDepth} circuitType={circuitType} chunkProgress={chunkProgress} />}
+      <main className="px-zen-lg py-zen-xl max-w-7xl mx-auto">
+        {!isProcessing && !results && (
+          <ConsolidatedGeniusInterface
+            question={question}
+            setQuestion={setQuestion}
+            outputType={outputType}
+            setOutputType={setOutputType}
+            processingDepth={processingDepth}
+            setProcessingDepth={setProcessingDepth}
+            circuitType={circuitType}
+            setCircuitType={setCircuitType}
+            enhancedMode={enhancedMode}
+            setEnhancedMode={setEnhancedMode}
+            customArchetypes={customArchetypes}
+            currentAssessment={currentAssessment}
+            setCurrentAssessment={setCurrentAssessment}
+            onStartGenius={processingLogicComponent.handleStartGenius}
+          />
+        )}
 
-        {results && <ResultsSection results={results} question={question} onReset={handleReset} onExport={handleExportInsight} isExportModalOpen={isExportModalOpen} setIsExportModalOpen={setIsExportModalOpen} />}
+        {isProcessing && (
+          <ProcessingSection
+            currentArchetype={currentArchetype}
+            question={question}
+            currentLayer={currentLayer}
+            processingDepth={processingDepth}
+            circuitType={circuitType}
+            chunkProgress={chunkProgress}
+          />
+        )}
+
+        {results && (
+          <ResultsSection
+            results={results}
+            question={question}
+            onReset={handleReset}
+            onExport={handleExportInsight}
+            isExportModalOpen={isExportModalOpen}
+            setIsExportModalOpen={setIsExportModalOpen}
+          />
+        )}
       </main>
-    </div>;
+    </div>
+  );
 };
+
 export default Index;
