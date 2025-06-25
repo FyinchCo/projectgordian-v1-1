@@ -6,6 +6,24 @@ import { TestResult } from './types';
 
 export class MarketViabilityTester {
   
+  private async ensureFrameworkInitialized() {
+    const configurations = archetypeTestingFramework.getConfigurations();
+    console.log('Current configurations:', configurations.length);
+    
+    if (!configurations || configurations.length === 0) {
+      console.log('No configurations found, initializing framework...');
+      
+      // Import and add default configurations
+      const { defaultTestConfigurations } = await import('./defaultTestConfigurations');
+      
+      for (const config of defaultTestConfigurations) {
+        archetypeTestingFramework.addConfiguration(config);
+      }
+      
+      console.log('Framework initialized with', defaultTestConfigurations.length, 'configurations');
+    }
+  }
+  
   async runMarketViabilityBatch(
     segmentFocus?: string, 
     onProgress?: (current: number, total: number, currentTest?: string) => void
@@ -20,6 +38,9 @@ export class MarketViabilityTester {
       marketReadiness: string;
     };
   }> {
+    
+    // Ensure framework is initialized
+    await this.ensureFrameworkInitialized();
     
     const configurations = archetypeTestingFramework.getConfigurations();
     console.log('Available configurations:', configurations.length, configurations.map(c => c.name));
@@ -122,6 +143,9 @@ export class MarketViabilityTester {
   async testSingleMarketQuestion(questionId: string): Promise<TestResult | null> {
     const question = marketViabilityQuestions.find(q => q.id === questionId);
     if (!question) return null;
+    
+    // Ensure framework is initialized
+    await this.ensureFrameworkInitialized();
     
     const configurations = archetypeTestingFramework.getConfigurations();
     if (!configurations || configurations.length === 0) {
