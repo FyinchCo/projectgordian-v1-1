@@ -12,6 +12,7 @@ import { InitializationControls } from "./InitializationControls";
 import { DebugInfoCard } from "./DebugInfoCard";
 import { StatsOverview } from "./StatsOverview";
 import { BaselineResults } from "./BaselineResults";
+import { OptimizedConfigurationLoader } from "./OptimizedConfigurationLoader";
 import { archetypeTestingFramework } from "@/services/testing/archetypeTestingFramework";
 import { initializeDefaultTestData } from "@/services/testing/defaultTestConfigurations";
 import { FlaskConical } from "lucide-react";
@@ -125,6 +126,8 @@ export const ArchetypeTestingInterface = () => {
         isRunningBaseline={isRunningBaseline}
         stats={stats}
       />
+
+      <OptimizedConfigurationLoader />
 
       <BaselineResults baselineResults={baselineResults} />
 
