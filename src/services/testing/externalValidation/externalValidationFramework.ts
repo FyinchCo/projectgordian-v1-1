@@ -19,8 +19,8 @@ export interface ValidationTestResult {
     tensionPoints: number;
     noveltyScore: number;
     emergenceDetected: boolean;
-    processingDepth: number; // Added to track actual processing depth
-    layerCount: number; // Added to show layer progression
+    processingDepth: number;
+    layerCount: number;
   };
   externalResults: ExternalLLMResult[];
   evaluationMetrics?: {
@@ -39,19 +39,21 @@ export class ExternalValidationFramework {
   async runComparisonTest(questions: TestQuestion[]): Promise<ValidationTestResult[]> {
     const results: ValidationTestResult[] = [];
     
-    console.log(`Starting external validation test with ${questions.length} questions...`);
-    console.log('🎯 DEEP LAYER SHOWCASE: Genius Machine will use 3-layer processing vs single-pass external LLMs');
+    console.log(`🎯 EXTERNAL VALIDATION TEST STARTING`);
+    console.log(`Testing ${questions.length} questions across 4 AI systems...`);
+    console.log('🧠 Genius Machine: 3-layer deep processing');
+    console.log('🤖 External LLMs: Single-pass processing');
     
     for (const question of questions) {
-      console.log(`Testing question: ${question.question.substring(0, 50)}...`);
+      console.log(`\n📋 Testing question: ${question.question.substring(0, 50)}...`);
       
       try {
         // Get Genius Machine result with 3-layer processing
-        console.log('🧠 Processing Genius Machine with 3-layer deep architecture...');
+        console.log('🧠 Processing Genius Machine (3-layer architecture)...');
         const geniusResult = await this.getGeniusMachineResult(question.question);
         
         // Get external LLM results (single-pass only)
-        console.log('🤖 Processing external LLMs with single-pass responses...');
+        console.log('🤖 Processing external LLMs (single-pass)...');
         const externalResults = await this.getExternalLLMResults(question.question);
         
         const testResult: ValidationTestResult = {
@@ -62,15 +64,35 @@ export class ExternalValidationFramework {
         };
         
         results.push(testResult);
+        console.log(`✅ Question completed: ${results.length}/${questions.length}`);
         
         // Add delay between tests to avoid rate limiting
         await new Promise(resolve => setTimeout(resolve, 2000));
         
       } catch (error) {
-        console.error(`Error testing question ${question.id}:`, error);
+        console.error(`❌ Error testing question ${question.id}:`, error);
+        // Still add a partial result to track the attempt
+        results.push({
+          questionId: question.id,
+          question: question.question,
+          geniusMachineResult: {
+            insight: `Error: ${error.message}`,
+            confidence: 0,
+            tensionPoints: 0,
+            noveltyScore: 0,
+            emergenceDetected: false,
+            processingDepth: 0,
+            layerCount: 0
+          },
+          externalResults: []
+        });
       }
     }
     
+    console.log(`\n🎯 EXTERNAL VALIDATION COMPLETE`);
+    console.log(`Processed ${results.filter(r => !r.geniusMachineResult.insight.startsWith('Error:')).length}/${results.length} questions successfully`);
+    
+    // Save results immediately
     this.testResults = results;
     this.saveResults();
     
@@ -89,16 +111,19 @@ export class ExternalValidationFramework {
       }
     });
 
-    if (error) throw error;
+    if (error) {
+      console.error('❌ Genius Machine error:', error);
+      throw error;
+    }
 
     console.log(`✅ Genius Machine completed ${data.processingDepth || 3} layers with ${data.layers?.length || 0} layer results`);
 
     return {
-      insight: data.insight,
-      confidence: data.confidence,
-      tensionPoints: data.tensionPoints,
-      noveltyScore: data.noveltyScore,
-      emergenceDetected: data.emergenceDetected,
+      insight: data.insight || 'No insight generated',
+      confidence: data.confidence || 0,
+      tensionPoints: data.tensionPoints || 0,
+      noveltyScore: data.noveltyScore || 0,
+      emergenceDetected: data.emergenceDetected || false,
       processingDepth: data.processingDepth || 3,
       layerCount: data.layers?.length || 0
     };
@@ -119,7 +144,7 @@ export class ExternalValidationFramework {
     for (const llm of llmTests) {
       try {
         const startTime = Date.now();
-        console.log(`Processing ${llm.provider} ${llm.model} (single-pass)...`);
+        console.log(`Processing ${llm.provider} ${llm.model}...`);
         
         const { data, error } = await supabase.functions.invoke(llm.endpoint, {
           body: { question }
@@ -128,6 +153,7 @@ export class ExternalValidationFramework {
         const processingTime = Date.now() - startTime;
         
         if (error) {
+          console.error(`❌ ${llm.provider} error:`, error);
           results.push({
             provider: llm.provider,
             model: llm.model,
@@ -137,17 +163,18 @@ export class ExternalValidationFramework {
             error: error.message
           });
         } else {
-          console.log(`✅ ${llm.provider} completed single-pass in ${processingTime}ms`);
+          console.log(`✅ ${llm.provider} completed in ${processingTime}ms`);
           results.push({
             provider: llm.provider,
             model: llm.model,
-            response: data.response,
+            response: data.response || 'No response generated',
             processingTime,
             timestamp: Date.now()
           });
         }
         
       } catch (error) {
+        console.error(`❌ ${llm.provider} exception:`, error);
         results.push({
           provider: llm.provider,
           model: llm.model,
@@ -210,8 +237,8 @@ export class ExternalValidationFramework {
         noveltyScore: 0,
         tensionPoints: 0,
         emergenceRate: 0,
-        averageProcessingDepth: 0, // Added to track actual depth
-        averageLayerCount: 0 // Added to track layer progression
+        averageProcessingDepth: 0,
+        averageLayerCount: 0
       },
       externalProviderStats: {} as Record<string, any>
     };
@@ -265,15 +292,36 @@ export class ExternalValidationFramework {
     return metrics;
   }
 
-  // Data persistence
+  // Data persistence with better error handling
   private saveResults() {
-    localStorage.setItem('external-validation-results', JSON.stringify(this.testResults));
+    try {
+      const dataToSave = {
+        results: this.testResults,
+        timestamp: Date.now(),
+        version: '1.0'
+      };
+      localStorage.setItem('external-validation-results', JSON.stringify(dataToSave));
+      console.log(`💾 Saved ${this.testResults.length} validation results to localStorage`);
+    } catch (error) {
+      console.error('Failed to save results:', error);
+    }
   }
 
   loadResults(): ValidationTestResult[] {
-    const stored = localStorage.getItem('external-validation-results');
-    if (stored) {
-      this.testResults = JSON.parse(stored);
+    try {
+      const stored = localStorage.getItem('external-validation-results');
+      if (stored) {
+        const data = JSON.parse(stored);
+        // Handle both old and new format
+        this.testResults = data.results || data || [];
+        console.log(`📁 Loaded ${this.testResults.length} previous validation results`);
+      } else {
+        console.log('📁 No previous validation results found');
+        this.testResults = [];
+      }
+    } catch (error) {
+      console.error('Failed to load results:', error);
+      this.testResults = [];
     }
     return this.testResults;
   }
@@ -285,6 +333,24 @@ export class ExternalValidationFramework {
   clearResults(): void {
     this.testResults = [];
     localStorage.removeItem('external-validation-results');
+    console.log('🗑️ Cleared all validation results');
+  }
+
+  // Debug method to check current state
+  debugState(): void {
+    console.log('🔍 External Validation Framework Debug State:');
+    console.log(`Current results in memory: ${this.testResults.length}`);
+    console.log(`LocalStorage key exists: ${!!localStorage.getItem('external-validation-results')}`);
+    
+    const stored = localStorage.getItem('external-validation-results');
+    if (stored) {
+      try {
+        const data = JSON.parse(stored);
+        console.log(`LocalStorage results count: ${(data.results || data || []).length}`);
+      } catch (e) {
+        console.log('LocalStorage data corrupted');
+      }
+    }
   }
 }
 

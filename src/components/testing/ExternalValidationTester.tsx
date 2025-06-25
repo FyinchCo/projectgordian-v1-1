@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -10,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { externalValidationFramework, ValidationTestResult } from "@/services/testing/externalValidation/externalValidationFramework";
 import { archetypeTestingFramework } from "@/services/testing/archetypeTestingFramework";
 import { TestQuestion } from "@/services/testing/types";
-import { Play, Download, Eye, BarChart3, Users } from "lucide-react";
+import { Play, Download, Eye, BarChart3, Users, RefreshCw, Bug } from "lucide-react";
 
 export const ExternalValidationTester = () => {
   const [isRunning, setIsRunning] = useState(false);
@@ -20,19 +19,38 @@ export const ExternalValidationTester = () => {
   const [selectedTestSet, setSelectedTestSet] = useState<string>("benchmark");
   const { toast } = useToast();
 
+  // Load results on component mount
+  useEffect(() => {
+    const loadedResults = externalValidationFramework.loadResults();
+    setResults(loadedResults);
+    
+    if (loadedResults.length > 0) {
+      console.log(`Loaded ${loadedResults.length} previous results on mount`);
+    }
+  }, []);
+
   const questions = archetypeTestingFramework.getTestQuestions();
   const benchmarkQuestions = questions.filter(q => q.category === 'philosophical' || q.difficulty === 'hard');
+
+  const debugFrameworkState = () => {
+    externalValidationFramework.debugState();
+    toast({
+      title: "Debug Info",
+      description: "Check console for detailed framework state information.",
+    });
+  };
 
   const runValidationTest = async () => {
     setIsRunning(true);
     setProgress({ current: 0, total: 0 });
+    setCurrentTest("");
     
     try {
       let testQuestions: TestQuestion[] = [];
       
       switch (selectedTestSet) {
         case 'benchmark':
-          testQuestions = benchmarkQuestions.slice(0, 3); // Reduced to 3 for faster testing with 3 LLMs
+          testQuestions = benchmarkQuestions.slice(0, 3);
           break;
         case 'creative':
           testQuestions = questions.filter(q => q.category === 'creative').slice(0, 2);
@@ -54,34 +72,24 @@ export const ExternalValidationTester = () => {
       }
 
       setProgress({ current: 0, total: testQuestions.length });
+      console.log(`🎯 Starting External Validation Test with ${testQuestions.length} questions`);
 
-      // Mock progress updates for demonstration
-      const mockProgressUpdates = async () => {
-        for (let i = 0; i < testQuestions.length; i++) {
-          setCurrentTest(`Testing: ${testQuestions[i].question.substring(0, 50)}...`);
-          setProgress({ current: i, total: testQuestions.length });
-          await new Promise(resolve => setTimeout(resolve, 3000)); // Longer delay for 3 LLMs
-        }
-      };
-
-      // Run mock progress while actual test runs
-      const progressPromise = mockProgressUpdates();
-      const testPromise = externalValidationFramework.runComparisonTest(testQuestions);
-
-      const [testResults] = await Promise.all([testPromise, progressPromise]);
+      // Actually run the validation test
+      const testResults = await externalValidationFramework.runComparisonTest(testQuestions);
       
       setResults(testResults);
       setProgress({ current: testQuestions.length, total: testQuestions.length });
 
       toast({
         title: "External Validation Complete",
-        description: `Successfully compared ${testResults.length} questions across Genius Machine, GPT-4, Claude, and Gemini.`,
+        description: `Successfully tested ${testResults.length} questions across 4 AI systems. Check the Results tab.`,
       });
 
     } catch (error) {
+      console.error('Validation test failed:', error);
       toast({
         title: "Validation Test Failed",
-        description: "Some tests may have failed. Check the results for details.",
+        description: `Test failed: ${error.message}. Check console for details.`,
         variant: "destructive"
       });
     } finally {
@@ -93,12 +101,28 @@ export const ExternalValidationTester = () => {
   const loadPreviousResults = () => {
     const stored = externalValidationFramework.loadResults();
     setResults(stored);
+    
     if (stored.length > 0) {
       toast({
         title: "Results Loaded",
         description: `Loaded ${stored.length} previous validation test results.`,
       });
+    } else {
+      toast({
+        title: "No Previous Results",
+        description: "No previous validation test results found in storage.",
+        variant: "destructive"
+      });
     }
+  };
+
+  const clearAllResults = () => {
+    externalValidationFramework.clearResults();
+    setResults([]);
+    toast({
+      title: "Results Cleared",
+      description: "All validation test results have been cleared.",
+    });
   };
 
   const generateBlindEvaluation = async () => {
@@ -146,7 +170,7 @@ export const ExternalValidationTester = () => {
             <span>External Validation Testing</span>
           </CardTitle>
           <CardDescription>
-            Compare Genius Machine performance against 3 leading LLMs: GPT-4o-mini, Claude-3.5-Sonnet, and Gemini-1.5-Pro
+            Compare Genius Machine (3-layer processing) vs External LLMs (single-pass): GPT-4o-mini, Claude-3.5-Sonnet, Gemini-1.5-Pro
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -164,6 +188,17 @@ export const ExternalValidationTester = () => {
                   <SelectItem value="mixed">Mixed Sample (2 tests × 4 AIs)</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            
+            <div className="flex items-end space-x-2">
+              <Button variant="outline" size="sm" onClick={debugFrameworkState}>
+                <Bug className="w-4 h-4 mr-1" />
+                Debug State
+              </Button>
+              <Button variant="outline" size="sm" onClick={clearAllResults}>
+                <RefreshCw className="w-4 h-4 mr-1" />
+                Clear All
+              </Button>
             </div>
           </div>
 
@@ -204,13 +239,26 @@ export const ExternalValidationTester = () => {
               Load Previous Results
             </Button>
           </div>
+
+          {/* Results Preview */}
+          {results.length > 0 && (
+            <div className="p-4 bg-green-50 rounded-lg">
+              <h4 className="font-medium text-green-800 mb-2">
+                ✅ Validation Results Available
+              </h4>
+              <p className="text-sm text-green-700">
+                {results.length} questions tested across {results.length > 0 ? results[0].externalResults.length + 1 : 4} AI systems. 
+                View detailed results in the tabs below.
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
       {results.length > 0 && (
         <Tabs defaultValue="results" className="space-y-4">
           <TabsList>
-            <TabsTrigger value="results">Test Results</TabsTrigger>
+            <TabsTrigger value="results">Test Results ({results.length})</TabsTrigger>
             <TabsTrigger value="metrics">Performance Metrics</TabsTrigger>
             <TabsTrigger value="evaluation">Blind Evaluation</TabsTrigger>
           </TabsList>
@@ -220,7 +268,7 @@ export const ExternalValidationTester = () => {
               <CardHeader>
                 <CardTitle>Validation Test Results</CardTitle>
                 <CardDescription>
-                  Comparison of Genius Machine vs External LLMs
+                  Comparison of Genius Machine (3-layer) vs External LLMs (single-pass)
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -236,9 +284,9 @@ export const ExternalValidationTester = () => {
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {/* Genius Machine Result */}
-                        <div className="border rounded p-3">
+                        <div className="border rounded p-3 bg-blue-50">
                           <div className="flex items-center justify-between mb-2">
-                            <Badge className="text-xs">Genius Machine</Badge>
+                            <Badge className="text-xs bg-blue-600">Genius Machine (3-layer)</Badge>
                             <div className="flex space-x-1">
                               <Badge variant="outline" className="text-xs">
                                 Novel: {result.geniusMachineResult.noveltyScore}/10
@@ -253,6 +301,9 @@ export const ExternalValidationTester = () => {
                           <p className="text-sm text-gray-700">
                             {result.geniusMachineResult.insight.substring(0, 150)}...
                           </p>
+                          <div className="mt-2 text-xs text-gray-500">
+                            {result.geniusMachineResult.processingDepth} layers, {Math.round(result.geniusMachineResult.confidence * 100)}% confidence
+                          </div>
                         </div>
 
                         {/* External LLM Results */}
@@ -273,6 +324,9 @@ export const ExternalValidationTester = () => {
                                 {ext.response.substring(0, 150)}...
                               </p>
                             )}
+                            <div className="mt-2 text-xs text-gray-500">
+                              Single-pass processing
+                            </div>
                           </div>
                         ))}
                       </div>
