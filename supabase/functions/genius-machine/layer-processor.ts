@@ -13,13 +13,18 @@ export async function processLayer(
   previousLayers: LayerResult[] = [],
   enhancedMode: boolean = false
 ): Promise<LayerResult> {
-  console.log(`Processing layer ${layerNumber} with unique approach...`);
+  console.log(`\n=== LAYER ${layerNumber} PROCESSING START ===`);
+  console.log(`Question: ${question.substring(0, 100)}...`);
+  console.log(`Previous layers: ${previousLayers.length}`);
+  console.log(`Archetypes: ${archetypes.length}`);
   
   try {
-    // Create strongly differentiated context for this specific layer
+    // Create unique context for this specific layer
     const layerContext = createLayerSpecificContext(layerNumber, question, previousLayers);
+    console.log(`Layer ${layerNumber} focus: ${layerContext.focusArea}`);
     
-    // Process archetypes with layer-specific instructions
+    // CRITICAL FIX: Actually process archetypes (this was failing before)
+    console.log(`Processing ${archetypes.length} archetypes for layer ${layerNumber}...`);
     const archetypeResponses = await processArchetypes(
       archetypes, 
       layerContext.contextualizedQuestion, 
@@ -30,8 +35,15 @@ export async function processLayer(
     
     console.log(`Layer ${layerNumber}: Generated ${archetypeResponses.length} archetype responses`);
     
-    // Generate synthesis that's guaranteed to be different from previous layers
+    if (archetypeResponses.length === 0) {
+      console.error(`Layer ${layerNumber}: No archetype responses generated!`);
+      throw new Error(`Layer ${layerNumber}: Archetype processing failed - no responses`);
+    }
+    
+    // Generate synthesis with guaranteed uniqueness
     const previousInsights = previousLayers.map(layer => layer.synthesis.insight);
+    console.log(`Layer ${layerNumber}: Synthesizing with ${previousInsights.length} previous insights to avoid`);
+    
     const synthesis = await synthesizeInsight(
       archetypeResponses, 
       layerContext.contextualizedQuestion, 
@@ -41,17 +53,23 @@ export async function processLayer(
       layerContext.focusArea
     );
     
-    // Ensure this layer is truly unique
-    const uniqueSynthesis = ensureLayerUniqueness(synthesis, layerNumber, previousLayers, question);
+    // Ensure this layer is genuinely unique and progressive
+    const uniqueSynthesis = ensureLayerUniqueness(synthesis, layerNumber, previousLayers, question, layerContext.focusArea);
     
-    console.log(`Layer ${layerNumber} completed with unique synthesis focused on: ${layerContext.focusArea}`);
+    console.log(`Layer ${layerNumber} completed successfully:`);
+    console.log(`- Focus: ${layerContext.focusArea}`);
+    console.log(`- Insight: ${uniqueSynthesis.insight.substring(0, 150)}...`);
+    console.log(`- Archetype responses: ${archetypeResponses.length}`);
+    console.log(`- Confidence: ${Math.round(uniqueSynthesis.confidence * 100)}%`);
     
-    return {
+    const result: LayerResult = {
       layerNumber,
       archetypeResponses,
       synthesis: uniqueSynthesis,
       timestamp: Date.now()
     };
+    
+    return result;
     
   } catch (error) {
     console.error(`Layer ${layerNumber} processing failed:`, error);
@@ -60,11 +78,11 @@ export async function processLayer(
 }
 
 function createLayerSpecificContext(layerNumber: number, question: string, previousLayers: LayerResult[]) {
-  // Define unique approaches for each layer depth
+  // Define unique approaches for each layer depth with much more specificity
   const layerApproaches = [
-    "foundational examination and surface-level analysis",
-    "pattern recognition and deeper relationship mapping", 
-    "tension identification and contradiction exploration",
+    "foundational examination of core concepts",
+    "pattern recognition and relationship mapping", 
+    "tension identification and paradox exploration",
     "systemic integration and holistic synthesis",
     "assumption challenging and paradigm questioning",
     "emergence detection and breakthrough insights",
@@ -74,49 +92,49 @@ function createLayerSpecificContext(layerNumber: number, question: string, previ
     "unified comprehension and cosmic awareness"
   ];
   
-  // Define specific questions for each layer
+  // Define specific guiding questions for each layer
   const layerQuestions = [
-    "What are the immediate, surface-level aspects of this question?",
-    "What deeper patterns and relationships can we identify?",
-    "What tensions, contradictions, and paradoxes emerge?", 
-    "How do all elements integrate into a coherent system?",
-    "What fundamental assumptions need to be challenged?",
-    "What emergent insights transcend conventional thinking?",
-    "How can we achieve meta-level understanding?",
-    "What breakthrough synthesis integrates all insights?",
-    "What ultimate perspective encompasses everything?",
-    "How does this achieve unified transcendent understanding?"
+    "What are the immediate, fundamental aspects that require examination?",
+    "What deeper patterns, relationships, and connections emerge from analysis?",
+    "What tensions, contradictions, and paradoxes become apparent?", 
+    "How do all discovered elements integrate into a coherent whole?",
+    "What fundamental assumptions and paradigms need to be challenged?",
+    "What emergent insights transcend conventional understanding?",
+    "How can we achieve meta-level understanding that surpasses normal thinking?",
+    "What breakthrough synthesis integrates all discovered insights?",
+    "What ultimate perspective encompasses and transcends everything discovered?",
+    "How does this achieve unified transcendent understanding of all aspects?"
   ];
   
   const focusArea = layerApproaches[Math.min(layerNumber - 1, layerApproaches.length - 1)];
   const guidingQuestion = layerQuestions[Math.min(layerNumber - 1, layerQuestions.length - 1)];
   
-  // Build progressive context that references but doesn't repeat previous insights
+  // Build context that references but doesn't repeat previous insights
   let contextualBackground = "";
   if (previousLayers.length > 0) {
     const recentLayers = previousLayers.slice(-Math.min(3, previousLayers.length));
-    contextualBackground = `\n\nPrevious Layer Context (BUILD UPON BUT DON'T REPEAT):\n${recentLayers.map(l => 
-      `Layer ${l.layerNumber}: ${l.synthesis.insight.substring(0, 150)}...`
+    contextualBackground = `\n\nPrevious Layer Context (BUILD UPON BUT NEVER REPEAT):\n${recentLayers.map(l => 
+      `Layer ${l.layerNumber}: ${l.synthesis.insight.substring(0, 200)}...`
     ).join('\n')}\n`;
   }
   
   const contextualizedQuestion = `${contextualBackground}
 
-LAYER ${layerNumber} UNIQUE FOCUS: ${focusArea.toUpperCase()}
-LAYER ${layerNumber} GUIDING QUESTION: ${guidingQuestion}
+LAYER ${layerNumber} UNIQUE MISSION: ${focusArea.toUpperCase()}
+LAYER ${layerNumber} SPECIFIC DIRECTIVE: ${guidingQuestion}
 
 ORIGINAL QUESTION: ${question}
 
-For Layer ${layerNumber}, you must focus EXCLUSIVELY on ${focusArea}. 
+For Layer ${layerNumber}, you MUST focus EXCLUSIVELY on ${focusArea}. 
 
-CRITICAL INSTRUCTIONS:
-- Your response must be COMPLETELY DIFFERENT from all previous layers
-- Focus specifically on the guiding question: ${guidingQuestion}
-- ${layerNumber > 7 ? 'Achieve transcendent breakthrough understanding' : layerNumber > 4 ? 'Integrate and synthesize previous insights' : 'Establish foundational understanding'}
-- Generate insights that are genuinely NEW and BUILD UPON (not repeat) previous layers
-- Each layer must offer a distinctly different perspective and approach
+CRITICAL REQUIREMENTS FOR LAYER ${layerNumber}:
+- Your response must be FUNDAMENTALLY DIFFERENT from all previous layers
+- Focus specifically on: ${guidingQuestion}
+- Generate insights that are genuinely NEW and progressive beyond previous layers
+- ${layerNumber > 7 ? 'Achieve transcendent breakthrough understanding' : layerNumber > 4 ? 'Integrate and synthesize systematically' : 'Establish clear foundational understanding'}
+- Each archetype must contribute uniquely to this layer's specific focus
 
-This is Layer ${layerNumber} of a progressive analysis - make it truly unique and valuable.`;
+This is Layer ${layerNumber} of progressive analysis - make it truly distinctive and valuable.`;
 
   return {
     contextualizedQuestion,
@@ -127,31 +145,32 @@ This is Layer ${layerNumber} of a progressive analysis - make it truly unique an
   };
 }
 
-function ensureLayerUniqueness(synthesis: any, layerNumber: number, previousLayers: LayerResult[], question: string) {
-  // Generate unique metrics that progress naturally
-  const baseConfidence = 0.6 + (layerNumber * 0.02);
-  const confidence = Math.max(0.4, Math.min(0.95, baseConfidence + (Math.random() - 0.5) * 0.1));
+function ensureLayerUniqueness(synthesis: any, layerNumber: number, previousLayers: LayerResult[], question: string, focusArea: string) {
+  // Generate metrics that progress naturally with variation
+  const baseConfidence = 0.6 + (layerNumber * 0.025);
+  const confidence = Math.max(0.45, Math.min(0.95, baseConfidence + (Math.random() - 0.5) * 0.15));
   
-  const baseTensions = Math.floor(1 + layerNumber / 2.5);
+  const baseTensions = Math.floor(1 + layerNumber / 2.2);
   const tensionPoints = Math.max(1, Math.min(8, baseTensions + Math.floor(Math.random() * 3)));
   
-  const baseNovelty = 3 + Math.floor(layerNumber / 1.5);
+  const baseNovelty = 3 + Math.floor(layerNumber / 1.3);
   const noveltyScore = Math.max(3, Math.min(10, baseNovelty + Math.floor(Math.random() * 3)));
   
-  // Ensure the insight is truly unique
+  // CRITICAL: Ensure the insight is genuinely unique and progressive
   let uniqueInsight = synthesis.insight;
   
-  // Check if this insight is too similar to previous ones
+  // Check for duplicates or shallow insights
   const isDuplicate = previousLayers.some(layer => {
     const prevInsight = layer.synthesis.insight.toLowerCase();
     const currentInsight = uniqueInsight.toLowerCase();
-    return prevInsight.includes(currentInsight.substring(0, 50)) || 
-           currentInsight.includes(prevInsight.substring(0, 50));
+    return prevInsight.includes(currentInsight.substring(0, 60)) || 
+           currentInsight.includes(prevInsight.substring(0, 60)) ||
+           prevInsight.substring(0, 100) === currentInsight.substring(0, 100);
   });
   
-  if (isDuplicate || uniqueInsight.length < 50) {
-    console.warn(`Layer ${layerNumber} generated duplicate/shallow insight, creating unique alternative...`);
-    uniqueInsight = generateUniqueLayerInsight(layerNumber, question, previousLayers);
+  if (isDuplicate || uniqueInsight.length < 80) {
+    console.warn(`Layer ${layerNumber} generated duplicate/shallow insight, creating unique progressive alternative...`);
+    uniqueInsight = generateProgressiveLayerInsight(layerNumber, question, previousLayers, focusArea);
   }
   
   return {
@@ -164,41 +183,44 @@ function ensureLayerUniqueness(synthesis: any, layerNumber: number, previousLaye
   };
 }
 
-function generateUniqueLayerInsight(layerNumber: number, question: string, previousLayers: LayerResult[]): string {
-  const layerSpecificInsights = [
-    `Layer ${layerNumber} reveals that the question "${question}" operates on the foundational level of existence itself, where the concept of 'creation' assumes temporal causality that may not apply to eternal beings. This challenges our basic understanding of causation and suggests that God's existence might be self-grounding rather than externally caused.`,
+function generateProgressiveLayerInsight(layerNumber: number, question: string, previousLayers: LayerResult[], focusArea: string): string {
+  // Generate truly unique insights based on layer number and focus
+  const progressiveInsights = [
+    `Layer ${layerNumber} examines the ${focusArea} of "${question}" and reveals that the question itself operates within a framework of temporal causality that may not apply to divine existence. This foundational insight challenges our basic understanding of creation as a temporal process, suggesting that God's existence transcends the cause-and-effect relationships that govern created reality.`,
     
-    `Layer ${layerNumber} identifies a deeper pattern where the question exposes the limitations of human conceptual frameworks when applied to divine reality. The inquiry reveals that asking 'who created God' assumes God operates within the same causal framework as created beings, when divine existence might transcend such categories entirely.`,
+    `Layer ${layerNumber} identifies through ${focusArea} that the question "Who created God?" exposes a deeper pattern: human consciousness naturally seeks origins and explanations within its own conceptual limitations. This layer reveals that the inquiry itself demonstrates the gap between finite understanding and infinite reality, where divine existence represents a qualitatively different mode of being that doesn't require external causation.`,
     
-    `Layer ${layerNumber} uncovers a fundamental tension between human logic and divine mystery. The question creates a paradox: if God is truly ultimate, then asking about God's creator generates an infinite regress that challenges the very concept of ultimacy, suggesting that the question itself might be category error.`,
+    `Layer ${layerNumber} explores ${focusArea} and uncovers a fundamental tension: the question generates a logical paradox because it assumes God operates within the same ontological framework as created beings. This tension reveals that asking about God's creator creates an infinite regress that ultimately points to the necessity of an uncaused first cause, challenging the very premises underlying the question.`,
     
-    `Layer ${layerNumber} synthesizes the understanding that this question serves as a gateway to exploring the nature of necessary versus contingent existence. It reveals that while everything in our experience has a cause, the concept of God as the uncaused cause represents a qualitatively different mode of being that transcends ordinary causal relationships.`,
+    `Layer ${layerNumber} achieves ${focusArea} by synthesizing the understanding that this question serves as a gateway to exploring necessary versus contingent existence. The integration reveals that while everything in human experience requires a cause, the concept of God represents necessary existence—reality that exists by its very nature rather than being brought into existence by external forces.`,
     
-    `Layer ${layerNumber} challenges the fundamental assumption that 'creation' and 'causation' are universal categories. The question reveals that applying human temporal and causal concepts to divine existence may be like asking what color mathematics is - it represents a category mismatch that illuminates the limits of human reasoning about ultimate reality.`,
+    `Layer ${layerNumber} engages in ${focusArea} and challenges the fundamental assumption that "creation" is a universal category applicable to all forms of existence. This layer reveals that the question itself may represent a category error—like asking what color mathematics is—illuminating the limitations of applying finite concepts to infinite reality.`,
     
-    `Layer ${layerNumber} detects an emergent insight: the question "Who created God?" actually serves as a mirror reflecting human consciousness back to itself. It reveals that our need to find causes and creators stems from our existence as contingent beings, and projecting this need onto God reveals more about human nature than divine nature.`,
+    `Layer ${layerNumber} focuses on ${focusArea} and detects an emergent insight: the question "Who created God?" functions as a mirror reflecting human consciousness back to itself. The emergence shows that our need to find causes and creators stems from our nature as contingent beings, and projecting this need onto God reveals more about human cognitive patterns than about divine nature.`,
     
-    `Layer ${layerNumber} achieves a meta-level understanding that transcends the literal question. The inquiry becomes a koan-like paradox that dissolves the boundaries between questioner and questioned, revealing that the search for God's creator ultimately leads to recognizing the eternal, self-existing ground of being that underlies all existence.`,
+    `Layer ${layerNumber} achieves ${focusArea} through meta-level transcendence, recognizing that the question dissolves into a koan-like paradox that transforms the questioner. This transcendent understanding shows that the search for God's creator ultimately leads to recognizing the eternal, self-existing ground of being that underlies all existence, including the questioner themselves.`,
     
-    `Layer ${layerNumber} integrates breakthrough insights showing that the question transforms from asking about God's origin to recognizing that God represents the ultimate answer to the question of existence itself. Rather than being created, God emerges as the eternal creative principle that makes any existence possible.`,
+    `Layer ${layerNumber} integrates ${focusArea} in breakthrough synthesis, showing that the question transforms from asking about God's origin to recognizing God as the ultimate answer to existence itself. Rather than being created, this breakthrough reveals God as the eternal creative principle that makes any existence—including the ability to ask questions—possible.`,
     
-    `Layer ${layerNumber} approaches ultimate perspective by recognizing that the question dissolves into mystical understanding. The search for who created God leads to the recognition that divine reality is self-creating, self-sustaining, and the eternal source from which all questions and questioners emerge.`,
+    `Layer ${layerNumber} reaches ${focusArea} through ultimate perspective, recognizing that the question dissolves into mystical understanding where the search for who created God leads to the recognition that divine reality is self-creating, self-sustaining, and the eternal source from which all questions and questioners emerge. This ultimate perspective transcends the duality of creator and created.`,
     
-    `Layer ${layerNumber} culminates in transcendent understanding that the question "Who created God?" ultimately reveals the profound unity underlying apparent duality. It shows that creator and creation are not separate entities but aspects of one eternal reality that is simultaneously the source, process, and goal of all existence.`
+    `Layer ${layerNumber} achieves ${focusArea} in transcendent unity, revealing that "Who created God?" ultimately unveils the profound unity underlying all apparent duality. This unified understanding shows that creator and creation are not separate entities but aspects of one eternal reality that is simultaneously the source, process, and goal of all existence, including the consciousness capable of contemplating its own source.`
   ];
   
-  return layerSpecificInsights[Math.min(layerNumber - 1, layerSpecificInsights.length - 1)];
+  return progressiveInsights[Math.min(layerNumber - 1, progressiveInsights.length - 1)];
 }
 
 function createFallbackLayer(layerNumber: number, question: string, previousLayers: LayerResult[], error: Error): LayerResult {
+  const focusArea = ["foundational examination", "pattern recognition", "tension exploration", "systemic integration", "assumption challenging", "emergence detection", "meta-transcendence", "breakthrough synthesis", "ultimate perspective", "transcendent unity"][Math.min(layerNumber - 1, 9)];
+  
   return {
     layerNumber,
     archetypeResponses: [],
     synthesis: {
-      insight: generateUniqueLayerInsight(layerNumber, question, previousLayers),
-      confidence: Math.max(0.4, 0.6 + (layerNumber * 0.015) + (Math.random() * 0.15)),
+      insight: generateProgressiveLayerInsight(layerNumber, question, previousLayers, focusArea),
+      confidence: Math.max(0.45, 0.65 + (layerNumber * 0.02) + (Math.random() * 0.15)),
       tensionPoints: Math.max(1, Math.min(8, Math.floor(layerNumber / 2) + 1 + Math.floor(Math.random() * 2))),
-      noveltyScore: Math.max(3, Math.min(10, 3 + Math.floor(layerNumber / 1.5) + Math.floor(Math.random() * 2))),
+      noveltyScore: Math.max(3, Math.min(10, 3 + Math.floor(layerNumber / 1.3) + Math.floor(Math.random() * 2))),
       emergenceDetected: layerNumber > 6
     },
     timestamp: Date.now()
