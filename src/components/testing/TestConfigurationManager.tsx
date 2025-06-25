@@ -1,14 +1,16 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Eye, Settings } from "lucide-react";
 import { archetypeTestingFramework } from "@/services/testing/archetypeTestingFramework";
 import { ConfigurationDetailView } from "./ConfigurationDetailView";
+import { ExternalValidationTester } from "./ExternalValidationTester";
 
 export const TestConfigurationManager = () => {
   const [selectedConfigId, setSelectedConfigId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<string>("configurations");
   
   const configurations = archetypeTestingFramework.getConfigurations();
   
@@ -28,66 +30,84 @@ export const TestConfigurationManager = () => {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Configuration Manager</CardTitle>
-          <CardDescription>
-            View and manage archetype test configurations. Click "View Details" to see internal archetypes.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {configurations.length === 0 ? (
-            <p className="text-gray-500 text-center py-4">
-              No configurations loaded. Please initialize the framework first.
-            </p>
-          ) : (
-            <div className="space-y-4">
-              {configurations.map((config) => {
-                const performance = archetypeTestingFramework.getConfigurationPerformance(config.id);
-                
-                return (
-                  <div key={config.id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <h3 className="font-medium">{config.name}</h3>
-                        {config.id === 'current-default' && (
-                          <Badge variant="outline" className="text-xs border-blue-300 text-blue-700">
-                            Baseline (9.7/10)
-                          </Badge>
-                        )}
-                      </div>
-                      <p className="text-sm text-gray-600 mb-2">{config.description}</p>
-                      <div className="flex items-center space-x-4 text-xs text-gray-500">
-                        <span>{config.archetypes.length} archetypes</span>
-                        <span>•</span>
-                        <span>{performance.testCount} tests run</span>
-                        {performance.testCount > 0 && (
-                          <>
-                            <span>•</span>
-                            <span className="font-medium">Avg: {performance.averageScore.toFixed(1)}/10</span>
-                          </>
-                        )}
-                      </div>
-                    </div>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="configurations">Configurations</TabsTrigger>
+          <TabsTrigger value="validation">External Validation</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="configurations">
+          <Card>
+            <CardHeader>
+              <CardTitle>Configuration Manager</CardTitle>
+              <CardDescription>
+                View and manage archetype test configurations. Click "View Details" to see internal archetypes.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {configurations.length === 0 ? (
+                <p className="text-gray-500 text-center py-4">
+                  No configurations loaded. Please initialize the framework first.
+                </p>
+              ) : (
+                <div className="space-y-4">
+                  {configurations.map((config) => {
+                    const performance = archetypeTestingFramework.getConfigurationPerformance(config.id);
                     
-                    <div className="flex items-center space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setSelectedConfigId(config.id)}
-                        className="flex items-center space-x-2"
-                      >
-                        <Eye className="w-4 h-4" />
-                        <span>View Details</span>
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                    return (
+                      <div key={config.id} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-3 mb-2">
+                            <h3 className="font-medium">{config.name}</h3>
+                            {config.id === 'current-default' && (
+                              <Badge variant="outline" className="text-xs border-blue-300 text-blue-700">
+                                Baseline (9.7/10)
+                              </Badge>
+                            )}
+                            {config.id === 'version-1-default' && (
+                              <Badge variant="outline" className="text-xs border-green-300 text-green-700">
+                                Version 1 (10.0/10)
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-sm text-gray-600 mb-2">{config.description}</p>
+                          <div className="flex items-center space-x-4 text-xs text-gray-500">
+                            <span>{config.archetypes.length} archetypes</span>
+                            <span>•</span>
+                            <span>{performance.testCount} tests run</span>
+                            {performance.testCount > 0 && (
+                              <>
+                                <span>•</span>
+                                <span className="font-medium">Avg: {performance.averageScore.toFixed(1)}/10</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSelectedConfigId(config.id)}
+                            className="flex items-center space-x-2"
+                          >
+                            <Eye className="w-4 h-4" />
+                            <span>View Details</span>
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="validation">
+          <ExternalValidationTester />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
