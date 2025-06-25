@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -114,7 +113,7 @@ const InsightsHistory = () => {
   if (selectedInsight) {
     return (
       <div className="min-h-screen bg-zen-paper">
-        <Header customArchetypes={null} enhancedMode={true} />
+        <Header />
         
         <main className="px-zen-lg py-zen-xl max-w-7xl mx-auto">
           <div className="mb-6">
@@ -148,7 +147,7 @@ const InsightsHistory = () => {
 
   return (
     <div className="min-h-screen bg-zen-paper">
-      <Header customArchetypes={null} enhancedMode={true} />
+      <Header />
       
       <main className="px-zen-lg py-zen-xl max-w-7xl mx-auto">
         <div className="space-y-8">
