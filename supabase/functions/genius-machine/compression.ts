@@ -10,31 +10,35 @@ export interface CompressionFormats {
 }
 
 export async function generateCompressionFormats(
-  originalInsight: string,
+  insight: string,
   synthesisResult: SynthesisResult,
-  question: string
+  originalQuestion: string
 ): Promise<CompressionFormats> {
-  const compressionPrompt = `You are a Master Insight Compressor. Given this breakthrough insight, create THREE different compression formats:
+  console.log('Generating distinct compression formats...');
+  
+  try {
+    // Generate three genuinely different compression formats
+    const compressionPrompt = `Transform this insight into three DISTINCTLY DIFFERENT formats:
 
-Original Question: ${question}
-Original Insight: "${originalInsight}"
-Confidence: ${Math.round(synthesisResult.confidence * 100)}%
-Novelty Score: ${synthesisResult.noveltyScore || 5}/10
+ORIGINAL INSIGHT: ${insight}
 
-Create these three formats:
+ORIGINAL QUESTION: ${originalQuestion}
 
-1. ULTRA_CONCISE: Extract the absolute core essence in exactly 2-3 words. This should be the most distilled truth.
-2. MEDIUM: The current insight is already good for this - 1-2 impactful sentences that create cognitive disruption.
-3. COMPREHENSIVE: Expand with deeper reasoning, implications, and actionable context (3-4 sentences).
+Generate three completely different versions:
 
-Respond with ONLY valid JSON:
+1. ULTRA-CONCISE: A single powerful sentence that captures the core breakthrough (max 20 words)
+2. MEDIUM: A focused paragraph that explains the key insight with practical implications (50-80 words) 
+3. COMPREHENSIVE: An expanded exploration with context, implications, and actionable understanding (150-200 words)
+
+Each format should be GENUINELY DIFFERENT - not just truncated versions of each other.
+
+Respond with JSON in this exact format:
 {
-  "ultraConcise": "2-3 word essence",
-  "medium": "1-2 impactful sentences",
-  "comprehensive": "3-4 sentences with deeper reasoning and implications"
+  "ultraConcise": "single sentence here",
+  "medium": "focused paragraph here", 
+  "comprehensive": "expanded exploration here"
 }`;
 
-  try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -44,46 +48,89 @@ Respond with ONLY valid JSON:
       body: JSON.stringify({
         model: 'gpt-4o-mini',
         messages: [
-          { role: 'system', content: 'You are a compression specialist. Respond only with valid JSON.' },
+          { 
+            role: 'system', 
+            content: 'You are a compression specialist. Generate three genuinely different formats of the same insight. Each format serves a different purpose and audience. Return only valid JSON without markdown formatting.' 
+          },
           { role: 'user', content: compressionPrompt }
         ],
-        max_tokens: 400,
-        temperature: 0.3,
+        max_tokens: 800,
+        temperature: 0.4,
       }),
     });
 
     const data = await response.json();
-    const rawContent = data.choices[0].message.content.trim();
+    let rawResponse = data.choices[0]?.message?.content || '{}';
     
-    // Clean and parse JSON response
-    let cleanedContent = rawContent;
-    const firstBrace = rawContent.indexOf('{');
-    if (firstBrace > 0) {
-      cleanedContent = rawContent.substring(firstBrace);
+    // Clean up response
+    rawResponse = rawResponse.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+    
+    console.log('Compression raw response received:', rawResponse.substring(0, 100) + '...');
+    
+    try {
+      const parsed = JSON.parse(rawResponse);
+      
+      // Validate that formats are genuinely different
+      const formats = {
+        ultraConcise: parsed.ultraConcise || generateFallbackUltraConcise(insight),
+        medium: parsed.medium || generateFallbackMedium(insight),
+        comprehensive: parsed.comprehensive || generateFallbackComprehensive(insight, originalQuestion)
+      };
+      
+      // Ensure no format is just a truncation of another
+      if (formats.medium.includes(formats.ultraConcise) || 
+          formats.comprehensive.startsWith(formats.medium.substring(0, 50))) {
+        console.warn('Detected format duplication, using fallback generation');
+        return generateFallbackFormats(insight, originalQuestion);
+      }
+      
+      console.log('Successfully generated distinct compression formats');
+      return formats;
+      
+    } catch (parseError) {
+      console.error('Compression parsing failed:', parseError);
+      return generateFallbackFormats(insight, originalQuestion);
     }
-    
-    const lastBrace = cleanedContent.lastIndexOf('}');
-    if (lastBrace !== -1 && lastBrace < cleanedContent.length - 1) {
-      cleanedContent = cleanedContent.substring(0, lastBrace + 1);
-    }
-    
-    const compressionResult = JSON.parse(cleanedContent);
-    
-    return {
-      ultraConcise: compressionResult.ultraConcise || originalInsight.split(' ').slice(0, 3).join(' '),
-      medium: compressionResult.medium || originalInsight,
-      comprehensive: compressionResult.comprehensive || originalInsight
-    };
     
   } catch (error) {
     console.error('Compression generation failed:', error);
-    
-    // Fallback compression
-    const words = originalInsight.split(' ');
-    return {
-      ultraConcise: words.slice(0, 3).join(' '),
-      medium: originalInsight,
-      comprehensive: `${originalInsight} This insight emerges from analyzing multiple perspectives and identifying breakthrough patterns that challenge conventional thinking.`
-    };
+    return generateFallbackFormats(insight, originalQuestion);
   }
+}
+
+function generateFallbackFormats(insight: string, question: string): CompressionFormats {
+  const words = insight.split(' ');
+  
+  return {
+    ultraConcise: extractKeyPhrase(insight),
+    medium: `The exploration of "${question}" reveals ${words.slice(0, 15).join(' ')}... leading to new understanding of the underlying dynamics.`,
+    comprehensive: `${insight} This insight emerges from deep analysis and offers practical implications for how we understand and approach the question "${question}". The breakthrough suggests new pathways for exploration and application in related contexts.`
+  };
+}
+
+function generateFallbackUltraConcise(insight: string): string {
+  const sentences = insight.split('.').filter(s => s.trim().length > 10);
+  const firstSentence = sentences[0]?.trim() || insight.substring(0, 100);
+  const words = firstSentence.split(' ').slice(0, 12);
+  return words.join(' ') + (words.length === 12 ? '...' : '.');
+}
+
+function generateFallbackMedium(insight: string): string {
+  const sentences = insight.split('.').filter(s => s.trim().length > 10);
+  const mediumLength = sentences.slice(0, 2).join('. ') + '.';
+  return mediumLength.length > 300 ? mediumLength.substring(0, 250) + '...' : mediumLength;
+}
+
+function generateFallbackComprehensive(insight: string, question: string): string {
+  return `${insight} This comprehensive analysis of "${question}" reveals multiple layers of understanding that extend beyond conventional approaches. The synthesis suggests practical applications and invites further exploration into the underlying principles and their broader implications for related inquiries.`;
+}
+
+function extractKeyPhrase(text: string): string {
+  // Extract the most impactful phrase from the insight
+  const sentences = text.split(/[.!?]/).filter(s => s.trim().length > 5);
+  const firstSentence = sentences[0]?.trim() || text;
+  
+  // Look for key patterns or just take first meaningful chunk
+  const keyWords = firstSentence.split(' ').slice(0, 8);
+  return keyWords.join(' ') + (keyWords.length === 8 ? '...' : '.');
 }

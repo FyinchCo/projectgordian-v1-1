@@ -104,9 +104,10 @@ Return only the (possibly tagged) contribution text.`;
 async function performInitialSynthesis(
   archetypeResponses: ArchetypeResponse[],
   question: string,
-  previousInsights: string[] = []
+  previousInsights: string[] = [],
+  layerNumber: number = 1
 ): Promise<SynthesisResult> {
-  console.log('Layer performing initial synthesis analysis...');
+  console.log(`Layer ${layerNumber} performing initial synthesis analysis...`);
   
   const responses = archetypeResponses.map(r => 
     `${r.archetype}: ${r.response}`
@@ -116,21 +117,27 @@ async function performInitialSynthesis(
     ? `\nPrevious layer insights:\n${previousInsights.join('\n\n')}`
     : '';
 
-  const prompt = `Analyze these archetype responses and perform initial synthesis.
+  const layerGuidance = getLayerSpecificGuidance(layerNumber);
+
+  const prompt = `Analyze these archetype responses for Layer ${layerNumber} synthesis.
 
 Question: ${question}
 ${previousContext}
 
+Layer ${layerNumber} Focus: ${layerGuidance}
+
 Archetype Responses:
 ${responses}
 
+Generate a Layer ${layerNumber}-appropriate synthesis that ${layerNumber > 3 ? 'transcends' : 'builds upon'} previous insights.
+
 Provide a JSON response with this exact structure (no markdown, no code blocks):
 {
-  "insight": "Initial synthesis combining key themes and tensions",
-  "confidence": 0.7,
-  "tensionPoints": 3,
-  "noveltyScore": 6,
-  "emergenceDetected": false
+  "insight": "Layer ${layerNumber} synthesis with ${layerNumber > 5 ? 'breakthrough' : 'progressive'} perspective",
+  "confidence": ${0.6 + (layerNumber * 0.03)},
+  "tensionPoints": ${Math.min(2 + layerNumber, 7)},
+  "noveltyScore": ${Math.min(4 + layerNumber, 9)},
+  "emergenceDetected": ${layerNumber > 6}
 }`;
 
   try {
@@ -145,56 +152,53 @@ Provide a JSON response with this exact structure (no markdown, no code blocks):
         messages: [
           { 
             role: 'system', 
-            content: 'You are a synthesis engine. Return only valid JSON without markdown formatting or code blocks. Be precise and analytical.' 
+            content: `You are a Layer ${layerNumber} synthesis engine. Each layer should provide genuinely different insights. Return only valid JSON without markdown formatting. Layer ${layerNumber} should be ${layerNumber > 5 ? 'paradigm-shifting' : layerNumber > 3 ? 'integrative' : 'foundational'}.` 
           },
           { role: 'user', content: prompt }
         ],
         max_tokens: 800,
-        temperature: 0.3
+        temperature: 0.2 + (layerNumber * 0.05) // Increase creativity with depth
       }),
     });
 
     const data = await response.json();
     let rawResponse = data.choices[0]?.message?.content || '{}';
     
-    // Clean up the response - remove markdown code blocks if present
     rawResponse = rawResponse.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
     
-    console.log('Initial synthesis raw response:', rawResponse);
+    console.log(`Layer ${layerNumber} initial synthesis raw response:`, rawResponse);
     
     try {
       const result = JSON.parse(rawResponse);
       return {
-        insight: result.insight || 'Initial synthesis completed',
-        confidence: result.confidence || 0.6,
-        tensionPoints: result.tensionPoints || 2,
-        noveltyScore: result.noveltyScore || 5,
-        emergenceDetected: result.emergenceDetected || false
+        insight: result.insight || `Layer ${layerNumber} synthesis completed with progressive understanding`,
+        confidence: result.confidence || (0.6 + layerNumber * 0.02),
+        tensionPoints: result.tensionPoints || Math.min(2 + layerNumber, 7),
+        noveltyScore: result.noveltyScore || Math.min(4 + layerNumber, 9),
+        emergenceDetected: result.emergenceDetected || (layerNumber > 6)
       };
     } catch (parseError) {
-      console.error('Initial synthesis failed:', parseError);
+      console.error(`Layer ${layerNumber} initial synthesis failed:`, parseError);
       
-      // Fallback synthesis using simpler approach
       const insight = extractInsightFromResponses(archetypeResponses);
       return {
-        insight,
-        confidence: 0.6,
-        tensionPoints: 2,
-        noveltyScore: 5,
-        emergenceDetected: false
+        insight: `Layer ${layerNumber}: ${insight}`,
+        confidence: 0.6 + (layerNumber * 0.02),
+        tensionPoints: Math.min(2 + layerNumber, 7),
+        noveltyScore: Math.min(4 + layerNumber, 9),
+        emergenceDetected: layerNumber > 6
       };
     }
   } catch (error) {
-    console.error('Initial synthesis request failed:', error);
+    console.error(`Layer ${layerNumber} initial synthesis request failed:`, error);
     
-    // Fallback synthesis
     const insight = extractInsightFromResponses(archetypeResponses);
     return {
-      insight,
-      confidence: 0.5,
-      tensionPoints: 1,
-      noveltyScore: 4,
-      emergenceDetected: false
+      insight: `Layer ${layerNumber}: ${insight}`,
+      confidence: 0.5 + (layerNumber * 0.02),
+      tensionPoints: Math.min(1 + layerNumber, 6),
+      noveltyScore: Math.min(3 + layerNumber, 8),
+      emergenceDetected: layerNumber > 6
     };
   }
 }
@@ -203,9 +207,10 @@ async function performFinalSynthesis(
   archetypeResponses: ArchetypeResponse[],
   initialSynthesis: SynthesisResult,
   question: string,
-  previousInsights: string[] = []
+  previousInsights: string[] = [],
+  layerNumber: number = 1
 ): Promise<SynthesisResult> {
-  console.log('Layer performing final breakthrough synthesis...');
+  console.log(`Layer ${layerNumber} performing final breakthrough synthesis...`);
   
   const responses = archetypeResponses.map(r => 
     `${r.archetype}: ${r.response}`
@@ -215,25 +220,29 @@ async function performFinalSynthesis(
     ? `\nPrevious layer insights:\n${previousInsights.join('\n\n')}`
     : '';
 
-  const prompt = `Perform final breakthrough synthesis building on initial analysis.
+  const layerGuidance = getLayerSpecificGuidance(layerNumber);
+
+  const prompt = `Perform Layer ${layerNumber} final breakthrough synthesis building on initial analysis.
 
 Question: ${question}
 ${previousContext}
+
+Layer ${layerNumber} Focus: ${layerGuidance}
 
 Initial Synthesis: ${initialSynthesis.insight}
 
 Archetype Responses:
 ${responses}
 
-Create a breakthrough insight that transcends the initial synthesis. Look for emergence patterns, novel connections, and paradigm shifts.
+Create a breakthrough insight that ${layerNumber > 7 ? 'transcends all previous understanding' : layerNumber > 4 ? 'integrates previous layers into new paradigm' : 'deepens the foundational understanding'}. 
 
 Provide a JSON response with this exact structure (no markdown, no code blocks):
 {
-  "insight": "Breakthrough synthesis with novel perspective",
-  "confidence": 0.85,
-  "tensionPoints": 5,
-  "noveltyScore": 8,
-  "emergenceDetected": true
+  "insight": "Layer ${layerNumber} breakthrough synthesis with ${layerNumber > 6 ? 'paradigm-shifting' : 'enhanced'} perspective",
+  "confidence": ${Math.min(0.95, 0.75 + (layerNumber * 0.02))},
+  "tensionPoints": ${Math.min(3 + layerNumber, 8)},
+  "noveltyScore": ${Math.min(6 + layerNumber, 10)},
+  "emergenceDetected": ${layerNumber > 5}
 }`;
 
   try {
@@ -248,56 +257,70 @@ Provide a JSON response with this exact structure (no markdown, no code blocks):
         messages: [
           { 
             role: 'system', 
-            content: 'You are a breakthrough synthesis engine. Return only valid JSON without markdown formatting or code blocks. Focus on emergence and novel insights.' 
+            content: `You are a Layer ${layerNumber} breakthrough synthesis engine. Generate genuinely unique insights for each layer depth. Return only valid JSON without markdown formatting. Focus on ${layerNumber > 7 ? 'transcendent breakthroughs' : layerNumber > 4 ? 'paradigm integration' : 'foundational depth'}.` 
           },
           { role: 'user', content: prompt }
         ],
         max_tokens: 1000,
-        temperature: 0.7
+        temperature: 0.5 + (layerNumber * 0.03) // More creative at deeper layers
       }),
     });
 
     const data = await response.json();
     let rawResponse = data.choices[0]?.message?.content || '{}';
     
-    // Clean up the response - remove markdown code blocks if present
     rawResponse = rawResponse.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
     
-    console.log('Layer final synthesis raw response:', rawResponse);
+    console.log(`Layer ${layerNumber} final synthesis raw response:`, rawResponse);
     
     try {
       const result = JSON.parse(rawResponse);
       return {
         insight: result.insight || initialSynthesis.insight,
-        confidence: result.confidence || 0.75,
-        tensionPoints: result.tensionPoints || 4,
-        noveltyScore: result.noveltyScore || 7,
-        emergenceDetected: result.emergenceDetected || false
+        confidence: result.confidence || Math.min(initialSynthesis.confidence + 0.1, 0.9),
+        tensionPoints: result.tensionPoints || Math.min(initialSynthesis.tensionPoints + 1, 8),
+        noveltyScore: result.noveltyScore || Math.min(initialSynthesis.noveltyScore + 2, 10),
+        emergenceDetected: result.emergenceDetected || (layerNumber > 5)
       };
     } catch (parseError) {
-      console.error('Final synthesis parsing failed:', parseError);
+      console.error(`Layer ${layerNumber} final synthesis parsing failed:`, parseError);
       
-      // Return enhanced version of initial synthesis
       return {
         insight: initialSynthesis.insight,
         confidence: Math.min(initialSynthesis.confidence + 0.1, 0.9),
-        tensionPoints: initialSynthesis.tensionPoints + 1,
+        tensionPoints: Math.min(initialSynthesis.tensionPoints + 1, 8),
         noveltyScore: Math.min(initialSynthesis.noveltyScore + 2, 10),
-        emergenceDetected: initialSynthesis.noveltyScore >= 7
+        emergenceDetected: layerNumber > 5
       };
     }
   } catch (error) {
-    console.error('Final synthesis request failed:', error);
+    console.error(`Layer ${layerNumber} final synthesis request failed:`, error);
     
-    // Return enhanced version of initial synthesis
     return {
       insight: initialSynthesis.insight,
       confidence: Math.min(initialSynthesis.confidence + 0.1, 0.9),
-      tensionPoints: initialSynthesis.tensionPoints + 1,
+      tensionPoints: Math.min(initialSynthesis.tensionPoints + 1, 8),
       noveltyScore: Math.min(initialSynthesis.noveltyScore + 2, 10),
-      emergenceDetected: initialSynthesis.noveltyScore >= 7
+      emergenceDetected: layerNumber > 5
     };
   }
+}
+
+function getLayerSpecificGuidance(layerNumber: number): string {
+  const guidances = [
+    "Establish foundational understanding and core themes",
+    "Identify patterns and initial connections",
+    "Explore tensions and contradictions", 
+    "Integrate disparate elements systematically",
+    "Question fundamental assumptions",
+    "Seek emergent properties and novel patterns",
+    "Transcend conventional frameworks",
+    "Achieve paradigmatic breakthroughs",
+    "Synthesize ultimate meta-insights",
+    "Reach transcendent understanding"
+  ];
+  
+  return guidances[Math.min(layerNumber - 1, guidances.length - 1)] || "synthesize deep insights";
 }
 
 // Helper function to extract insight from responses when JSON parsing fails
@@ -314,46 +337,48 @@ export async function synthesizeInsight(
   archetypeResponses: ArchetypeResponse[],
   question: string,
   previousInsights: string[] = [],
-  enhancedMode: boolean = false
+  enhancedMode: boolean = false,
+  layerNumber: number = 1
 ): Promise<SynthesisResult> {
-  console.log('Starting enhanced multi-stage synthesis...');
+  console.log(`Starting Layer ${layerNumber} enhanced multi-stage synthesis...`);
   
   // Add tension tags to responses
   const taggedResponses = await addTensionTags(archetypeResponses);
   
   // Stage 1: Initial Pattern Recognition and Analysis
-  console.log('Performing initial synthesis analysis...');
-  const initialSynthesis = await performInitialSynthesis(taggedResponses, question, previousInsights);
+  console.log(`Performing Layer ${layerNumber} initial synthesis analysis...`);
+  const initialSynthesis = await performInitialSynthesis(taggedResponses, question, previousInsights, layerNumber);
   
   // Stage 2: Final Breakthrough Synthesis
-  console.log('Performing final breakthrough synthesis...');
+  console.log(`Performing Layer ${layerNumber} final breakthrough synthesis...`);
   const synthesisResult = await performFinalSynthesis(
     taggedResponses, 
     initialSynthesis, 
     question, 
-    previousInsights
+    previousInsights,
+    layerNumber
   );
 
   // Generate compression formats - ENSURE THIS IS ALWAYS ATTEMPTED
   let compressionFormats: CompressionFormats | undefined;
   try {
-    console.log('Generating compression formats...');
+    console.log(`Generating Layer ${layerNumber} compression formats...`);
     compressionFormats = await generateCompressionFormats(
       synthesisResult.insight,
       synthesisResult,
       question
     );
-    console.log('Compression formats generated successfully:', !!compressionFormats);
+    console.log(`Layer ${layerNumber} compression formats generated successfully:`, !!compressionFormats);
   } catch (error) {
-    console.error('Compression generation failed:', error);
+    console.error(`Layer ${layerNumber} compression generation failed:`, error);
     // Provide fallback compression formats
     const words = synthesisResult.insight.split(' ');
     compressionFormats = {
-      ultraConcise: words.slice(0, 3).join(' '),
-      medium: synthesisResult.insight,
-      comprehensive: `${synthesisResult.insight} This insight emerges from analyzing multiple perspectives and identifying breakthrough patterns.`
+      ultraConcise: words.slice(0, 8).join(' ') + '...',
+      medium: `Layer ${layerNumber} reveals: ${synthesisResult.insight.substring(0, 200)}...`,
+      comprehensive: `${synthesisResult.insight} This Layer ${layerNumber} insight emerges from analyzing multiple perspectives and identifying ${layerNumber > 5 ? 'breakthrough' : 'progressive'} patterns.`
     };
-    console.log('Using fallback compression formats');
+    console.log(`Using Layer ${layerNumber} fallback compression formats`);
   }
 
   // Evaluate question quality only for final synthesis
@@ -365,10 +390,10 @@ export async function synthesizeInsight(
       taggedResponses
     );
   } catch (error) {
-    console.error('Question quality evaluation failed:', error);
+    console.error(`Layer ${layerNumber} question quality evaluation failed:`, error);
   }
 
-  console.log('Enhanced synthesis completed with quality improvements');
+  console.log(`Layer ${layerNumber} enhanced synthesis completed with quality improvements`);
 
   // ENSURE COMPRESSION FORMATS ARE RETURNED
   const finalResult = {
@@ -377,7 +402,7 @@ export async function synthesizeInsight(
     compressionFormats
   };
 
-  console.log('Final synthesis result includes compression formats:', !!finalResult.compressionFormats);
+  console.log(`Layer ${layerNumber} final synthesis result includes compression formats:`, !!finalResult.compressionFormats);
   
   return finalResult;
 }
