@@ -85,6 +85,23 @@ const Engine = () => {
     setChunkProgress({ current: 0, total: 0 });
   };
 
+  // Get the processing logic hook
+  const { handleStartGenius } = ProcessingLogic({
+    question,
+    processingDepth: [totalLayers],
+    circuitType: "sequential",
+    enhancedMode: true,
+    customArchetypes: null,
+    currentAssessment: null,
+    onProcessingStart: handleProcessingStart,
+    onProcessingComplete: handleProcessingComplete,
+    onProcessingError: handleProcessingError,
+    onCurrentArchetypeChange: setCurrentArchetype,
+    onCurrentLayerChange: setCurrentLayer,
+    onChunkProgressChange: setChunkProgress,
+    onProcessingPhaseChange: setProcessingPhase
+  });
+
   const archetypes = [
     { name: "The Visionary", color: "purple", description: "Sees possibilities beyond the obvious" },
     { name: "The Skeptic", color: "red", description: "Questions assumptions relentlessly" },
@@ -187,21 +204,14 @@ const Engine = () => {
                   </Badge>
                 </div>
 
-                <ProcessingLogic
-                  question={question}
-                  processingDepth={[totalLayers]}
-                  circuitType="sequential"
-                  enhancedMode={true}
-                  customArchetypes={null}
-                  currentAssessment={null}
-                  onProcessingStart={handleProcessingStart}
-                  onProcessingComplete={handleProcessingComplete}
-                  onProcessingError={handleProcessingError}
-                  onCurrentArchetypeChange={setCurrentArchetype}
-                  onCurrentLayerChange={setCurrentLayer}
-                  onChunkProgressChange={setChunkProgress}
-                  onProcessingPhaseChange={setProcessingPhase}
-                />
+                <Button 
+                  onClick={handleStartGenius}
+                  disabled={!question.trim()}
+                  className="w-full h-12 text-lg font-semibold bg-blue-600 hover:bg-blue-700"
+                >
+                  <Play className="w-5 h-5 mr-2" />
+                  Begin Analysis
+                </Button>
               </div>
             </Card>
           </>
