@@ -49,11 +49,11 @@ export const useJobMonitoring = (jobId?: string) => {
       setLoading(true);
       setError(null);
 
-      const response = await fetch(`${supabase.supabaseUrl}/functions/v1/genius-job-processor`, {
+      const response = await fetch(`https://hyrxtqaccmrfvspcfhjj.supabase.co/functions/v1/genius-job-processor`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabase.supabaseKey}`
+          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh5cnh0cWFjY21yZnZzcGNmaGpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTAzMzY5MDQsImV4cCI6MjA2NTkxMjkwNH0.y7pwI3YIOO0EsuBMGa71LlqQijJezykhLyuMh-hbxMY`
         },
         body: JSON.stringify(jobData)
       });
@@ -75,9 +75,9 @@ export const useJobMonitoring = (jobId?: string) => {
   // Fetch job status
   const fetchJob = async (id: string) => {
     try {
-      const response = await fetch(`${supabase.supabaseUrl}/functions/v1/genius-job-processor?jobId=${id}`, {
+      const response = await fetch(`https://hyrxtqaccmrfvspcfhjj.supabase.co/functions/v1/genius-job-processor?jobId=${id}`, {
         headers: {
-          'Authorization': `Bearer ${supabase.supabaseKey}`
+          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh5cnh0cWFjY21yZnZzcGNmaGpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTAzMzY5MDQsImV4cCI6MjA2NTkxMjkwNH0.y7pwI3YIOO0EsuBMGa71LlqQijJezykhLyuMh-hbxMY`
         }
       });
 
@@ -98,9 +98,9 @@ export const useJobMonitoring = (jobId?: string) => {
   const fetchJobs = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${supabase.supabaseUrl}/functions/v1/genius-job-processor`, {
+      const response = await fetch(`https://hyrxtqaccmrfvspcfhjj.supabase.co/functions/v1/genius-job-processor`, {
         headers: {
-          'Authorization': `Bearer ${supabase.supabaseKey}`
+          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh5cnh0cWFjY21yZnZzcGNmaGpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTAzMzY5MDQsImV4cCI6MjA2NTkxMjkwNH0.y7pwI3YIOO0EsuBMGa71LlqQijJezykhLyuMh-hbxMY`
         }
       });
 
