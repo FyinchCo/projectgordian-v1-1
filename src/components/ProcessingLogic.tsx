@@ -1,7 +1,7 @@
-
 import { useMetaLearning } from "@/hooks/useMetaLearning";
 import { useToast } from "@/hooks/use-toast";
 import { useProcessingExecutor } from "./processing/processingExecutor";
+import { OutputType } from "@/types/outputTypes";
 
 interface ProcessingLogicProps {
   question: string;
@@ -10,6 +10,7 @@ interface ProcessingLogicProps {
   enhancedMode: boolean;
   customArchetypes: any;
   currentAssessment: any;
+  outputType?: OutputType;
   onProcessingStart: () => void;
   onProcessingComplete: (results: any) => void;
   onProcessingError: () => void;
@@ -25,6 +26,7 @@ export const ProcessingLogic = ({
   enhancedMode,
   customArchetypes,
   currentAssessment,
+  outputType,
   onProcessingStart,
   onProcessingComplete,
   onProcessingError,
@@ -49,7 +51,6 @@ export const ProcessingLogic = ({
     // Load compression settings from localStorage
     const savedCompression = localStorage.getItem('genius-machine-compression');
     const compressionSettings = savedCompression ? JSON.parse(savedCompression) : {
-      style: "insight-summary",
       length: "medium",
       includeTrail: true,
       includeFullTranscript: false,
@@ -63,6 +64,7 @@ export const ProcessingLogic = ({
       circuitType,
       customArchetypes: customArchetypes ? customArchetypes.length : 0,
       enhancedMode,
+      outputType,
       compressionSettings
     });
     
@@ -79,6 +81,7 @@ export const ProcessingLogic = ({
         customArchetypes,
         currentAssessment,
         compressionSettings,
+        outputType,
         onProcessingComplete,
         onCurrentLayerChange,
         onChunkProgressChange

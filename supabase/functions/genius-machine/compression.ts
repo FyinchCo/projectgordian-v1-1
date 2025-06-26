@@ -8,7 +8,8 @@ export async function generateCompressionFormats(
   insight: string,
   synthesisResult: any,
   originalQuestion: string,
-  compressionSettings?: any
+  compressionSettings?: any,
+  outputType?: string
 ): Promise<CompressionFormats> {
-  return await processCompressionWithOpenAI(insight, originalQuestion, compressionSettings);
+  return await processCompressionWithOpenAI(insight, originalQuestion, compressionSettings, outputType);
 }

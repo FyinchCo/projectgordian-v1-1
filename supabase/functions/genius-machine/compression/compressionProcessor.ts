@@ -1,4 +1,3 @@
-
 import { CompressionFormats, CompressionSettings } from './types.ts';
 import { buildEnhancedSystemPrompt, buildEnhancedCompressionPrompt } from './promptBuilders.ts';
 import { generateFallbackFormats } from './fallbackGenerator.ts';
@@ -8,9 +7,10 @@ const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 export async function processCompressionWithOpenAI(
   insight: string,
   originalQuestion: string,
-  compressionSettings?: CompressionSettings
+  compressionSettings?: CompressionSettings,
+  outputType?: string
 ): Promise<CompressionFormats> {
-  console.log('Starting enhanced compression format generation...');
+  console.log('Starting enhanced compression format generation with output type:', outputType);
   
   if (!openAIApiKey) {
     console.error('OpenAI API key not available for compression');
@@ -18,7 +18,7 @@ export async function processCompressionWithOpenAI(
   }
   
   try {
-    const compressionPrompt = buildEnhancedCompressionPrompt(insight, originalQuestion, compressionSettings);
+    const compressionPrompt = buildEnhancedCompressionPrompt(insight, originalQuestion, compressionSettings, outputType);
 
     console.log('Calling OpenAI for enhanced compression formats...');
     
@@ -33,7 +33,7 @@ export async function processCompressionWithOpenAI(
         messages: [
           { 
             role: 'system', 
-            content: buildEnhancedSystemPrompt(compressionSettings)
+            content: buildEnhancedSystemPrompt(compressionSettings, outputType)
           },
           { role: 'user', content: compressionPrompt }
         ],

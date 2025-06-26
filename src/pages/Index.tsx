@@ -76,7 +76,7 @@ const Index = () => {
     setCurrentAssessment(null);
   };
 
-  // Get the processing logic handler function
+  // Get the processing logic handler function with outputType
   const processingLogicComponent = ProcessingLogic({
     question,
     processingDepth,
@@ -84,6 +84,7 @@ const Index = () => {
     enhancedMode,
     customArchetypes,
     currentAssessment,
+    outputType,
     onProcessingStart: handleProcessingStart,
     onProcessingComplete: handleProcessingComplete,
     onProcessingError: handleProcessingError,

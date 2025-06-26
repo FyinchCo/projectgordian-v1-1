@@ -11,6 +11,7 @@ interface ProcessingExecutorParams {
   customArchetypes: any;
   currentAssessment: any;
   compressionSettings?: any;
+  outputType?: string;
   onProcessingComplete: (results: any) => void;
   onCurrentLayerChange: (layer: number) => void;
   onChunkProgressChange: (progress: { current: number; total: number }) => void;
@@ -27,6 +28,7 @@ export const useProcessingExecutor = () => {
     customArchetypes,
     currentAssessment,
     compressionSettings,
+    outputType,
     onProcessingComplete,
     onCurrentLayerChange,
     onChunkProgressChange
@@ -41,6 +43,7 @@ export const useProcessingExecutor = () => {
         enhancedMode,
         customArchetypes,
         compressionSettings,
+        outputType,
         onCurrentLayerChange,
         onChunkProgressChange
       });
@@ -56,7 +59,7 @@ export const useProcessingExecutor = () => {
       const noveltyScore = cleanLayers.length > 0 ? cleanLayers[cleanLayers.length - 1].noveltyScore : 5;
       const emergenceDetected = cleanLayers.some(layer => layer.emergenceDetected);
 
-      // Note: Compression formats are now handled by the main edge function
+      // Note: Compression formats are now handled by the main edge function with outputType
       // They will be included in the results if available
       const compressionFormats = (rawResults as any).compressionFormats || null;
       
@@ -75,13 +78,15 @@ export const useProcessingExecutor = () => {
             contribution: response.response || ''
           })) || []), [] as Array<{archetype: string; contribution: string}>),
         circuitType,
-        enhancedMode
+        enhancedMode,
+        outputType
       };
       
       console.log('Final results prepared for display:', {
         insight: finalResults.insight?.substring(0, 100) + '...',
         layerCount: finalResults.layers.length,
-        hasCompressionFormats: !!finalResults.compressionFormats
+        hasCompressionFormats: !!finalResults.compressionFormats,
+        outputType: finalResults.outputType
       });
       
       onProcessingComplete(finalResults);
