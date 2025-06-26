@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -44,6 +45,15 @@
     --sidebar-accent-foreground: 0 0% 10%;
     --sidebar-border: 0 0% 92%;
     --sidebar-ring: 0 0% 0%;
+
+    /* Modular Dashboard Colors */
+    --dashboard-bg: #FFFFFF;
+    --dashboard-card: #F7F7F7;
+    --dashboard-border: #E2E2E2;
+    --dashboard-text-primary: #111111;
+    --dashboard-text-secondary: #6E6E6E;
+    --dashboard-accent: #191E2C;
+    --dashboard-icon-gray: #C1C1C1;
   }
 
   .dark {
@@ -149,6 +159,24 @@
   .py-zen-xl {
     padding-top: 4rem;
     padding-bottom: 4rem;
+  }
+
+  /* Modular Dashboard Utilities */
+  .dashboard-card {
+    background-color: var(--dashboard-card);
+    border: 1px solid var(--dashboard-border);
+  }
+
+  .dashboard-accent {
+    color: var(--dashboard-accent);
+  }
+
+  .dashboard-text-primary {
+    color: var(--dashboard-text-primary);
+  }
+
+  .dashboard-text-secondary {
+    color: var(--dashboard-text-secondary);
   }
 }
 
