@@ -1,4 +1,5 @@
 
+
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, Eye, Download } from "lucide-react";
@@ -10,30 +11,61 @@ interface AnalysisResultsDisplayProps {
 
 export const AnalysisResultsDisplay = ({ jobResults, onClearResults }: AnalysisResultsDisplayProps) => {
   console.log('Displaying job results:', jobResults);
+  console.log('Job results structure:', JSON.stringify(jobResults, null, 2));
   
-  // Extract the actual synthesis from the results
+  // Extract the actual synthesis from the results - prioritize compressed formats
   const getSynthesis = () => {
-    if (typeof jobResults === 'string') {
-      return jobResults;
+    // First, try to get compression formats (the real compressed synthesis)
+    if (jobResults?.full_results?.compressionFormats?.comprehensive) {
+      return jobResults.full_results.compressionFormats.comprehensive;
     }
     
-    if (jobResults?.synthesis) {
-      return jobResults.synthesis;
+    if (jobResults?.full_results?.compressionFormats?.medium) {
+      return jobResults.full_results.compressionFormats.medium;
+    }
+    
+    if (jobResults?.compressionFormats?.comprehensive) {
+      return jobResults.compressionFormats.comprehensive;
+    }
+    
+    if (jobResults?.compressionFormats?.medium) {
+      return jobResults.compressionFormats.medium;
+    }
+    
+    // Then try the main insight (should be the compressed synthesis of all layers)
+    if (jobResults?.full_results?.insight) {
+      return jobResults.full_results.insight;
     }
     
     if (jobResults?.insight) {
       return jobResults.insight;
     }
     
+    // Try synthesis fields
     if (jobResults?.full_results?.synthesis) {
       return jobResults.full_results.synthesis;
     }
     
-    if (jobResults?.full_results?.insight) {
-      return jobResults.full_results.insight;
+    if (jobResults?.synthesis) {
+      return jobResults.synthesis;
     }
     
-    return "Analysis completed successfully. Results available for review.";
+    // Last resort - try to build from layers if available
+    if (jobResults?.full_results?.layers && Array.isArray(jobResults.full_results.layers)) {
+      const layerInsights = jobResults.full_results.layers
+        .map((layer: any, index: number) => `Layer ${index + 1}: ${layer.insight}`)
+        .join('\n\n');
+      
+      if (layerInsights) {
+        return `Comprehensive Analysis Synthesis:\n\n${layerInsights}`;
+      }
+    }
+    
+    if (typeof jobResults === 'string') {
+      return jobResults;
+    }
+    
+    return "Analysis completed but synthesis extraction failed. Please try reprocessing.";
   };
   
   // Extract metrics
@@ -60,9 +92,9 @@ export const AnalysisResultsDisplay = ({ jobResults, onClearResults }: AnalysisR
         
         {/* Main Results */}
         <div className="prose max-w-none">
-          <h3 className="text-xl font-semibold mb-4">Synthesis</h3>
-          <div className="bg-gray-50 p-6 rounded-lg">
-            <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+          <h3 className="text-xl font-semibold mb-4">Comprehensive Synthesis</h3>
+          <div className="bg-gray-50 p-6 rounded-lg border-l-4 border-blue-500">
+            <p className="text-gray-700 leading-relaxed whitespace-pre-wrap text-base">
               {synthesis}
             </p>
           </div>
@@ -110,3 +142,4 @@ export const AnalysisResultsDisplay = ({ jobResults, onClearResults }: AnalysisR
     </Card>
   );
 };
+
