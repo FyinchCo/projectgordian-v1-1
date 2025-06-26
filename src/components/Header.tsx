@@ -10,6 +10,7 @@ import {
   TestTube, 
   TrendingUp, 
   DollarSign,
+  Brain,
   Menu,
   X
 } from "lucide-react";
@@ -20,6 +21,7 @@ export const Header = () => {
 
   const navItems = [
     { path: "/", label: "Home", icon: Home },
+    { path: "/engine", label: "Engine", icon: Brain },
     { path: "/config", label: "Config", icon: Settings },
     { path: "/insights", label: "History", icon: History },
     { path: "/testing", label: "Testing", icon: TestTube },

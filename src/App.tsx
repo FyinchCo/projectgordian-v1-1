@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Header } from "./components/Header";
 import Index from "./pages/Index";
+import Engine from "./pages/Engine";
 import Config from "./pages/Config";
 import InsightsHistory from "./pages/InsightsHistory";
 import ArchetypeTesting from "./pages/ArchetypeTesting";
@@ -25,6 +26,7 @@ const App = () => (
           <Header />
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/engine" element={<Engine />} />
             <Route path="/config" element={<Config />} />
             <Route path="/insights" element={<InsightsHistory />} />
             <Route path="/testing" element={<ArchetypeTesting />} />
