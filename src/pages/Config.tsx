@@ -42,10 +42,35 @@ const Config = () => {
   // Get the current outputType from localStorage to sync with main page
   const [currentOutputType, setCurrentOutputType] = useState('practical');
 
-  useEffect(() => {
-    // Read the current outputType from localStorage or other shared state
+  const updateCurrentOutputType = () => {
     const savedOutputType = localStorage.getItem('genius-machine-output-type') || 'practical';
     setCurrentOutputType(savedOutputType);
+  };
+
+  useEffect(() => {
+    // Initial load
+    updateCurrentOutputType();
+
+    // Listen for window focus to detect navigation back to config page
+    const handleFocus = () => {
+      updateCurrentOutputType();
+    };
+
+    window.addEventListener('focus', handleFocus);
+
+    // Also listen for storage changes in case of multiple tabs
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'genius-machine-output-type') {
+        updateCurrentOutputType();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, []);
 
   // Load saved configuration on mount
