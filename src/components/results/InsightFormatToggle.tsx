@@ -26,7 +26,7 @@ export const InsightFormatToggle = ({ currentFormat, onFormatChange }: InsightFo
         >
           <div className="flex items-center space-x-1">
             <span>Ultra</span>
-            <Badge variant="secondary" className="text-xs">2-3 words</Badge>
+            <Badge variant="secondary" className="text-xs">Concise</Badge>
           </div>
         </ToggleGroupItem>
         <ToggleGroupItem 

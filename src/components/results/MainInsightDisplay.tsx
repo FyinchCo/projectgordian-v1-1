@@ -1,5 +1,8 @@
+
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Lightbulb, Brain, Zap, TrendingUp, Target } from "lucide-react";
+import { InsightFormatToggle, InsightFormat } from "./InsightFormatToggle";
 
 interface MainInsightDisplayProps {
   insight: string;
@@ -30,8 +33,40 @@ export const MainInsightDisplay = ({
   logicTrailLength = 0,
   compressionFormats
 }: MainInsightDisplayProps) => {
+  const [currentFormat, setCurrentFormat] = useState<InsightFormat>('medium');
+  
   // Calculate actual processing depth from the insight content
   const actualDepth = processingDepth || 1;
+
+  // Get the current format text
+  const getCurrentFormatText = () => {
+    if (!compressionFormats) return insight;
+    
+    switch (currentFormat) {
+      case 'ultra':
+        return compressionFormats.ultraConcise;
+      case 'medium':
+        return compressionFormats.medium;
+      case 'comprehensive':
+        return compressionFormats.comprehensive;
+      default:
+        return compressionFormats.medium;
+    }
+  };
+
+  // Get the current format label
+  const getCurrentFormatLabel = () => {
+    switch (currentFormat) {
+      case 'ultra':
+        return 'Ultra Concise';
+      case 'medium':
+        return 'Balanced';
+      case 'comprehensive':
+        return 'Comprehensive';
+      default:
+        return 'Balanced';
+    }
+  };
   
   return (
     <div className="space-y-8">
@@ -58,11 +93,26 @@ export const MainInsightDisplay = ({
             )}
           </div>
 
+          {/* Format Toggle - only show if compression formats are available */}
+          {compressionFormats && (
+            <InsightFormatToggle 
+              currentFormat={currentFormat}
+              onFormatChange={setCurrentFormat}
+            />
+          )}
+
           {/* Main Insight */}
           <div className="space-y-6">
             <blockquote className="font-cormorant text-3xl italic text-black leading-relaxed max-w-5xl mx-auto">
-              "{insight}"
+              "{getCurrentFormatText()}"
             </blockquote>
+            
+            {/* Format Label - only show if compression formats are available */}
+            {compressionFormats && (
+              <div className="text-sm text-gray-500 font-inter">
+                {getCurrentFormatLabel()} Format
+              </div>
+            )}
           </div>
 
           {/* Metrics Dashboard */}
@@ -126,57 +176,6 @@ export const MainInsightDisplay = ({
           </div>
         </div>
       </Card>
-
-      {/* Insight Compression Formats */}
-      {compressionFormats && (
-        <Card className="p-8 bg-gray-50 border border-gray-300">
-          <div className="space-y-6">
-            <div className="text-center">
-              <h3 className="font-cormorant text-2xl font-normal text-black">
-                Compressed Insights
-              </h3>
-              <div className="text-sm text-gray-600 font-inter mt-1">
-                Multiple levels of synthesis for different contexts
-              </div>
-            </div>
-
-            <div className="grid md:grid-cols-3 gap-6">
-              {/* Ultra Concise */}
-              <div className="space-y-3">
-                <div className="flex items-center space-x-2">
-                  <Target className="w-4 h-4 text-black" />
-                  <h4 className="font-cormorant text-lg font-normal text-black">Ultra Concise</h4>
-                </div>
-                <div className="text-sm text-gray-800 font-inter leading-relaxed p-4 bg-white rounded border border-gray-200">
-                  {compressionFormats.ultraConcise}
-                </div>
-              </div>
-
-              {/* Medium */}
-              <div className="space-y-3">
-                <div className="flex items-center space-x-2">
-                  <TrendingUp className="w-4 h-4 text-black" />
-                  <h4 className="font-cormorant text-lg font-normal text-black">Balanced</h4>
-                </div>
-                <div className="text-sm text-gray-800 font-inter leading-relaxed p-4 bg-white rounded border border-gray-200">
-                  {compressionFormats.medium}
-                </div>
-              </div>
-
-              {/* Comprehensive */}
-              <div className="space-y-3">
-                <div className="flex items-center space-x-2">
-                  <Brain className="w-4 h-4 text-black" />
-                  <h4 className="font-cormorant text-lg font-normal text-black">Comprehensive</h4>
-                </div>
-                <div className="text-sm text-gray-800 font-inter leading-relaxed p-4 bg-white rounded border border-gray-200">
-                  {compressionFormats.comprehensive}
-                </div>
-              </div>
-            </div>
-          </div>
-        </Card>
-      )}
     </div>
   );
 };
