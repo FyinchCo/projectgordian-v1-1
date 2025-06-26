@@ -8,6 +8,7 @@ import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useArchetypes } from "@/hooks/useArchetypes";
 import { useAIConfigOptimization } from "@/hooks/useAIConfigOptimization";
+import { useOutputType } from "@/hooks/useOutputType";
 import { ArchetypesTab } from "@/components/ArchetypesTab";
 import { TensionTab } from "@/components/TensionTab";
 import { CompressionTab } from "@/components/CompressionTab";
@@ -22,6 +23,7 @@ const Config = () => {
     optimizationReasoning, 
     clearOptimizationReasoning 
   } = useAIConfigOptimization();
+  const { outputType } = useOutputType('practical');
   
   const [question, setQuestion] = useState("");
   const [tensionSettings, setTensionSettings] = useState({
@@ -208,6 +210,7 @@ const Config = () => {
             <CompressionTab
               compressionSettings={compressionSettings}
               onUpdateCompressionSettings={updateCompressionSettings}
+              outputType={outputType}
             />
           </TabsContent>
         </Tabs>

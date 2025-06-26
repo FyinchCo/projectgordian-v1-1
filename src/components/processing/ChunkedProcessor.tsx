@@ -15,6 +15,7 @@ export class ChunkedProcessor {
     enhancedMode,
     customArchetypes,
     compressionSettings,
+    outputType,
     onCurrentLayerChange,
     onChunkProgressChange
   }: {
@@ -24,6 +25,7 @@ export class ChunkedProcessor {
     enhancedMode: boolean;
     customArchetypes?: any;
     compressionSettings?: any;
+    outputType?: string;
     onCurrentLayerChange: (layer: number) => void;
     onChunkProgressChange: (progress: { current: number; total: number }) => void;
   }) {
@@ -55,7 +57,8 @@ export class ChunkedProcessor {
       noveltyScore: 7,
       emergenceDetected: false,
       circuitType,
-      processingDepth: mockLayers.length
+      processingDepth: mockLayers.length,
+      outputType
     };
   }
 }
