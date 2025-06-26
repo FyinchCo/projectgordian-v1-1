@@ -58,7 +58,7 @@ export const useProcessingExecutor = () => {
 
       // Note: Compression formats are now handled by the main edge function
       // They will be included in the results if available
-      const compressionFormats = rawResults.compressionFormats || null;
+      const compressionFormats = (rawResults as any).compressionFormats || null;
       
       const finalResults = {
         insight,
