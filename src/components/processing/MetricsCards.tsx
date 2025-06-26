@@ -8,6 +8,7 @@ interface MetricsCardsProps {
   currentArchetype: string;
   efficiency: number;
   chunkProgress?: { current: number; total: number };
+  processingPhase?: string;
 }
 
 export const MetricsCards = ({ 
@@ -15,7 +16,8 @@ export const MetricsCards = ({
   totalLayers, 
   currentArchetype, 
   efficiency,
-  chunkProgress 
+  chunkProgress,
+  processingPhase
 }: MetricsCardsProps) => {
   // Calculate confidence based on progress
   const confidence = Math.round(((currentLayer - 1) / totalLayers) * 100);
