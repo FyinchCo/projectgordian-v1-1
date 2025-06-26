@@ -2,7 +2,6 @@
 import { useToast } from "@/hooks/use-toast";
 import { ChunkedProcessor } from './ChunkedProcessor';
 import { normalizeLayerStructure, deduplicateLayers } from './layerNormalizer';
-import { generateCompressionFormats } from '../../../supabase/functions/genius-machine/compression.ts';
 
 interface ProcessingExecutorParams {
   question: string;
@@ -57,34 +56,9 @@ export const useProcessingExecutor = () => {
       const noveltyScore = cleanLayers.length > 0 ? cleanLayers[cleanLayers.length - 1].noveltyScore : 5;
       const emergenceDetected = cleanLayers.some(layer => layer.emergenceDetected);
 
-      // Generate compression formats
-      let compressionFormats = null;
-      if (insight) {
-        try {
-          compressionFormats = await generateCompressionFormats(
-            insight,
-            {
-              insight,
-              confidence,
-              tensionPoints,
-              noveltyScore,
-              emergenceDetected,
-              layers: cleanLayers,
-              logicTrail: [],
-              circuitType,
-              processingDepth: cleanLayers.length
-            },
-            question
-          );
-        } catch (compressionError) {
-          console.error('Failed to generate compression formats:', compressionError);
-          toast({
-            title: "Compression Failed",
-            description: "Insight compression encountered an error. Displaying uncompressed insight.",
-            variant: "destructive",
-          });
-        }
-      }
+      // Note: Compression formats are now handled by the main edge function
+      // They will be included in the results if available
+      const compressionFormats = rawResults.compressionFormats || null;
       
       const finalResults = {
         insight,
