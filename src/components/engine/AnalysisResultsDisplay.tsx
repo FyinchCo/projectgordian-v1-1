@@ -13,64 +13,64 @@ export const AnalysisResultsDisplay = ({ jobResults, onClearResults }: AnalysisR
   console.log('Displaying job results:', jobResults);
   console.log('Job results structure:', JSON.stringify(jobResults, null, 2));
   
-  // Extract the actual synthesis from the results - prioritize compressed formats
+  // Extract the actual synthesis from the results - prioritize the real analysis content
   const getSynthesis = () => {
-    // First, try to get compression formats (the real compressed synthesis)
-    if (jobResults?.full_results?.compressionFormats?.comprehensive) {
-      return jobResults.full_results.compressionFormats.comprehensive;
+    // First priority: Get the actual insight content from final_results
+    if (jobResults?.final_results?.[0]?.full_results?.insight) {
+      const insight = jobResults.final_results[0].full_results.insight;
+      console.log('Found insight in final_results:', insight);
+      return insight;
     }
     
-    if (jobResults?.full_results?.compressionFormats?.medium) {
-      return jobResults.full_results.compressionFormats.medium;
+    // Second priority: Direct insight from final_results
+    if (jobResults?.final_results?.[0]?.synthesis) {
+      console.log('Found synthesis in final_results');
+      return jobResults.final_results[0].synthesis;
     }
     
-    if (jobResults?.compressionFormats?.comprehensive) {
-      return jobResults.compressionFormats.comprehensive;
+    // Third priority: Look for compression formats with actual content
+    if (jobResults?.final_results?.[0]?.full_results?.compressionFormats?.comprehensive) {
+      const compressed = jobResults.final_results[0].full_results.compressionFormats.comprehensive;
+      if (compressed && !compressed.includes('PROGRESSIVE GENIUS SYNTHESIS')) {
+        console.log('Found comprehensive compression format');
+        return compressed;
+      }
     }
     
-    if (jobResults?.compressionFormats?.medium) {
-      return jobResults.compressionFormats.medium;
-    }
-    
-    // Then try the main insight (should be the compressed synthesis of all layers)
-    if (jobResults?.full_results?.insight) {
-      return jobResults.full_results.insight;
-    }
-    
-    if (jobResults?.insight) {
-      return jobResults.insight;
-    }
-    
-    // Try synthesis fields
-    if (jobResults?.full_results?.synthesis) {
-      return jobResults.full_results.synthesis;
-    }
-    
-    if (jobResults?.synthesis) {
-      return jobResults.synthesis;
-    }
-    
-    // Last resort - try to build from layers if available
-    if (jobResults?.full_results?.layers && Array.isArray(jobResults.full_results.layers)) {
-      const layerInsights = jobResults.full_results.layers
+    // Fourth priority: Extract from layers if available
+    if (jobResults?.final_results?.[0]?.full_results?.layers && Array.isArray(jobResults.final_results[0].full_results.layers)) {
+      const layers = jobResults.final_results[0].full_results.layers;
+      console.log('Extracting from layers:', layers.length);
+      
+      // Get the final layer's insight (most synthesized)
+      const finalLayer = layers[layers.length - 1];
+      if (finalLayer?.insight && !finalLayer.insight.includes('PROGRESSIVE GENIUS SYNTHESIS')) {
+        return finalLayer.insight;
+      }
+      
+      // Fallback: combine insights from all layers
+      const layerInsights = layers
+        .filter(layer => layer.insight && !layer.insight.includes('PROGRESSIVE GENIUS SYNTHESIS'))
         .map((layer: any, index: number) => `Layer ${index + 1}: ${layer.insight}`)
         .join('\n\n');
       
       if (layerInsights) {
-        return `Comprehensive Analysis Synthesis:\n\n${layerInsights}`;
+        return layerInsights;
       }
     }
     
-    if (typeof jobResults === 'string') {
-      return jobResults;
+    // Fallback to any available insight that's not meta-commentary
+    const fallbackInsight = jobResults?.insight || jobResults?.synthesis || jobResults?.full_results?.insight;
+    if (fallbackInsight && !fallbackInsight.includes('PROGRESSIVE GENIUS SYNTHESIS')) {
+      return fallbackInsight;
     }
     
-    return "Analysis completed but synthesis extraction failed. Please try reprocessing.";
+    return "Analysis completed but the compressed insights were not properly extracted. The system processed your question but the synthesis extraction needs refinement.";
   };
   
   // Extract metrics
   const getMetrics = () => {
-    const base = jobResults?.full_results || jobResults || {};
+    const base = jobResults?.final_results?.[0] || jobResults?.full_results || jobResults || {};
     return {
       confidence: Math.round((base.confidence || 0.8) * 100),
       tensionPoints: base.tensionPoints || base.tension_points || 0,
@@ -92,7 +92,7 @@ export const AnalysisResultsDisplay = ({ jobResults, onClearResults }: AnalysisR
         
         {/* Main Results */}
         <div className="prose max-w-none">
-          <h3 className="text-xl font-semibold mb-4">Comprehensive Synthesis</h3>
+          <h3 className="text-xl font-semibold mb-4">Key Insights from Analysis</h3>
           <div className="bg-gray-50 p-6 rounded-lg border-l-4 border-blue-500">
             <p className="text-gray-700 leading-relaxed whitespace-pre-wrap text-base">
               {synthesis}
