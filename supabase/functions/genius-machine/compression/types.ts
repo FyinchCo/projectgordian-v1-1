@@ -1,17 +1,16 @@
 
 export interface CompressionFormats {
-  ultraConcise: string;
-  medium: string;
-  comprehensive: string;
-  insightRating?: {
-    score: number;
-    category: string;
-    justification: string;
-  };
+  practical: string;
+  technical: string;
+  creative: string;
+  executive: string;
+  academic: string;
 }
 
 export interface CompressionSettings {
-  style?: string;
-  length?: string;
-  customInstructions?: string;
+  style: string;
+  length: string;
+  includeTrail: boolean;
+  includeFullTranscript: boolean;
+  customInstructions: string;
 }
