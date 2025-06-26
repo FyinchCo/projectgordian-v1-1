@@ -1,8 +1,9 @@
 
-import { useCoreProcessor } from './coreProcessor';
+import { processWithGeniusMachine } from './directProcessor';
 
 export const useChunkedProcessor = () => {
-  const { processChunkedLayers } = useCoreProcessor();
+  // This hook is kept for compatibility but now uses the direct processor
+  const processChunkedLayers = processWithGeniusMachine;
   
   return { processChunkedLayers };
 };
@@ -29,15 +30,11 @@ export class ChunkedProcessor {
     onCurrentLayerChange: (layer: number) => void;
     onChunkProgressChange: (progress: { current: number; total: number }) => void;
   }) {
-    console.log('=== CHUNKED PROCESSOR - CALLING REAL FUNCTION ===');
+    console.log('=== CHUNKED PROCESSOR - USING DIRECT CALL ===');
     
     try {
-      // Import the core processor function
-      const { useCoreProcessor } = await import('./coreProcessor');
-      const processor = useCoreProcessor();
-      
-      // Call the real processing function
-      return await processor.processChunkedLayers({
+      // Use the direct processor function instead of a React hook
+      return await processWithGeniusMachine({
         question,
         processingDepth,
         circuitType,
