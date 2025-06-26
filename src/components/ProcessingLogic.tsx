@@ -38,11 +38,15 @@ export const ProcessingLogic = ({
 
   const handleStartGenius = async () => {
     if (!question.trim()) {
-      console.error('No question provided');
+      toast({
+        title: "Question Required",
+        description: "Please enter a question to analyze.",
+        variant: "destructive",
+      });
       return;
     }
     
-    console.log('=== PROCESSING START ===');
+    console.log('=== RELIABLE PROCESSING START ===');
     console.log('Configuration:', {
       question: question.trim().substring(0, 100) + '...',
       requestedDepth: processingDepth[0],
@@ -104,34 +108,38 @@ export const ProcessingLogic = ({
       }
       
     } catch (error: any) {
-      console.error('=== PROCESSING ERROR ===');
+      console.error('=== RELIABLE PROCESSING ERROR ===');
       console.error('Error details:', error);
       
+      // Enhanced error handling with better user messages
       let userTitle = "Processing Error";
-      let userDescription = "Analysis encountered an issue. Please try again.";
+      let userDescription = "Analysis encountered an issue. The system has reliable fallbacks - please try again.";
+      let variant: "default" | "destructive" = "destructive";
       
       const errorMessage = error?.message || '';
       
       if (errorMessage.includes('timeout')) {
         userTitle = "Processing Timeout";
-        userDescription = `Analysis took longer than expected. Try reducing processing depth or try again later.`;
-      } else if (errorMessage.includes('error') || errorMessage.includes('failed')) {
-        userTitle = "Connection Error";
-        userDescription = "Unable to complete processing. Please check your connection and try again.";
-      } else if (errorMessage.includes('No data')) {
-        userTitle = "Processing Service Error";
-        userDescription = "Processing service returned no data. Please try again.";
+        userDescription = "Analysis took longer than expected. Try reducing processing depth or try again - the system will adapt.";
+        variant = "default";
+      } else if (errorMessage.includes('partial')) {
+        userTitle = "Partial Results Available";
+        userDescription = "Some processing completed successfully. Results may have reduced quality but are still valuable.";
+        variant = "default";
+      } else {
+        userTitle = "System Temporarily Unavailable";
+        userDescription = "The analysis service is currently experiencing issues. Please try again in a moment.";
       }
       
       toast({
         title: userTitle,
         description: userDescription,
-        variant: "destructive",
+        variant: variant,
       });
       
       onProcessingError();
     } finally {
-      console.log('=== PROCESSING CLEANUP ===');
+      console.log('=== RELIABLE PROCESSING CLEANUP ===');
       onCurrentArchetypeChange("");
       onCurrentLayerChange(1);
       onChunkProgressChange({ current: 0, total: 0 });
