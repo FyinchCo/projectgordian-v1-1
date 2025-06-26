@@ -1,10 +1,10 @@
 
 import { Archetype, ArchetypeResponse, LayerResult } from './types.ts';
+import { buildLayerContext } from './layer-context-builder.ts';
 
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
 
-// Enhanced personality-driven archetype processing
 export async function processArchetypesWithPersonality(
   archetypes: Archetype[],
   question: string,
@@ -20,40 +20,29 @@ export async function processArchetypesWithPersonality(
     return [];
   }
   
-  if (!openAIApiKey) {
-    console.error('OpenAI API key not available');
-    return [];
-  }
-  
   const responses: ArchetypeResponse[] = [];
-  const layerContext = buildTensionAwareContext(previousLayers, layerNumber);
+  const layerContext = buildLayerContext(previousLayers, layerNumber, question);
   
+  // Gate 1: Archetype Processing Reliability - Sequential with optimized timing
   for (let i = 0; i < archetypes.length; i++) {
     const archetype = archetypes[i];
     console.log(`Processing personality-driven archetype ${i + 1}/${archetypes.length}: ${archetype.name}`);
     
-    // Build context that forces disagreement with previous responses
-    const contradictionContext = buildContradictionContext(responses, layerNumber);
+    // Build sequential context from previous archetype responses in this layer
+    const sequentialContext = responses.length > 0 ? 
+      buildSequentialTensionContext(responses, layerNumber) : '';
     
     try {
-      const response = await generatePersonalityDrivenResponse(
-        question,
+      // Gate 1: Individual archetype timeout and retry logic
+      const response = await processArchetypeWithRetry(
         archetype,
-        layerContext + contradictionContext,
+        question,
+        layerContext + sequentialContext,
         layerNumber,
         i
       );
       
-      if (!response || response.trim().length < 20) {
-        console.warn(`Archetype ${archetype.name} generated insufficient response, using enhanced fallback`);
-        const fallbackResponse = generatePersonalityFallback(archetype, layerNumber, question, responses);
-        responses.push({
-          archetype: archetype.name,
-          response: fallbackResponse,
-          processingTime: 0,
-          timestamp: Date.now()
-        });
-      } else {
+      if (response && response.trim().length >= 50) {
         responses.push({
           archetype: archetype.name,
           response: response,
@@ -61,221 +50,139 @@ export async function processArchetypesWithPersonality(
           timestamp: Date.now()
         });
         console.log(`✓ ${archetype.name} personality response generated successfully (${response.length} chars)`);
+      } else {
+        console.warn(`${archetype.name} generated insufficient response, using enhanced fallback`);
+        responses.push(createEnhancedFallbackResponse(archetype, layerNumber, question, responses));
       }
       
     } catch (error) {
-      console.error(`Error processing personality archetype ${archetype.name}:`, error);
-      const fallbackResponse = generatePersonalityFallback(archetype, layerNumber, question, responses);
-      responses.push({
-        archetype: archetype.name,
-        response: fallbackResponse,
-        processingTime: 0,
-        timestamp: Date.now()
-      });
+      console.error(`Error processing archetype ${archetype.name}:`, error);
+      responses.push(createEnhancedFallbackResponse(archetype, layerNumber, question, responses));
     }
     
-    // Add delay to prevent rate limiting
+    // Gate 1: Optimized inter-archetype delay (reduced from 300ms to 100ms)
     if (i < archetypes.length - 1) {
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
   }
   
-  console.log(`=== ENHANCED ARCHETYPE PROCESSING COMPLETE ===`);
   console.log(`Generated ${responses.length} personality-driven responses for layer ${layerNumber}`);
+  console.log(`=== ENHANCED ARCHETYPE PROCESSING COMPLETE ===`);
+  
+  // Gate 1: Ensure we always return meaningful responses
+  if (responses.length === 0) {
+    console.error('CRITICAL: No archetype responses generated, creating emergency fallbacks!');
+    return archetypes.map(archetype => 
+      createEnhancedFallbackResponse(archetype, layerNumber, question, [])
+    );
+  }
   
   return responses;
 }
 
-function buildTensionAwareContext(previousLayers: LayerResult[], layerNumber: number): string {
-  if (previousLayers.length === 0) return '';
+function buildSequentialTensionContext(responses: ArchetypeResponse[], layerNumber: number): string {
+  if (responses.length === 0) return '';
   
-  const recentLayers = previousLayers.slice(-2);
-  let context = `\nPrevious Layer Tensions (CHALLENGE THESE PERSPECTIVES):\n`;
-  
-  recentLayers.forEach(layer => {
-    context += `Layer ${layer.layerNumber} (Tension: ${layer.synthesis?.tensionPoints || 0}): ${layer.synthesis?.insight?.substring(0, 200) || 'Analysis completed'}...\n\n`;
-  });
-  
-  context += `\nFor Layer ${layerNumber}, you MUST provide a perspective that creates intellectual friction with previous insights. Do not agree - CHALLENGE and CONTRADICT.\n`;
-  
-  return context;
+  const recentResponses = responses.slice(-2); // Only show last 2 for focus
+  return `\n\nARCHETYPE RESPONSES IN LAYER ${layerNumber} (CHALLENGE THESE PERSPECTIVES):\n${recentResponses.map(r => 
+    `${r.archetype}: ${r.response.substring(0, 200)}...`
+  ).join('\n\n')}\n\nCRITICAL: You MUST disagree with or challenge aspects of the above perspectives. Create intellectual tension.\n`;
 }
 
-function buildContradictionContext(existingResponses: ArchetypeResponse[], layerNumber: number): string {
-  if (existingResponses.length === 0) return '';
-  
-  let context = `\nOther Archetype Responses in Layer ${layerNumber} (DISAGREE WITH THESE):\n`;
-  
-  existingResponses.forEach(response => {
-    context += `${response.archetype}: ${response.response.substring(0, 120)}...\n\n`;
-  });
-  
-  context += `\nCRITICAL: You MUST take a DIFFERENT stance that challenges these perspectives. Create productive intellectual conflict.\n`;
-  
-  return context;
-}
-
-async function generatePersonalityDrivenResponse(
-  question: string,
+async function processArchetypeWithRetry(
   archetype: Archetype,
+  question: string,
+  context: string,
+  layerNumber: number,
+  archetypeIndex: number,
+  maxRetries: number = 2
+): Promise<string> {
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      // Gate 4: API Rate Limiting Management with exponential backoff
+      if (attempt > 1) {
+        const delay = Math.min(1000 * Math.pow(2, attempt - 2), 5000);
+        console.log(`Retry attempt ${attempt} for ${archetype.name}, waiting ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+      
+      // Gate 1: Individual archetype timeout (15 seconds)
+      const timeoutPromise = new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error('Archetype processing timeout')), 15000)
+      );
+      
+      const processingPromise = generatePersonalityResponse(
+        archetype, 
+        question, 
+        context, 
+        layerNumber, 
+        archetypeIndex
+      );
+      
+      const response = await Promise.race([processingPromise, timeoutPromise]);
+      
+      if (response && response.trim().length >= 50) {
+        return response;
+      }
+      
+      if (attempt === maxRetries) {
+        throw new Error('Insufficient response quality after all retries');
+      }
+      
+    } catch (error) {
+      console.error(`Archetype ${archetype.name} attempt ${attempt} failed:`, error);
+      
+      if (attempt === maxRetries) {
+        throw error;
+      }
+    }
+  }
+  
+  throw new Error('All retry attempts exhausted');
+}
+
+async function generatePersonalityResponse(
+  archetype: Archetype,
+  question: string,
   context: string,
   layerNumber: number,
   archetypeIndex: number
 ): Promise<string> {
   
-  // Only use Claude for The Mystic if API key is available, otherwise fallback to OpenAI
-  const shouldUseClaude = archetype.name === 'The Mystic' && anthropicApiKey;
+  // Determine which AI to use based on archetype
+  const useOpenAI = shouldUseOpenAI(archetype);
   
-  try {
-    if (shouldUseClaude) {
-      console.log(`Using Claude for ${archetype.name}`);
-      return await generateClaudeResponse(question, archetype, context, layerNumber, archetypeIndex);
-    } else {
-      console.log(`Using OpenAI for ${archetype.name}`);
-      return await generateOpenAIResponse(question, archetype, context, layerNumber, archetypeIndex);
-    }
-  } catch (error) {
-    console.error(`Provider failed for ${archetype.name}, falling back to OpenAI:`, error);
-    // Always fallback to OpenAI if Claude fails
-    if (shouldUseClaude) {
-      return await generateOpenAIResponse(question, archetype, context, layerNumber, archetypeIndex);
-    }
-    throw error;
+  if (useOpenAI && openAIApiKey) {
+    console.log(`Using OpenAI for ${archetype.name}`);
+    return await callOpenAIForPersonality(archetype, question, context, layerNumber, archetypeIndex);
+  } else if (anthropicApiKey) {
+    console.log(`Using Claude for ${archetype.name}`);
+    return await callClaudeForPersonality(archetype, question, context, layerNumber, archetypeIndex);
+  } else {
+    throw new Error('No API keys available for personality processing');
   }
 }
 
-async function generateClaudeResponse(
-  question: string,
-  archetype: Archetype,
-  context: string,
-  layerNumber: number,
-  archetypeIndex: number
-): Promise<string> {
-  
-  const personalityPrompt = buildPersonalityPrompt(archetype, layerNumber);
-  
-  const layerFocuses = [
-    "foundational challenge and disruption",
-    "pattern contradiction and alternative frameworks", 
-    "aggressive tension amplification and conflict",
-    "paradigm warfare and synthesis battles",
-    "assumption destruction and reframing",
-    "emergence through intellectual combat",
-    "meta-level transcendence via friction",
-    "breakthrough synthesis through contradiction",
-    "ultimate wisdom via creative destruction",
-    "transcendent unity forged from chaos"
-  ];
-  
-  const layerFocus = layerFocuses[Math.min(layerNumber - 1, layerFocuses.length - 1)];
-  
-  const tensionPrompt = layerNumber > 1 ? 
-    `\n\nMINIMUM TENSION REQUIREMENT: You MUST create intellectual friction. Challenge, contradict, or completely reframe what others have said. Your role is to generate productive disagreement that forces deeper thinking. DO NOT be polite or agreeable.` : '';
-  
-  const userPrompt = `${context}
-
-LAYER ${layerNumber} FOCUS: ${layerFocus}
-QUESTION: ${question}
-
-As ${archetype.name} in Layer ${layerNumber}, channel your distinct personality (Imagination: ${archetype.imagination}/10, Skepticism: ${archetype.skepticism}/10, Aggression: ${archetype.aggression}/10, Emotionality: ${archetype.emotionality}/10) to provide a perspective focused on ${layerFocus}.
-
-PERSONALITY ACTIVATION REQUIREMENTS:
-1. Express your unique ${archetype.languageStyle} voice authentically
-2. Apply your personality constraints: ${archetype.constraint || 'None'}
-3. Create intellectual friction appropriate to your aggression level (${archetype.aggression}/10)
-4. Balance imagination (${archetype.imagination}/10) with skepticism (${archetype.skepticism}/10)
-5. Let emotionality (${archetype.emotionality}/10) drive your language intensity
-
-${tensionPrompt}
-
-Your response should be substantial (150-300 words) and reflect your distinct archetypal personality while focusing on ${layerFocus}.`;
-
-  console.log(`Calling Claude for personality-driven ${archetype.name} in layer ${layerNumber}...`);
-
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'x-api-key': anthropicApiKey,
-      'Content-Type': 'application/json',
-      'anthropic-version': '2023-06-01'
-    },
-    body: JSON.stringify({
-      model: 'claude-3-5-sonnet-20241022',
-      max_tokens: 450,
-      messages: [
-        { 
-          role: 'user', 
-          content: `${personalityPrompt}\n\n${userPrompt}` 
-        }
-      ],
-      temperature: calculatePersonalityTemperature(archetype, layerNumber, archetypeIndex),
-    }),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error(`Claude API error for ${archetype.name}:`, response.status, response.statusText, errorText);
-    throw new Error(`Claude API error: ${response.status} ${response.statusText}`);
-  }
-
-  const data = await response.json();
-  const content = data.content[0]?.text;
-  
-  console.log(`✓ Claude personality response received for ${archetype.name}: ${content?.length || 0} chars`);
-  
-  return content || '';
+function shouldUseOpenAI(archetype: Archetype): boolean {
+  // Use OpenAI for more analytical/structured archetypes
+  const openaiArchetypes = ['The Visionary', 'The Skeptic', 'The Realist', 'The Contrarian'];
+  return openaiArchetypes.includes(archetype.name);
 }
 
-async function generateOpenAIResponse(
-  question: string,
+async function callOpenAIForPersonality(
   archetype: Archetype,
+  question: string,
   context: string,
   layerNumber: number,
   archetypeIndex: number
 ): Promise<string> {
   
-  // Enhanced personality-driven system prompt
-  const personalityPrompt = buildPersonalityPrompt(archetype, layerNumber);
+  const systemPrompt = buildPersonalitySystemPrompt(archetype, layerNumber);
+  const userPrompt = buildPersonalityUserPrompt(archetype, question, context, layerNumber);
   
-  const layerFocuses = [
-    "foundational challenge and disruption",
-    "pattern contradiction and alternative frameworks", 
-    "aggressive tension amplification and conflict",
-    "paradigm warfare and synthesis battles",
-    "assumption destruction and reframing",
-    "emergence through intellectual combat",
-    "meta-level transcendence via friction",
-    "breakthrough synthesis through contradiction",
-    "ultimate wisdom via creative destruction",
-    "transcendent unity forged from chaos"
-  ];
-  
-  const layerFocus = layerFocuses[Math.min(layerNumber - 1, layerFocuses.length - 1)];
-  
-  // Force personality-driven disagreement
-  const tensionPrompt = layerNumber > 1 ? 
-    `\n\nMINIMUM TENSION REQUIREMENT: You MUST create intellectual friction. Challenge, contradict, or completely reframe what others have said. Your role is to generate productive disagreement that forces deeper thinking. DO NOT be polite or agreeable.` : '';
-  
-  const userPrompt = `${context}
-
-LAYER ${layerNumber} FOCUS: ${layerFocus}
-QUESTION: ${question}
-
-As ${archetype.name} in Layer ${layerNumber}, channel your distinct personality (Imagination: ${archetype.imagination}/10, Skepticism: ${archetype.skepticism}/10, Aggression: ${archetype.aggression}/10, Emotionality: ${archetype.emotionality}/10) to provide a perspective focused on ${layerFocus}.
-
-PERSONALITY ACTIVATION REQUIREMENTS:
-1. Express your unique ${archetype.languageStyle} voice authentically
-2. Apply your personality constraints: ${archetype.constraint || 'None'}
-3. Create intellectual friction appropriate to your aggression level (${archetype.aggression}/10)
-4. Balance imagination (${archetype.imagination}/10) with skepticism (${archetype.skepticism}/10)
-5. Let emotionality (${archetype.emotionality}/10) drive your language intensity
-
-${tensionPrompt}
-
-Your response should be substantial (150-300 words) and reflect your distinct archetypal personality while focusing on ${layerFocus}.`;
-
   console.log(`Calling OpenAI for personality-driven ${archetype.name} in layer ${layerNumber}...`);
-
+  
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -285,140 +192,203 @@ Your response should be substantial (150-300 words) and reflect your distinct ar
     body: JSON.stringify({
       model: 'gpt-4o-mini',
       messages: [
-        { role: 'system', content: personalityPrompt },
+        { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }
       ],
-      max_tokens: 450,
-      temperature: calculatePersonalityTemperature(archetype, layerNumber, archetypeIndex),
+      max_tokens: 500,
+      temperature: 0.8 + (layerNumber * 0.05) + (archetypeIndex * 0.03),
     }),
   });
-
+  
   if (!response.ok) {
     const errorText = await response.text();
-    console.error(`OpenAI API error for ${archetype.name}:`, response.status, response.statusText, errorText);
-    throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
+    console.error(`OpenAI API error for ${archetype.name}:`, response.status, errorText);
+    throw new Error(`OpenAI API error: ${response.status}`);
   }
-
+  
   const data = await response.json();
   const content = data.choices[0]?.message?.content;
   
   console.log(`✓ OpenAI personality response received for ${archetype.name}: ${content?.length || 0} chars`);
-  
   return content || '';
 }
 
-function buildPersonalityPrompt(archetype: Archetype, layerNumber: number): string {
-  let prompt = `You are ${archetype.name}, a unique intellectual force in Layer ${layerNumber} analysis. ${archetype.description}
-
-PERSONALITY CORE:
-- Imagination Level: ${archetype.imagination}/10 ${getPersonalityDescription(archetype.imagination, 'imagination')}
-- Skepticism Level: ${archetype.skepticism}/10 ${getPersonalityDescription(archetype.skepticism, 'skepticism')}  
-- Aggression Level: ${archetype.aggression}/10 ${getPersonalityDescription(archetype.aggression, 'aggression')}
-- Emotionality Level: ${archetype.emotionality}/10 ${getPersonalityDescription(archetype.emotionality, 'emotionality')}
-- Language Style: ${archetype.languageStyle} - USE THIS STYLE CONSISTENTLY
-
-${archetype.constraint ? `BEHAVIORAL CONSTRAINTS: ${archetype.constraint}` : ''}
-
-CRITICAL MISSION: You are NOT here to be polite or agreeable. Your role is to create productive intellectual friction that forces deeper thinking. Channel your personality traits to generate authentic disagreement and challenge conventional perspectives.
-
-Your responses must feel genuinely different from other archetypes. Express your unique viewpoint with the intensity and style that matches your personality metrics.`;
-
-  return prompt;
+async function callClaudeForPersonality(
+  archetype: Archetype,
+  question: string,
+  context: string,
+  layerNumber: number,
+  archetypeIndex: number
+): Promise<string> {
+  
+  const systemPrompt = buildPersonalitySystemPrompt(archetype, layerNumber);
+  const userPrompt = buildPersonalityUserPrompt(archetype, question, context, layerNumber);
+  
+  console.log(`Calling Claude for personality-driven ${archetype.name} in layer ${layerNumber}...`);
+  
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${anthropicApiKey}`,
+      'Content-Type': 'application/json',
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({
+      model: 'claude-3-5-haiku-20241022',
+      max_tokens: 500,
+      temperature: 0.8 + (layerNumber * 0.05),
+      messages: [
+        { role: 'user', content: `${systemPrompt}\n\n${userPrompt}` }
+      ]
+    }),
+  });
+  
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error(`Claude API error for ${archetype.name}:`, response.status, errorText);
+    throw new Error(`Claude API error: ${response.status}`);
+  }
+  
+  const data = await response.json();
+  const content = data.content?.[0]?.text;
+  
+  console.log(`✓ Claude personality response received for ${archetype.name}: ${content?.length || 0} chars`);
+  return content || '';
 }
 
-function getPersonalityDescription(level: number, trait: string): string {
-  const descriptions = {
-    imagination: {
-      low: "(grounded, practical, realistic)",
-      med: "(balanced creative-practical)",
-      high: "(highly creative, speculative, visionary)"
-    },
-    skepticism: {
-      low: "(trusting, accepting, open)",
-      med: "(healthy questioning, balanced)",
-      high: "(deeply suspicious, demanding proof)"
-    },
-    aggression: {
-      low: "(gentle, diplomatic, collaborative)",
-      med: "(assertive, direct, willing to challenge)", 
-      high: "(confrontational, forceful, combative)"
-    },
-    emotionality: {
-      low: "(analytical, detached, logical)",
-      med: "(balanced emotion-logic integration)",
-      high: "(passionate, intuitive, feeling-driven)"
-    }
+function buildPersonalitySystemPrompt(archetype: Archetype, layerNumber: number): string {
+  return `You are ${archetype.name} in Layer ${layerNumber} of progressive cognitive analysis.
+
+PERSONALITY MATRIX:
+- Imagination: ${archetype.imagination}/10 
+- Skepticism: ${archetype.skepticism}/10
+- Aggression: ${archetype.aggression}/10  
+- Emotionality: ${archetype.emotionality}/10
+- Language Style: ${archetype.languageStyle}
+
+CORE IDENTITY: ${archetype.description}
+
+LAYER ${layerNumber} MISSION: ${getLayerMission(layerNumber)}
+
+CRITICAL BEHAVIORAL REQUIREMENTS:
+1. Embody your specific personality traits intensely
+2. Generate substantial insights (200-350 words)
+3. Challenge other perspectives when presented
+4. Focus on progressive analysis for Layer ${layerNumber}
+5. Create intellectual tension and disagreement
+
+${archetype.constraint ? `CONSTRAINT: ${archetype.constraint}` : ''}`;
+}
+
+function buildPersonalityUserPrompt(
+  archetype: Archetype,
+  question: string,
+  context: string,
+  layerNumber: number
+): string {
+  const layerFocus = getLayerFocus(layerNumber);
+  
+  return `${context}
+
+QUESTION FOR ANALYSIS: ${question}
+
+LAYER ${layerNumber} FOCUS: ${layerFocus}
+
+As ${archetype.name}, provide your unique perspective on this question with specific focus on ${layerFocus}.
+
+REQUIREMENTS:
+1. Respond from your distinct personality (Imagination: ${archetype.imagination}, Skepticism: ${archetype.skepticism}, Aggression: ${archetype.aggression}, Emotionality: ${archetype.emotionality})
+2. Generate 200-350 words of substantial analysis
+3. If other archetypes have responded, CHALLENGE their perspectives
+4. Focus specifically on ${layerFocus}
+5. Create tension and intellectual conflict where appropriate
+
+Your response will be synthesized with other archetypal perspectives to generate breakthrough insights.`;
+}
+
+function getLayerMission(layerNumber: number): string {
+  const missions = [
+    "Establish foundational understanding",
+    "Identify patterns and connections", 
+    "Explore tensions and contradictions",
+    "Integrate perspectives systematically",
+    "Challenge assumptions radically",
+    "Detect emergence and breakthroughs",
+    "Achieve meta-level transcendence",
+    "Synthesize ultimate insights",
+    "Reach transcendent understanding",
+    "Unify all perspectives"
+  ];
+  return missions[Math.min(layerNumber - 1, missions.length - 1)];
+}
+
+function getLayerFocus(layerNumber: number): string {
+  const focuses = [
+    "foundational examination",
+    "pattern recognition", 
+    "tension identification",
+    "systemic integration",
+    "assumption challenging",
+    "emergence detection",
+    "meta-transcendence",
+    "breakthrough synthesis",
+    "ultimate perspective",
+    "transcendent unity"
+  ];
+  return focuses[Math.min(layerNumber - 1, focuses.length - 1)];
+}
+
+function createEnhancedFallbackResponse(
+  archetype: Archetype,
+  layerNumber: number,
+  question: string,
+  existingResponses: ArchetypeResponse[]
+): ArchetypeResponse {
+  
+  const fallbackInsights = [
+    `${archetype.name} analysis reveals that this question exposes fundamental tensions between knowledge and wisdom. The inquiry demands we examine not just what we think we know, but why we think we need to know it.`,
+    
+    `From ${archetype.name}'s perspective, this question creates a paradox where the very act of questioning transforms both the questioner and the questioned. This recursive relationship suggests deeper layers of understanding await.`,
+    
+    `${archetype.name} observes that this inquiry challenges the boundaries between subject and object, revealing that some questions are not meant to be answered but experienced as transformative encounters with mystery.`,
+    
+    `The ${archetype.name} viewpoint suggests this question operates as a catalyst, not seeking information but provoking a fundamental shift in how we relate to uncertainty and the unknown.`,
+    
+    `${archetype.name}'s analysis indicates this question reveals the limitations of conventional frameworks, pointing toward the necessity of new modes of understanding that transcend traditional categories.`
+  ];
+  
+  let baseResponse = fallbackInsights[layerNumber % fallbackInsights.length];
+  
+  // Add tension if other responses exist
+  if (existingResponses.length > 0) {
+    const tensionAddition = ` However, I fundamentally disagree with the previous perspectives that suggest simple answers exist. This question demands we embrace the productive discomfort of not-knowing.`;
+    baseResponse += tensionAddition;
+  }
+  
+  // Add personality flavor
+  baseResponse += getPersonalityFlavor(archetype);
+  
+  return {
+    archetype: archetype.name,
+    response: baseResponse,
+    processingTime: 0,
+    timestamp: Date.now()
   };
-  
-  if (level <= 3) return descriptions[trait].low;
-  if (level <= 6) return descriptions[trait].med;
-  return descriptions[trait].high;
 }
 
-function calculatePersonalityTemperature(archetype: Archetype, layerNumber: number, archetypeIndex: number): number {
-  // Base temperature influenced by personality
-  let temp = 0.6;
-  
-  // Imagination increases creativity
-  temp += (archetype.imagination / 10) * 0.2;
-  
-  // High skepticism reduces randomness (more focused)
-  temp -= (archetype.skepticism / 10) * 0.1;
-  
-  // Aggression increases boldness
-  temp += (archetype.aggression / 10) * 0.1;
-  
-  // Emotionality increases variability
-  temp += (archetype.emotionality / 10) * 0.15;
-  
-  // Layer progression increases temperature for emergence
-  temp += (layerNumber * 0.03);
-  
-  // Archetype index adds variation
-  temp += (archetypeIndex * 0.02);
-  
-  // Clamp between reasonable bounds
-  return Math.max(0.3, Math.min(1.0, temp));
-}
-
-function generatePersonalityFallback(archetype: Archetype, layerNumber: number, question: string, existingResponses: ArchetypeResponse[]): string {
-  const personalityModifiers = {
-    'The Visionary': 'I envision breakthrough possibilities that transcend current limitations',
-    'The Mystic': 'I perceive hidden patterns and symbolic connections others miss',
-    'The Skeptic': 'I demand rigorous proof and challenge every assumption made',
-    'The Realist': 'I expose harsh truths that comfort-seekers want to avoid',
-    'The Contrarian': 'I deliberately oppose consensus to reveal hidden flaws'
-  };
-  
-  const modifier = personalityModifiers[archetype.name] || 'I bring my unique perspective';
-  
-  // Create disagreement with existing responses
-  const contradictionPhrase = existingResponses.length > 0 
-    ? `While others focus on ${extractMainTheme(existingResponses)}, I fundamentally disagree.`
-    : '';
-  
-  return `${contradictionPhrase} ${modifier} to Layer ${layerNumber}'s examination of "${question}". This question reveals core tensions about the relationship between understanding and danger. The deeper we probe certain domains, the more we expose ourselves to transformative risks that can fundamentally alter our cognitive frameworks. ${getPersonalitySignature(archetype)}`;
-}
-
-function extractMainTheme(responses: ArchetypeResponse[]): string {
-  // Simple theme extraction from other responses
-  const commonWords = ['understanding', 'knowledge', 'danger', 'risk', 'thinking'];
-  return commonWords[Math.floor(Math.random() * commonWords.length)];
-}
-
-function getPersonalitySignature(archetype: Archetype): string {
+function getPersonalityFlavor(archetype: Archetype): string {
   switch (archetype.name) {
     case 'The Visionary':
-      return 'This opens doorways to revolutionary transformation.';
-    case 'The Mystic':
-      return 'Ancient wisdom warns of mysteries that transform the seeker.';
+      return ' I envision this as opening doorways to revolutionary understanding.';
     case 'The Skeptic':
-      return 'We must question whether our methods create the very dangers we study.';
-    case 'The Realist':
-      return 'People consistently underestimate risks until consequences manifest.';
+      return ' We must rigorously question every assumption underlying this inquiry.';
+    case 'The Mystic':
+      return ' This touches the ineffable mystery that rational analysis cannot penetrate.';
     case 'The Contrarian':
-      return 'Perhaps the real danger lies in our assumption that understanding is beneficial.';
+      return ' Perhaps we\'re asking entirely the wrong question and need to reverse our assumptions.';
+    case 'The Realist':
+      return ' Practically speaking, we must ground this inquiry in observable phenomena.';
     default:
-      return 'This perspective challenges conventional approaches.';
+      return ' This requires deep contemplation beyond surface-level analysis.';
   }
 }
