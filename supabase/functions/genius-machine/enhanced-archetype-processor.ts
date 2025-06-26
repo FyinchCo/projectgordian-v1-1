@@ -1,3 +1,4 @@
+
 import { Archetype, ArchetypeResponse, LayerResult } from './types.ts';
 
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
@@ -75,7 +76,7 @@ export async function processArchetypesWithPersonality(
     
     // Add delay to prevent rate limiting
     if (i < archetypes.length - 1) {
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise(resolve => setTimeout(resolve, 300));
     }
   }
   
@@ -122,15 +123,24 @@ async function generatePersonalityDrivenResponse(
   archetypeIndex: number
 ): Promise<string> {
   
-  // Determine which AI provider to use based on archetype
+  // Only use Claude for The Mystic if API key is available, otherwise fallback to OpenAI
   const shouldUseClaude = archetype.name === 'The Mystic' && anthropicApiKey;
   
-  if (shouldUseClaude) {
-    console.log(`Using Claude for ${archetype.name}`);
-    return await generateClaudeResponse(question, archetype, context, layerNumber, archetypeIndex);
-  } else {
-    console.log(`Using OpenAI for ${archetype.name}`);
-    return await generateOpenAIResponse(question, archetype, context, layerNumber, archetypeIndex);
+  try {
+    if (shouldUseClaude) {
+      console.log(`Using Claude for ${archetype.name}`);
+      return await generateClaudeResponse(question, archetype, context, layerNumber, archetypeIndex);
+    } else {
+      console.log(`Using OpenAI for ${archetype.name}`);
+      return await generateOpenAIResponse(question, archetype, context, layerNumber, archetypeIndex);
+    }
+  } catch (error) {
+    console.error(`Provider failed for ${archetype.name}, falling back to OpenAI:`, error);
+    // Always fallback to OpenAI if Claude fails
+    if (shouldUseClaude) {
+      return await generateOpenAIResponse(question, archetype, context, layerNumber, archetypeIndex);
+    }
+    throw error;
   }
 }
 
@@ -284,11 +294,13 @@ Your response should be substantial (150-300 words) and reflect your distinct ar
   });
 
   if (!response.ok) {
+    const errorText = await response.text();
+    console.error(`OpenAI API error for ${archetype.name}:`, response.status, response.statusText, errorText);
     throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
   }
 
   const data = await response.json();
-  const content = data.choices[0].message.content;
+  const content = data.choices[0]?.message?.content;
   
   console.log(`✓ OpenAI personality response received for ${archetype.name}: ${content?.length || 0} chars`);
   

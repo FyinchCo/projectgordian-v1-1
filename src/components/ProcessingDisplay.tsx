@@ -4,6 +4,7 @@ import { LayerGridMap } from "./processing/LayerGridMap";
 import { MetricsCards } from "./processing/MetricsCards";
 import { ArchetypeContributionBars } from "./processing/ArchetypeContributionBars";
 import { InsightStream } from "./processing/InsightStream";
+import { ProcessingClock } from "./processing/ProcessingClock";
 import { Eye } from "lucide-react";
 
 interface ProcessingDisplayProps {
@@ -29,7 +30,7 @@ export const ProcessingDisplay = ({
   return (
     <div className="min-h-screen bg-white">
       <div className="space-y-8 max-w-6xl mx-auto p-8">
-        {/* Header */}
+        {/* Header with Processing Clock */}
         <div className="text-center space-y-4">
           <div className="space-y-2">
             <h1 className="font-cormorant text-4xl font-normal text-black tracking-tight">
@@ -38,6 +39,15 @@ export const ProcessingDisplay = ({
             <div className="text-sm text-gray-500 uppercase tracking-wider font-mono">
               {circuitType} Processing • Archetypal Reasoning
             </div>
+          </div>
+          
+          {/* Processing Clock - Seamlessly Integrated */}
+          <div className="flex justify-center pt-2">
+            <ProcessingClock 
+              isActive={true}
+              currentLayer={currentLayer}
+              totalLayers={totalLayers}
+            />
           </div>
         </div>
 
