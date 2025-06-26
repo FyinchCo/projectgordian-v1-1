@@ -105,7 +105,7 @@ export const useProcessingExecutor = () => {
 
       if (error || !data) {
         console.error('Even minimal processing failed, creating emergency fallback');
-        return createEmergencyFallback(params.question, params.outputType);
+        return createEmergencyFallback(params.question, params.outputType, params.circuitType);
       }
 
       console.log('✓ Minimal processing completed successfully');
@@ -119,11 +119,11 @@ export const useProcessingExecutor = () => {
       
     } catch (error) {
       console.error('Minimal processing failed:', error);
-      return createEmergencyFallback(params.question, params.outputType);
+      return createEmergencyFallback(params.question, params.outputType, params.circuitType);
     }
   };
 
-  const createEmergencyFallback = (question: string, outputType?: string) => {
+  const createEmergencyFallback = (question: string, outputType?: string, circuitType?: string) => {
     console.log('Creating emergency fallback response...');
     
     const fallbackInsight = outputType === 'practical' 
@@ -148,7 +148,7 @@ export const useProcessingExecutor = () => {
       tensionPoints: 3,
       noveltyScore: 5,
       emergenceDetected: false,
-      circuitType: params.circuitType || 'sequential',
+      circuitType: circuitType || 'sequential',
       processingDepth: 1,
       outputType: outputType || 'practical',
       logicTrail: [],
