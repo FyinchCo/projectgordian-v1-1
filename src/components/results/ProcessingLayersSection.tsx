@@ -1,156 +1,200 @@
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Badge } from "@/components/ui/badge";
-import { ChevronDown, ChevronUp, Layers } from "lucide-react";
-
-interface Layer {
-  layerNumber: number;
-  circuitType: string;
-  insight: string;
-  confidence: number;
-  tensionPoints: number;
-  noveltyScore?: number;
-  emergenceDetected?: boolean;
-  archetypeResponses: Array<{
-    archetype: string;
-    contribution: string;
-  }>;
-  synthesis?: {
-    insight?: string;
-    confidence?: number;
-    tensionPoints?: number;
-    noveltyScore?: number;
-    emergenceDetected?: boolean;
-  };
-}
+import { ChevronDown, ChevronUp, Layers, TrendingUp, Brain } from "lucide-react";
 
 interface ProcessingLayersSectionProps {
-  layers: Layer[];
+  layers?: Array<{
+    layerNumber: number;
+    circuitType: string;
+    insight: string;
+    confidence: number;
+    tensionPoints: number;
+    noveltyScore?: number;
+    emergenceDetected?: boolean;
+    tensionMetrics?: any;
+    archetypeResponses: Array<{
+      archetype: string;
+      contribution: string;
+    }>;
+  }>;
 }
 
 export const ProcessingLayersSection = ({ layers }: ProcessingLayersSectionProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
-  if (!layers || layers.length <= 1) return null;
+  if (!layers || layers.length === 0) {
+    return null;
+  }
 
-  // Helper function to safely extract insight with fallbacks
-  const getLayerInsight = (layer: Layer): string => {
-    const insight = layer.insight || 
-                   layer.synthesis?.insight || 
-                   `Layer ${layer.layerNumber} processing completed`;
-    
-    console.log(`Layer ${layer.layerNumber} insight extraction:`, {
-      hasDirectInsight: !!layer.insight,
-      hasSynthesisInsight: !!layer.synthesis?.insight,
-      finalInsight: insight.substring(0, 50) + '...'
-    });
-    
-    return insight;
-  };
-
-  // Helper function to safely extract other properties
-  const getLayerProperty = (layer: Layer, property: string, defaultValue: any) => {
-    return layer[property] !== undefined ? layer[property] : 
-           layer.synthesis?.[property] !== undefined ? layer.synthesis[property] : 
-           defaultValue;
-  };
-
-  // Validate that layers have unique content
-  const layersWithUniqueContent = layers.filter((layer, index) => {
-    const insight = getLayerInsight(layer);
-    const isUnique = index === 0 || layers.slice(0, index).every(prevLayer => 
-      getLayerInsight(prevLayer) !== insight
-    );
-    
-    if (!isUnique) {
-      console.warn(`Layer ${layer.layerNumber} has duplicate content - this indicates a processing issue`);
+  // Deduplicate and organize layers properly
+  const uniqueLayers = layers.reduce((acc, layer) => {
+    const key = `${layer.layerNumber}-${layer.circuitType}`;
+    if (!acc[key] || layer.confidence > acc[key].confidence) {
+      acc[key] = layer;
     }
-    
-    return true; // Show all layers but log duplicates
-  });
+    return acc;
+  }, {} as Record<string, any>);
+
+  const sortedLayers = Object.values(uniqueLayers).sort((a, b) => a.layerNumber - b.layerNumber);
+
+  // Calculate progression metrics
+  const tensionProgression = sortedLayers.map(layer => layer.tensionPoints);
+  const confidenceProgression = sortedLayers.map(layer => Math.round(layer.confidence * 100));
+  const avgTensionIncrease = tensionProgression.length > 1 
+    ? (tensionProgression[tensionProgression.length - 1] - tensionProgression[0]) / (tensionProgression.length - 1)
+    : 0;
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-      <Card className="p-6">
+      <Card className="p-8 bg-white border border-gray-300 shadow-zen">
         <CollapsibleTrigger asChild>
-          <Button variant="ghost" className="w-full flex items-center justify-between p-0 h-auto">
-            <div className="flex items-center space-x-2">
-              <Layers className="w-5 h-5" />
-              <h3 className="font-bold text-lg">PROCESSING LAYERS</h3>
-              <Badge variant="outline" className="text-xs">
-                {layersWithUniqueContent.length} layers
-              </Badge>
+          <button className="w-full flex items-center justify-between text-left">
+            <div className="flex items-center space-x-4">
+              <Layers className="w-6 h-6 text-black" />
+              <div>
+                <h3 className="font-cormorant text-2xl font-normal text-black">
+                  Cognitive Descent Analysis
+                </h3>
+                <div className="text-sm text-gray-600 font-inter mt-1">
+                  {sortedLayers.length} layers processed • Tension escalation: {avgTensionIncrease > 0 ? '↗' : '→'} {avgTensionIncrease.toFixed(1)} pts/layer
+                </div>
+              </div>
             </div>
-            {isOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-          </Button>
+            {isOpen ? <ChevronUp className="w-5 h-5 text-gray-500" /> : <ChevronDown className="w-5 h-5 text-gray-500" />}
+          </button>
         </CollapsibleTrigger>
         
-        <CollapsibleContent className="mt-6">
-          <div className="space-y-4">
-            {layersWithUniqueContent.map((layer, index) => {
-              const insight = getLayerInsight(layer);
-              const confidence = getLayerProperty(layer, 'confidence', 0.5);
-              const tensionPoints = getLayerProperty(layer, 'tensionPoints', 3);
-              const noveltyScore = getLayerProperty(layer, 'noveltyScore', null);
-              const emergenceDetected = getLayerProperty(layer, 'emergenceDetected', false);
-              
-              // Check if this layer has identical metrics to others (indicating a processing issue)
-              const hasIdenticalMetrics = index > 0 && layersWithUniqueContent.slice(0, index).some(prevLayer => 
-                getLayerProperty(prevLayer, 'confidence', 0.5) === confidence &&
-                getLayerProperty(prevLayer, 'tensionPoints', 3) === tensionPoints &&
-                getLayerProperty(prevLayer, 'noveltyScore', null) === noveltyScore
-              );
-              
-              return (
-                <Card key={index} className={`p-4 ${hasIdenticalMetrics ? 'bg-yellow-50 border-yellow-200' : 'bg-gray-50'}`}>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h4 className="font-bold text-sm uppercase tracking-wide text-gray-700">
-                        Layer {layer.layerNumber} - {layer.circuitType || 'sequential'}
-                        {hasIdenticalMetrics && (
-                          <span className="ml-2 text-xs text-yellow-600 font-normal">⚠️ Duplicate metrics detected</span>
-                        )}
-                      </h4>
-                      <div className="flex space-x-2">
-                        <Badge variant="outline" className="text-xs">
-                          {Math.round(confidence * 100)}% confidence
-                        </Badge>
-                        <Badge variant="outline" className="text-xs">
-                          {tensionPoints} tensions
-                        </Badge>
-                        {noveltyScore !== null && noveltyScore !== undefined && (
-                          <Badge variant="outline" className="text-xs">
-                            {noveltyScore}/10 novelty
-                          </Badge>
-                        )}
-                        {emergenceDetected && (
-                          <Badge className="text-xs bg-purple-100 text-purple-800">
-                            Emergence
-                          </Badge>
+        <CollapsibleContent className="mt-8">
+          <div className="space-y-6">
+            {/* Processing Overview */}
+            <div className="grid grid-cols-3 gap-6 p-6 bg-gray-50 rounded-lg border border-gray-200">
+              <div className="text-center">
+                <div className="text-2xl font-mono font-bold text-black">{sortedLayers.length}</div>
+                <div className="text-xs text-gray-500 uppercase tracking-wider">Depth Layers</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-mono font-bold text-black">
+                  {tensionProgression[tensionProgression.length - 1] || 0}
+                </div>
+                <div className="text-xs text-gray-500 uppercase tracking-wider">Final Tension</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-mono font-bold text-black">
+                  {confidenceProgression[confidenceProgression.length - 1] || 0}%
+                </div>
+                <div className="text-xs text-gray-500 uppercase tracking-wider">Peak Confidence</div>
+              </div>
+            </div>
+
+            {/* Tension Progression Visualization */}
+            <div className="space-y-4">
+              <h4 className="font-cormorant text-lg font-normal text-black">Tension Escalation Pattern</h4>
+              <div className="flex items-end space-x-2 h-20 bg-gray-50 p-4 rounded-lg">
+                {tensionProgression.map((tension, index) => (
+                  <div key={index} className="flex flex-col items-center space-y-1 flex-1">
+                    <div 
+                      className="bg-black rounded-sm transition-all duration-300"
+                      style={{ 
+                        height: `${Math.max(8, (tension / Math.max(...tensionProgression)) * 48)}px`,
+                        width: '12px'
+                      }}
+                    ></div>
+                    <div className="text-xs text-gray-500 font-mono">L{sortedLayers[index]?.layerNumber}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Individual Layer Analysis */}
+            <div className="space-y-4">
+              <h4 className="font-cormorant text-lg font-normal text-black">Layer-by-Layer Insights</h4>
+              {sortedLayers.map((layer, index) => (
+                <Card key={`${layer.layerNumber}-${index}`} className="p-6 bg-white border border-gray-200">
+                  <div className="space-y-4">
+                    {/* Layer Header */}
+                    <div className="flex items-center justify-between border-b border-gray-200 pb-3">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-8 h-8 bg-black text-white rounded-full flex items-center justify-center text-sm font-bold">
+                          {layer.layerNumber}
+                        </div>
+                        <div>
+                          <h5 className="font-cormorant text-lg font-normal text-black">
+                            Layer {layer.layerNumber} Analysis
+                          </h5>
+                          <div className="text-xs text-gray-500 uppercase tracking-wider font-mono">
+                            {layer.circuitType} processing
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex space-x-4 text-sm">
+                        <div className="text-center">
+                          <div className="font-mono font-bold text-black">{Math.round(layer.confidence * 100)}%</div>
+                          <div className="text-xs text-gray-500">Confidence</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="font-mono font-bold text-black">{layer.tensionPoints}</div>
+                          <div className="text-xs text-gray-500">Tension</div>
+                        </div>
+                        {layer.emergenceDetected && (
+                          <div className="text-center">
+                            <div className="text-sm text-purple-600">⚡</div>
+                            <div className="text-xs text-purple-600">Emergence</div>
+                          </div>
                         )}
                       </div>
                     </div>
-                    <p className="text-gray-800 leading-relaxed">{insight}</p>
-                    
-                    {layer.archetypeResponses && layer.archetypeResponses.length > 0 && (
-                      <div className="mt-3 pt-3 border-t border-gray-200">
-                        <p className="text-xs text-gray-500 mb-2">Contributing Archetypes:</p>
-                        <div className="flex flex-wrap gap-1">
-                          {layer.archetypeResponses.map((response, idx) => (
-                            <Badge key={idx} variant="secondary" className="text-xs">
-                              {response.archetype}
-                            </Badge>
-                          ))}
-                        </div>
+
+                    {/* Layer Insight */}
+                    <div className="space-y-3">
+                      <div className="text-gray-800 font-inter leading-relaxed">
+                        {layer.insight}
                       </div>
-                    )}
+                      
+                      {/* Archetype Contributions */}
+                      {layer.archetypeResponses && layer.archetypeResponses.length > 0 && (
+                        <details className="group">
+                          <summary className="cursor-pointer text-sm text-gray-600 hover:text-black transition-colors">
+                            <span className="group-open:hidden">Show archetype contributions ({layer.archetypeResponses.length})</span>
+                            <span className="hidden group-open:inline">Hide archetype contributions</span>
+                          </summary>
+                          <div className="mt-3 space-y-2 pl-4 border-l-2 border-gray-200">
+                            {layer.archetypeResponses.map((response, idx) => (
+                              <div key={idx} className="text-sm">
+                                <div className="font-medium text-gray-700">{response.archetype}:</div>
+                                <div className="text-gray-600 mt-1">
+                                  {response.contribution.substring(0, 200)}
+                                  {response.contribution.length > 200 ? '...' : ''}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </details>
+                      )}
+                    </div>
                   </div>
                 </Card>
-              );
-            })}
+              ))}
+            </div>
+
+            {/* Breakthrough Detection */}
+            {sortedLayers.some(layer => layer.emergenceDetected) && (
+              <Card className="p-6 bg-purple-50 border border-purple-200">
+                <div className="flex items-center space-x-3">
+                  <Brain className="w-6 h-6 text-purple-600" />
+                  <div>
+                    <h4 className="font-cormorant text-lg font-normal text-purple-900">
+                      Breakthrough Synthesis Detected
+                    </h4>
+                    <div className="text-sm text-purple-700 font-inter mt-1">
+                      Cognitive tension reached critical threshold, triggering emergent insight compression
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            )}
           </div>
         </CollapsibleContent>
       </Card>

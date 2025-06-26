@@ -1,10 +1,6 @@
 
-import { useState } from "react";
-import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Lightbulb, Brain, Sparkles } from "lucide-react";
-import { InsightFormatToggle, InsightFormat } from "./InsightFormatToggle";
-import { PixelRobot } from "../PixelRobot";
+import { Lightbulb, Brain, Zap, TrendingUp, Target } from "lucide-react";
 
 interface MainInsightDisplayProps {
   insight: string;
@@ -15,7 +11,7 @@ interface MainInsightDisplayProps {
   enhancedMode?: boolean;
   circuitType?: string;
   processingDepth?: number;
-  logicTrailLength: number;
+  logicTrailLength?: number;
   compressionFormats?: {
     ultraConcise: string;
     medium: string;
@@ -27,173 +23,158 @@ export const MainInsightDisplay = ({
   insight,
   confidence,
   tensionPoints,
-  noveltyScore,
-  emergenceDetected,
-  enhancedMode,
-  circuitType,
-  processingDepth,
-  logicTrailLength,
-  compressionFormats,
+  noveltyScore = 5,
+  emergenceDetected = false,
+  enhancedMode = false,
+  circuitType = 'sequential',
+  processingDepth = 1,
+  logicTrailLength = 0,
+  compressionFormats
 }: MainInsightDisplayProps) => {
-  const [currentFormat, setCurrentFormat] = useState<InsightFormat>('medium');
-
-  const getNoveltyColor = (score: number) => {
-    if (score >= 8) return "bg-red-500";
-    if (score >= 6) return "bg-yellow-500";
-    return "bg-green-500";
-  };
-
-  const getNoveltyLabel = (score: number) => {
-    if (score >= 8) return "Paradigm Shift";
-    if (score >= 6) return "Challenging";
-    return "Conventional";
-  };
-
-  // Clean the insight text - remove any JSON artifacts
-  const cleanInsight = (text: string): string => {
-    // Remove any JSON prefixes or suffixes
-    let cleaned = text.replace(/^(json\s*|```json\s*)/i, '');
-    cleaned = cleaned.replace(/```\s*$/, '');
-    
-    // If it starts with a JSON object, extract just the insight value
-    if (cleaned.startsWith('{')) {
-      try {
-        const parsed = JSON.parse(cleaned);
-        return parsed.insight || text;
-      } catch {
-        // If parsing fails, try to extract insight from malformed JSON
-        const insightMatch = cleaned.match(/"insight":\s*"([^"]+)"/);
-        if (insightMatch) {
-          return insightMatch[1];
-        }
-      }
-    }
-    
-    return cleaned;
-  };
-
-  const getCurrentInsight = () => {
-    if (!compressionFormats) {
-      return cleanInsight(insight);
-    }
-
-    let selectedInsight = '';
-    switch (currentFormat) {
-      case 'ultra':
-        selectedInsight = compressionFormats.ultraConcise || '';
-        break;
-      case 'medium':
-        selectedInsight = compressionFormats.medium || '';
-        break;
-      case 'comprehensive':
-        selectedInsight = compressionFormats.comprehensive || '';
-        break;
-      default:
-        selectedInsight = '';
-    }
-
-    // Fallback to main insight if selected format is empty
-    if (!selectedInsight || selectedInsight.trim() === '') {
-      return cleanInsight(insight);
-    }
-
-    return selectedInsight;
-  };
-
-  const getInsightStyle = () => {
-    switch (currentFormat) {
-      case 'ultra':
-        return "text-4xl font-black tracking-tight text-center";
-      case 'medium':
-        return "text-2xl font-bold leading-tight";
-      case 'comprehensive':
-        return "text-xl font-semibold leading-relaxed";
-      default:
-        return "text-2xl font-bold leading-tight";
-    }
-  };
-
-  const displayInsight = getCurrentInsight();
-
   return (
-    <Card className="p-8 border-3 border-gray-300 bg-gradient-to-br from-yellow-50 via-green-50 to-blue-50 shadow-2xl">
-      <div className="text-center space-y-6">
-        <div className="flex items-center justify-center space-x-4 mb-6">
-          <PixelRobot size={64} mood="celebrating" animate={true} />
-          <div className="flex flex-col items-center">
-            <Lightbulb className="w-16 h-16 text-yellow-500 mb-2" />
-            {emergenceDetected && (
-              <Badge variant="secondary" className="bg-purple-100 text-purple-800 border-2 border-purple-300 font-bold">
-                <Brain className="w-4 h-4 mr-1" />
-                🎉 BREAKTHROUGH DETECTED!
-              </Badge>
-            )}
-          </div>
-          <PixelRobot size={64} mood="excited" animate={true} />
-        </div>
-        
-        <div>
-          <h2 className="text-lg font-bold uppercase tracking-wide text-gray-600 mb-4">
-            🌟 Your Breakthrough Insight 🌟
-            {enhancedMode && (
-              <Badge variant="outline" className="ml-2 border-2 border-purple-300 text-purple-700">
-                <Sparkles className="w-3 h-3 mr-1" />
-                Enhanced Mode
-              </Badge>
-            )}
-          </h2>
-
-          {/* Format Toggle - Only show if compression formats are available */}
-          {compressionFormats && (
-            <InsightFormatToggle
-              currentFormat={currentFormat}
-              onFormatChange={setCurrentFormat}
-            />
-          )}
-
-          <div className={`transition-all duration-300 ${currentFormat === 'ultra' ? 'py-8' : 'py-4'}`}>
-            <p className={getInsightStyle()}>
-              {currentFormat === 'ultra' ? displayInsight : `"${displayInsight}"`}
-            </p>
-          </div>
-        </div>
-
-        {/* Enhanced Metrics with Pixel Robot Charm */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-6 border-t-2 border-gray-200">
-          <div className="text-center bg-white rounded-lg p-3 border-2 border-green-200">
-            <div className="text-2xl font-bold text-green-600">{Math.round(confidence * 100)}%</div>
-            <div className="text-xs text-gray-500 uppercase font-medium">Confidence</div>
-          </div>
-          <div className="text-center bg-white rounded-lg p-3 border-2 border-blue-200">
-            <div className="text-2xl font-bold text-blue-600">{tensionPoints}</div>
-            <div className="text-xs text-gray-500 uppercase font-medium">Tensions</div>
-          </div>
-          {noveltyScore !== undefined && (
-            <div className="text-center bg-white rounded-lg p-3 border-2 border-purple-200">
-              <div className="flex items-center justify-center space-x-2">
-                <div className="text-2xl font-bold text-purple-600">{noveltyScore}/10</div>
-                <div className={`w-3 h-3 rounded-full ${getNoveltyColor(noveltyScore)}`}></div>
+    <div className="space-y-8">
+      {/* Primary Insight Card */}
+      <Card className="p-12 bg-white border-2 border-black shadow-zen-lg">
+        <div className="text-center space-y-8">
+          {/* Breakthrough Icon & Status */}
+          <div className="space-y-4">
+            {emergenceDetected ? (
+              <div className="flex items-center justify-center space-x-3">
+                <Zap className="w-8 h-8 text-purple-600 animate-pulse" />
+                <div className="text-sm uppercase tracking-wider font-mono text-purple-600 font-bold">
+                  Breakthrough Synthesis Achieved
+                </div>
+                <Zap className="w-8 h-8 text-purple-600 animate-pulse" />
               </div>
-              <div className="text-xs text-gray-500 uppercase font-medium">{getNoveltyLabel(noveltyScore)}</div>
+            ) : (
+              <div className="flex items-center justify-center space-x-3">
+                <Brain className="w-8 h-8 text-black" />
+                <div className="text-sm uppercase tracking-wider font-mono text-gray-600">
+                  Deep Analysis Complete
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Main Insight */}
+          <div className="space-y-6">
+            <blockquote className="font-cormorant text-3xl italic text-black leading-relaxed max-w-5xl mx-auto">
+              "{insight}"
+            </blockquote>
+          </div>
+
+          {/* Metrics Dashboard */}
+          <div className="pt-8 border-t border-gray-200">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-8 max-w-4xl mx-auto">
+              <div className="text-center">
+                <div className="text-3xl font-mono font-bold text-black">
+                  {Math.round(confidence * 100)}%
+                </div>
+                <div className="text-xs text-gray-500 uppercase tracking-wider mt-1">
+                  Synthesis Confidence
+                </div>
+              </div>
+              
+              <div className="text-center">
+                <div className="text-3xl font-mono font-bold text-black">
+                  {tensionPoints}
+                </div>
+                <div className="text-xs text-gray-500 uppercase tracking-wider mt-1">
+                  Cognitive Tension
+                </div>
+              </div>
+              
+              <div className="text-center">
+                <div className="text-3xl font-mono font-bold text-black">
+                  {processingDepth}
+                </div>
+                <div className="text-xs text-gray-500 uppercase tracking-wider mt-1">
+                  Descent Layers
+                </div>
+              </div>
+              
+              <div className="text-center">
+                <div className="text-3xl font-mono font-bold text-black">
+                  {noveltyScore}/10
+                </div>
+                <div className="text-xs text-gray-500 uppercase tracking-wider mt-1">
+                  Novelty Index
+                </div>
+              </div>
+
+              <div className="text-center">
+                <div className="text-3xl font-mono font-bold text-black">
+                  {logicTrailLength}
+                </div>
+                <div className="text-xs text-gray-500 uppercase tracking-wider mt-1">
+                  Archetype Views
+                </div>
+              </div>
             </div>
-          )}
-          <div className="text-center bg-white rounded-lg p-3 border-2 border-yellow-200">
-            <div className="text-2xl font-bold text-yellow-600">{logicTrailLength}</div>
-            <div className="text-xs text-gray-500 uppercase font-medium">AI Friends</div>
+          </div>
+
+          {/* Processing Method */}
+          <div className="pt-6">
+            <div className="inline-block bg-gray-50 rounded-lg px-6 py-3 border border-gray-200">
+              <div className="text-sm text-gray-600 font-inter">
+                Processed via <span className="font-mono font-semibold text-black">{circuitType}</span> circuit
+                {enhancedMode && <span className="text-purple-600 ml-2">• Enhanced Mode</span>}
+              </div>
+            </div>
           </div>
         </div>
+      </Card>
 
-        {circuitType && (
-          <div className="text-center pt-4">
-            <div className="bg-gray-100 rounded-lg p-3 inline-block">
-              <span className="text-sm text-gray-600 font-medium">
-                Processed with {circuitType} teamwork
-                {processingDepth && ` across ${processingDepth} thinking layers`} 🤝
-              </span>
+      {/* Insight Compression Formats */}
+      {compressionFormats && (
+        <Card className="p-8 bg-gray-50 border border-gray-300">
+          <div className="space-y-6">
+            <div className="text-center">
+              <h3 className="font-cormorant text-2xl font-normal text-black">
+                Compressed Insights
+              </h3>
+              <div className="text-sm text-gray-600 font-inter mt-1">
+                Multiple levels of synthesis for different contexts
+              </div>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-6">
+              {/* Ultra Concise */}
+              <div className="space-y-3">
+                <div className="flex items-center space-x-2">
+                  <Target className="w-4 h-4 text-black" />
+                  <h4 className="font-cormorant text-lg font-normal text-black">Ultra Concise</h4>
+                </div>
+                <div className="text-sm text-gray-800 font-inter leading-relaxed p-4 bg-white rounded border border-gray-200">
+                  {compressionFormats.ultraConcise}
+                </div>
+              </div>
+
+              {/* Medium */}
+              <div className="space-y-3">
+                <div className="flex items-center space-x-2">
+                  <TrendingUp className="w-4 h-4 text-black" />
+                  <h4 className="font-cormorant text-lg font-normal text-black">Balanced</h4>
+                </div>
+                <div className="text-sm text-gray-800 font-inter leading-relaxed p-4 bg-white rounded border border-gray-200">
+                  {compressionFormats.medium}
+                </div>
+              </div>
+
+              {/* Comprehensive */}
+              <div className="space-y-3">
+                <div className="flex items-center space-x-2">
+                  <Brain className="w-4 h-4 text-black" />
+                  <h4 className="font-cormorant text-lg font-normal text-black">Comprehensive</h4>
+                </div>
+                <div className="text-sm text-gray-800 font-inter leading-relaxed p-4 bg-white rounded border border-gray-200">
+                  {compressionFormats.comprehensive}
+                </div>
+              </div>
             </div>
           </div>
-        )}
-      </div>
-    </Card>
+        </Card>
+      )}
+    </div>
   );
 };
