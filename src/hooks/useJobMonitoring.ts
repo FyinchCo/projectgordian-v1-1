@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -81,9 +82,11 @@ export const useJobMonitoring = (jobId?: string) => {
     }
   };
 
-  // Fetch job status
+  // Fetch job status with better error handling
   const fetchJob = async (id: string) => {
     try {
+      console.log('Fetching job status for:', id);
+      
       const response = await fetch(`https://hyrxtqaccmrfvspcfhjj.supabase.co/functions/v1/chunked-genius-processor?jobId=${id}`, {
         headers: {
           'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh5cnh0cWFjY21yZnZzcGNmaGpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTAzMzY5MDQsImV4cCI6MjA2NTkxMjkwNH0.y7pwI3YIOO0EsuBMGa71LlqQijJezykhLyuMh-hbxMY`
@@ -91,13 +94,22 @@ export const useJobMonitoring = (jobId?: string) => {
       });
 
       if (!response.ok) {
+        console.error('Failed to fetch job:', response.status, response.statusText);
         throw new Error('Failed to fetch job');
       }
 
       const jobData = await response.json();
+      console.log('Job data received:', {
+        id: jobData.id,
+        status: jobData.status,
+        progress: jobData.job_progress?.length || 0,
+        hasResults: !!jobData.final_results?.length
+      });
+      
       setJob(jobData);
       return jobData;
     } catch (err: any) {
+      console.error('Error fetching job:', err);
       setError(err.message);
       return null;
     }
@@ -118,9 +130,11 @@ export const useJobMonitoring = (jobId?: string) => {
       }
 
       const jobsData = await response.json();
+      console.log('Jobs data received:', jobsData.length, 'jobs');
       setJobs(jobsData);
       return jobsData;
     } catch (err: any) {
+      console.error('Error fetching jobs:', err);
       setError(err.message);
       return [];
     } finally {
@@ -128,12 +142,19 @@ export const useJobMonitoring = (jobId?: string) => {
     }
   };
 
-  // Real-time subscription for job updates with chunked progress
+  // Enhanced real-time subscription with better error handling and reconnection
   useEffect(() => {
     if (!jobId) return;
 
+    console.log('Setting up real-time subscription for job:', jobId);
+
+    // Set up polling as backup for real-time updates
+    const pollInterval = setInterval(() => {
+      fetchJob(jobId);
+    }, 3000); // Poll every 3 seconds
+
     const channel = supabase
-      .channel('chunked-job-updates')
+      .channel(`chunked-job-updates-${jobId}`)
       .on(
         'postgres_changes',
         {
@@ -142,7 +163,8 @@ export const useJobMonitoring = (jobId?: string) => {
           table: 'processing_jobs',
           filter: `id=eq.${jobId}`
         },
-        () => {
+        (payload) => {
+          console.log('Job table update:', payload);
           fetchJob(jobId);
         }
       )
@@ -154,7 +176,8 @@ export const useJobMonitoring = (jobId?: string) => {
           table: 'job_progress',
           filter: `job_id=eq.${jobId}`
         },
-        () => {
+        (payload) => {
+          console.log('Job progress update:', payload);
           fetchJob(jobId);
         }
       )
@@ -166,16 +189,24 @@ export const useJobMonitoring = (jobId?: string) => {
           table: 'final_results',
           filter: `job_id=eq.${jobId}`
         },
-        () => {
+        (payload) => {
+          console.log('Final results update:', payload);
           fetchJob(jobId);
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Subscription status:', status);
+        if (status === 'SUBSCRIBED') {
+          console.log('Successfully subscribed to real-time updates');
+        }
+      });
 
     // Initial fetch
     fetchJob(jobId);
 
     return () => {
+      console.log('Cleaning up subscription for job:', jobId);
+      clearInterval(pollInterval);
       supabase.removeChannel(channel);
     };
   }, [jobId]);

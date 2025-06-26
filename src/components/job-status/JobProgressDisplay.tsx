@@ -28,25 +28,44 @@ interface JobProgressDisplayProps {
 export const JobProgressDisplay = ({ job }: JobProgressDisplayProps) => {
   const getChunkedProgress = () => {
     const progress = job.job_progress?.[0];
-    if (!progress?.chunk_progress) return { percent: 0, text: 'Initializing...' };
+    if (!progress?.chunk_progress) {
+      // If no chunk progress yet, show initialization
+      return { 
+        percent: 5, 
+        text: 'Initializing chunked processing...',
+        isInitializing: true
+      };
+    }
     
     const { currentChunk, totalChunks, breakthroughPotential, tensionLevel } = progress.chunk_progress;
     
     if (job.status === 'completed') {
       return { 
         percent: 100, 
-        text: `Breakthrough: ${breakthroughPotential}%`,
+        text: `Analysis Complete: ${breakthroughPotential}%`,
         isBreakthrough: breakthroughPotential >= 70
       };
     }
     
+    if (job.status === 'failed') {
+      return {
+        percent: 0,
+        text: 'Processing failed',
+        isError: true
+      };
+    }
+    
+    // Calculate progress based on chunks
     const chunkPercent = totalChunks > 0 ? (currentChunk / totalChunks) * 100 : 0;
+    const displayPercent = Math.min(Math.max(chunkPercent, 10), 95); // Ensure visible progress
+    
     return { 
-      percent: Math.min(chunkPercent, 95), 
+      percent: displayPercent, 
       text: `Chunk ${currentChunk}/${totalChunks} • Breakthrough: ${breakthroughPotential}%`,
       tensionLevel,
       breakthroughPotential,
-      isBreakthrough: breakthroughPotential >= 70
+      isBreakthrough: breakthroughPotential >= 70,
+      isProcessing: true
     };
   };
 
@@ -54,6 +73,17 @@ export const JobProgressDisplay = ({ job }: JobProgressDisplayProps) => {
   const chunkedProgress = getChunkedProgress();
 
   if (job.status !== 'processing' || !progress) {
+    if (job.status === 'pending') {
+      return (
+        <div className="space-y-3">
+          <div className="flex justify-between text-sm">
+            <span>Queued for processing...</span>
+            <span>0%</span>
+          </div>
+          <Progress value={0} className="h-3" />
+        </div>
+      );
+    }
     return null;
   }
 
