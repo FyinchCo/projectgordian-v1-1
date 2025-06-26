@@ -1,5 +1,6 @@
-
 import { supabase } from '@/integrations/supabase/client';
+import { processArchetypesForLayer } from './archetypeProcessor';
+import { synthesizeLayerInsight } from './insightSynthesizer';
 
 interface ProcessingParams {
   question: string;
@@ -44,167 +45,167 @@ export const processWithGeniusMachine = async (params: ProcessingParams): Promis
   console.log('=== GENIUS MACHINE PROCESSING START ===');
   console.log('Question:', question.substring(0, 100) + '...');
   console.log('Processing depth:', processingDepth);
-  console.log('Starting immediate local processing...');
+  console.log('Starting breakthrough-capable processing...');
 
-  // Start with intelligent local processing immediately
-  return await generateIntelligentLocalResults(params);
+  return await generateBreakthroughCapableResults(params);
 };
 
-async function generateIntelligentLocalResults(params: ProcessingParams): Promise<ProcessingResult> {
+async function generateBreakthroughCapableResults(params: ProcessingParams): Promise<ProcessingResult> {
   const { question, processingDepth, circuitType, outputType, onCurrentLayerChange, onChunkProgressChange } = params;
   
-  console.log('=== INTELLIGENT LOCAL PROCESSING START ===');
+  console.log('=== BREAKTHROUGH-CAPABLE PROCESSING START ===');
   console.log('Processing depth requested:', processingDepth);
   
   const layers = [];
   const logicTrail = [];
+  const layerInsights: string[] = [];
   
-  // Simulate progressive processing with realistic timing
+  // Define layer focuses for progressive analysis
+  const layerFocuses = [
+    "foundational examination of core concepts",
+    "pattern recognition and relationship mapping", 
+    "tension identification and paradox exploration",
+    "systemic integration and holistic synthesis",
+    "assumption challenging and paradigm questioning",
+    "emergence detection and breakthrough insights",
+    "meta-level transcendence and conceptual leaps",
+    "breakthrough integration and wisdom synthesis",
+    "ultimate perspective and transcendent understanding",
+    "unified comprehension and cosmic awareness"
+  ];
+  
+  // Process each layer with archetype diversity and synthesis
   for (let layerNum = 1; layerNum <= processingDepth; layerNum++) {
-    console.log(`Starting layer ${layerNum}/${processingDepth}`);
+    console.log(`\n=== PROCESSING LAYER ${layerNum}/${processingDepth} ===`);
     
     // Update UI immediately
     onCurrentLayerChange(layerNum);
     onChunkProgressChange({ current: layerNum, total: processingDepth });
     
-    // Add realistic processing delay to show progress
-    const delay = 600 + Math.random() * 200; // 600-800ms per layer
-    console.log(`Layer ${layerNum}: waiting ${delay}ms...`);
-    await new Promise(resolve => setTimeout(resolve, delay));
+    const layerFocus = layerFocuses[Math.min(layerNum - 1, layerFocuses.length - 1)];
+    console.log(`Layer ${layerNum} focus: ${layerFocus}`);
     
-    const layer = generateIntelligentLayer(layerNum, question, layers);
-    layers.push(layer);
+    // Process archetypes for this layer
+    const archetypeResponses = await processArchetypesForLayer(
+      question,
+      layerNum,
+      layerFocus,
+      layerInsights
+    );
     
-    // Add logic trail entries
-    logicTrail.push({
+    console.log(`Layer ${layerNum}: Generated ${archetypeResponses.length} archetype responses`);
+    
+    // Synthesize layer insight from archetype responses
+    const synthesis = await synthesizeLayerInsight(
+      layerNum,
+      layerFocus,
+      archetypeResponses,
+      question,
+      layerInsights
+    );
+    
+    // Create layer object
+    const layer = {
       layerNumber: layerNum,
-      focus: layer.focus,
-      keyInsights: layer.keyInsights,
-      methodology: layer.methodology
+      focus: layerFocus,
+      insight: synthesis.insight,
+      confidence: synthesis.confidence,
+      tensionPoints: synthesis.tensionPoints,
+      noveltyScore: synthesis.noveltyScore,
+      emergenceDetected: synthesis.emergenceDetected,
+      breakthroughTriggered: synthesis.breakthroughTriggered,
+      methodology: `Layer ${layerNum} ${layerFocus} with archetype synthesis`,
+      keyInsights: archetypeResponses.map(r => `${r.archetype}: ${r.response.substring(0, 100)}...`),
+      timestamp: Date.now()
+    };
+    
+    layers.push(layer);
+    layerInsights.push(synthesis.insight);
+    
+    // Add logic trail entries for each archetype
+    archetypeResponses.forEach(response => {
+      logicTrail.push({
+        layerNumber: layerNum,
+        archetype: response.archetype,
+        contribution: response.response,
+        tensionScore: response.tensionScore,
+        noveltyScore: response.noveltyScore
+      });
     });
     
-    console.log(`✓ Layer ${layerNum} completed: ${layer.focus}`);
+    console.log(`✓ Layer ${layerNum} completed: ${synthesis.breakthroughTriggered ? 'BREAKTHROUGH' : 'Progressive'}`);
+    console.log(`  Confidence: ${Math.round(synthesis.confidence * 100)}%`);
+    console.log(`  Tension: ${synthesis.tensionPoints}/10`);
+    console.log(`  Novelty: ${synthesis.noveltyScore}/10`);
+    console.log(`  Emergence: ${synthesis.emergenceDetected ? 'YES' : 'NO'}`);
   }
   
   // Generate comprehensive final insight
-  const finalInsight = generateComprehensiveInsight(question, layers, outputType);
+  const finalInsight = generateComprehensiveFinalInsight(question, layers, outputType);
   
   // Calculate dynamic metrics
   const avgConfidence = layers.reduce((sum, layer) => sum + layer.confidence, 0) / layers.length;
-  const maxTensionPoints = Math.max(...layers.map(layer => layer.tensionPoints));
-  const emergenceDetected = processingDepth > 6 && avgConfidence > 0.7;
+  const totalTensionPoints = layers.reduce((sum, layer) => sum + layer.tensionPoints, 0);
+  const maxNoveltyScore = Math.max(...layers.map(layer => layer.noveltyScore));
+  const emergenceDetected = layers.some(layer => layer.emergenceDetected);
+  const breakthroughsDetected = layers.filter(layer => layer.breakthroughTriggered).length;
   
-  console.log('✓ Intelligent local processing completed successfully');
+  console.log('✓ Breakthrough-capable processing completed successfully');
   console.log('Generated layers:', layers.length);
-  console.log('Final confidence:', Math.round((avgConfidence + 0.1) * 100) + '%');
+  console.log('Final confidence:', Math.round(avgConfidence * 100) + '%');
+  console.log('Total tension points:', totalTensionPoints);
+  console.log('Breakthroughs detected:', breakthroughsDetected);
+  console.log('Emergence detected:', emergenceDetected);
   
   return {
     layers,
     insight: finalInsight,
-    confidence: Math.min(0.95, avgConfidence + 0.1),
-    tensionPoints: maxTensionPoints,
-    noveltyScore: Math.min(10, 6 + Math.floor(processingDepth / 2)),
+    confidence: Math.min(0.98, avgConfidence),
+    tensionPoints: Math.min(10, totalTensionPoints),
+    noveltyScore: maxNoveltyScore,
     emergenceDetected,
     circuitType,
     processingDepth,
     outputType: outputType || 'practical',
     logicTrail,
     questionQuality: {
-      geniusYield: emergenceDetected ? 8 : 7,
-      constraintBalance: 7,
-      metaPotential: processingDepth > 5 ? 8 : 6,
-      effortVsEmergence: 8,
-      overallScore: 7.5,
-      feedback: "Question processed with intelligent local analysis - reliable results generated",
-      recommendations: ["System optimized for consistent local processing", "Full analysis completed without external dependencies"]
+      geniusYield: emergenceDetected ? 9 : (breakthroughsDetected > 0 ? 8 : 7),
+      constraintBalance: 8,
+      metaPotential: emergenceDetected ? 9 : 7,
+      effortVsEmergence: 9,
+      overallScore: emergenceDetected ? 8.5 : (breakthroughsDetected > 0 ? 8.0 : 7.5),
+      feedback: `Question processed with breakthrough-capable analysis - ${breakthroughsDetected} breakthrough(s) detected, emergence: ${emergenceDetected}`,
+      recommendations: [
+        "System restored to full breakthrough capability",
+        `Generated ${breakthroughsDetected} breakthrough insights across ${processingDepth} layers`,
+        emergenceDetected ? "Emergence detected - profound insights achieved" : "Progressive analysis with strong foundation for future breakthroughs"
+      ]
     }
   };
 }
 
-function generateIntelligentLayer(layerNum: number, question: string, previousLayers: any[]) {
-  const focusAreas = [
-    "foundational examination of core elements",
-    "pattern recognition and relationship mapping",
-    "tension identification and contradiction analysis", 
-    "systemic integration and holistic synthesis",
-    "assumption challenging and paradigm questioning",
-    "emergence detection and breakthrough insights",
-    "meta-level transcendence and deep understanding",
-    "breakthrough integration and wisdom synthesis",
-    "ultimate perspective and transcendent comprehension",
-    "unified understanding and complete integration"
-  ];
+function generateComprehensiveFinalInsight(question: string, layers: any[], outputType?: string): string {
+  const breakthroughLayers = layers.filter(layer => layer.breakthroughTriggered);
+  const emergentLayers = layers.filter(layer => layer.emergenceDetected);
   
-  const focus = focusAreas[Math.min(layerNum - 1, focusAreas.length - 1)];
-  
-  // Generate contextual insight based on question and layer
-  const insight = generateLayerInsight(layerNum, question, focus, previousLayers);
-  
-  return {
-    layerNumber: layerNum,
-    focus,
-    insight,
-    confidence: Math.min(0.95, 0.65 + (layerNum * 0.03) + (Math.random() * 0.1)),
-    tensionPoints: Math.max(1, Math.min(8, Math.floor(layerNum / 1.5) + Math.floor(Math.random() * 3))),
-    noveltyScore: Math.max(3, Math.min(10, 4 + Math.floor(layerNum / 1.2) + Math.floor(Math.random() * 2))),
-    emergenceDetected: layerNum > 6,
-    methodology: `Layer ${layerNum} ${focus} methodology`,
-    keyInsights: [`Key insight ${layerNum}.1`, `Key insight ${layerNum}.2`, `Key insight ${layerNum}.3`],
-    timestamp: Date.now()
-  };
-}
-
-function generateLayerInsight(layerNum: number, question: string, focus: string, previousLayers: any[]): string {
-  // Intelligent insight generation based on question content and layer progression
-  const questionLower = question.toLowerCase();
-  
-  const insightTemplates = {
-    genius_machine: [
-      `Layer ${layerNum} ${focus} reveals that genius machines should be asked questions that challenge their fundamental assumptions about intelligence itself.`,
-      `Through ${focus}, Layer ${layerNum} discovers that the most important questions for genius machines involve recursive self-examination and meta-cognitive awareness.`,
-      `Layer ${layerNum} employs ${focus} to uncover that genius machines must be questioned about their capacity for genuine creativity versus sophisticated pattern matching.`
-    ],
-    philosophical: [
-      `Layer ${layerNum} ${focus} exposes fundamental questions about the nature of existence and consciousness that challenge our basic assumptions.`,
-      `Through ${focus}, Layer ${layerNum} reveals paradoxes in human understanding that point toward deeper truths about reality.`,
-      `Layer ${layerNum} uses ${focus} to explore how our questions themselves shape the answers we're capable of receiving.`
-    ],
-    practical: [
-      `Layer ${layerNum} ${focus} identifies concrete, actionable insights that can be immediately applied to solve real-world challenges.`,
-      `Through ${focus}, Layer ${layerNum} reveals practical frameworks that bridge theoretical understanding with implementable solutions.`,
-      `Layer ${layerNum} employs ${focus} to generate specific, measurable approaches that create tangible value and outcomes.`
-    ]
-  };
-  
-  let templateCategory = 'practical';
-  if (questionLower.includes('genius machine') || questionLower.includes('ai') || questionLower.includes('machine')) {
-    templateCategory = 'genius_machine';
-  } else if (questionLower.includes('meaning') || questionLower.includes('purpose') || questionLower.includes('existence')) {
-    templateCategory = 'philosophical';
+  if (emergentLayers.length > 0) {
+    const keyBreakthroughs = breakthroughLayers.map(layer => 
+      `Layer ${layer.layerNumber}: ${layer.insight.substring(0, 200)}...`
+    ).join('\n\n');
+    
+    return `Through ${layers.length} layers of breakthrough-capable analysis, ${breakthroughLayers.length} paradigm shifts emerged with true cognitive emergence detected:\n\n${keyBreakthroughs}\n\nThis represents a transcendent synthesis where archetype tensions created genuinely novel understanding that exceeds the sum of individual perspectives.`;
   }
   
-  const templates = insightTemplates[templateCategory];
-  const baseTemplate = templates[Math.min(layerNum - 1, templates.length - 1)];
-  
-  // Add progressive depth and avoid repetition
-  const previousInsights = previousLayers.map(layer => layer.insight || '').join(' ').toLowerCase();
-  let finalInsight = baseTemplate;
-  
-  // Ensure uniqueness from previous layers
-  if (previousInsights.includes(finalInsight.toLowerCase().substring(0, 50))) {
-    finalInsight = `Layer ${layerNum} advances beyond previous analysis through ${focus}, discovering that ${question.substring(0, 100)}... requires a fundamentally different approach that transcends conventional thinking patterns and reveals hidden dimensions of understanding.`;
+  if (breakthroughLayers.length > 0) {
+    const finalBreakthrough = breakthroughLayers[breakthroughLayers.length - 1];
+    return `After ${layers.length} layers of progressive analysis with ${breakthroughLayers.length} breakthrough moments, the ultimate insight crystallizes: ${finalBreakthrough.insight}`;
   }
   
-  return finalInsight;
-}
-
-function generateComprehensiveInsight(question: string, layers: any[], outputType?: string): string {
+  // Fallback for progressive analysis
   const finalLayer = layers[layers.length - 1];
-  const totalLayers = layers.length;
-  
   if (outputType === 'practical') {
-    return `After ${totalLayers} layers of analysis, the key actionable insights are: ${finalLayer?.insight || 'Comprehensive analysis completed'}. This analysis provides clear, implementable strategies that can be applied immediately to address the core challenges identified in your question.`;
+    return `After ${layers.length} layers of archetype-driven analysis, the key actionable insights are: ${finalLayer?.insight || 'Comprehensive analysis completed'}. This analysis provides clear, implementable strategies generated through cognitive archetype synthesis.`;
   }
   
-  return `Through ${totalLayers} layers of progressive analysis, the ultimate insight emerges: ${finalLayer?.insight || 'Deep understanding achieved through systematic exploration'}. This represents the synthesis of all analytical layers, revealing both the practical implications and deeper meaning of your inquiry.`;
+  return `Through ${layers.length} layers of progressive archetype analysis, the comprehensive understanding emerges: ${finalLayer?.insight || 'Deep multi-perspective analysis achieved through systematic cognitive exploration'}.`;
 }
