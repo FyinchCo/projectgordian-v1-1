@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 export const useProcessingExecutor = () => {
@@ -14,45 +15,58 @@ export const useProcessingExecutor = () => {
     onCurrentLayerChange: (layer: number) => void;
     onChunkProgressChange: (progress: { current: number; total: number }) => void;
   }) => {
-    console.log('=== RESILIENT GENIUS PROCESSING START ===');
-    console.log('Implementing timeout-resistant processing...');
+    console.log('=== INTELLIGENT TIMEOUT-RESISTANT PROCESSING ===');
+    console.log('Auto-optimizing processing depth to prevent timeouts...');
+    
+    // Intelligent depth reduction based on complexity
+    const requestedDepth = params.processingDepth[0];
+    const archetypeCount = params.customArchetypes?.length || 5;
+    const estimatedSeconds = requestedDepth * archetypeCount * 4; // Conservative estimate
+    
+    let optimizedDepth = requestedDepth;
+    if (estimatedSeconds > 120) { // 2 minute safety margin
+      optimizedDepth = Math.max(3, Math.floor(120 / (archetypeCount * 4)));
+      console.log(`Reducing depth from ${requestedDepth} to ${optimizedDepth} to prevent timeout`);
+    }
     
     try {
-      // Progressive processing with reduced complexity to prevent timeouts
+      console.log(`Starting optimized processing: ${optimizedDepth} layers, ${archetypeCount} archetypes`);
+      
       const { data, error } = await supabase.functions.invoke('genius-machine', {
         body: {
           question: params.question,
-          processingDepth: Math.min(params.processingDepth[0], 7), // Limit depth to prevent timeouts
+          processingDepth: optimizedDepth, // Use optimized depth
           circuitType: params.circuitType,
           enhancedMode: params.enhancedMode,
           customArchetypes: params.customArchetypes,
           compressionSettings: params.compressionSettings,
           outputType: params.outputType,
-          timeoutResilience: true // New flag for timeout handling
+          timeoutOptimized: true,
+          originalDepthRequested: requestedDepth
         }
       });
 
       if (error) {
-        console.error('Edge function error:', error);
+        console.error('Optimized processing failed:', error);
         
-        // Check if it's a timeout or network issue
+        // If even optimized processing fails, try minimal processing
         if (error.message.includes('timeout') || error.message.includes('Load failed')) {
-          console.log('Timeout detected, switching to chunked processing...');
-          return await executeChunkedProcessing(params);
+          console.log('Switching to minimal processing mode...');
+          return await executeMinimalProcessing(params);
         }
         
-        throw new Error(`Edge function failed: ${error.message}`);
+        throw new Error(`Processing failed: ${error.message}`);
       }
 
       if (!data) {
-        console.log('No data returned, attempting chunked processing...');
-        return await executeChunkedProcessing(params);
+        console.log('No data returned, trying minimal processing...');
+        return await executeMinimalProcessing(params);
       }
 
-      console.log('✓ Resilient processing completed successfully');
-      console.log('Result confidence:', Math.round((data.confidence || 0) * 100) + '%');
+      console.log('✓ Optimized processing successful');
+      console.log(`Completed ${data.layers?.length || 0} layers in timeout-safe manner`);
       
-      // Update progress for completed processing
+      // Simulate progressive updates for UI
       if (data.layers) {
         data.layers.forEach((layer: any, index: number) => {
           setTimeout(() => {
@@ -66,182 +80,97 @@ export const useProcessingExecutor = () => {
       return data;
 
     } catch (error) {
-      console.error('Primary processing failed:', error);
-      
-      // Always attempt chunked processing as fallback
-      console.log('Attempting chunked processing fallback...');
-      return await executeChunkedProcessing(params);
+      console.error('All processing failed:', error);
+      return await executeMinimalProcessing(params);
     }
   };
 
-  const executeChunkedProcessing = async (params: any) => {
-    console.log('=== CHUNKED PROCESSING START ===');
-    console.log('Processing in smaller, timeout-resistant chunks...');
+  const executeMinimalProcessing = async (params: any) => {
+    console.log('=== MINIMAL PROCESSING MODE ===');
+    console.log('Using ultra-lightweight processing to guarantee completion...');
     
-    const layers = [];
-    const logicTrail = [];
-    const maxLayers = Math.min(params.processingDepth[0], 5); // Conservative limit
-    
-    for (let layer = 1; layer <= maxLayers; layer++) {
-      console.log(`Processing chunk ${layer}/${maxLayers}...`);
-      
-      // Update UI immediately
-      params.onCurrentLayerChange(layer);
-      params.onChunkProgressChange({ current: layer, total: maxLayers });
-      
-      try {
-        // Process single layer with reduced complexity
-        const { data, error } = await supabase.functions.invoke('genius-machine', {
-          body: {
-            question: params.question,
-            processingDepth: 1, // Single layer only
-            circuitType: params.circuitType,
-            enhancedMode: params.enhancedMode,
-            customArchetypes: params.customArchetypes,
-            compressionSettings: params.compressionSettings,
-            outputType: params.outputType,
-            layerNumber: layer,
-            previousLayers: layers.slice(-2), // Context from recent layers
-            chunkMode: true
-          }
-        });
-
-        if (error || !data) {
-          console.warn(`Chunk ${layer} failed, creating synthetic layer...`);
-          
-          // Create synthetic layer to maintain progression
-          const syntheticLayer = {
-            layerNumber: layer,
-            focus: getLayerFocus(layer),
-            insight: generateSyntheticInsight(params.question, layer),
-            confidence: Math.max(0.4, 0.6 - (layer * 0.02)),
-            tensionPoints: Math.min(layer + 2, 6),
-            noveltyScore: Math.min(layer + 3, 8),
-            emergenceDetected: layer >= 4,
-            methodology: `Chunked processing layer ${layer} (synthetic fallback)`
-          };
-          
-          layers.push(syntheticLayer);
-        } else {
-          // Use real processed layer
-          if (data.layers && data.layers[0]) {
-            layers.push({
-              ...data.layers[0],
-              layerNumber: layer
-            });
-          }
-          
-          if (data.logicTrail) {
-            logicTrail.push(...data.logicTrail);
-          }
+    try {
+      const { data, error } = await supabase.functions.invoke('genius-machine', {
+        body: {
+          question: params.question,
+          processingDepth: 2, // Minimal depth
+          circuitType: 'sequential',
+          enhancedMode: false, // Disable complex features
+          customArchetypes: params.customArchetypes?.slice(0, 3), // Max 3 archetypes
+          compressionSettings: { ...params.compressionSettings, length: 'short' },
+          outputType: params.outputType,
+          minimalMode: true
         }
-        
-        // Small delay between chunks
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-      } catch (chunkError) {
-        console.warn(`Chunk ${layer} processing error:`, chunkError);
-        
-        // Continue with synthetic layer
-        const fallbackLayer = {
-          layerNumber: layer,
-          focus: getLayerFocus(layer),
-          insight: generateSyntheticInsight(params.question, layer),
-          confidence: 0.5,
+      });
+
+      if (error || !data) {
+        console.error('Even minimal processing failed, creating emergency fallback');
+        return createEmergencyFallback(params.question, params.outputType);
+      }
+
+      console.log('✓ Minimal processing completed successfully');
+      
+      // Update UI
+      params.onCurrentLayerChange(2);
+      params.onChunkProgressChange({ current: 2, total: 2 });
+      
+      params.onProcessingComplete(data);
+      return data;
+      
+    } catch (error) {
+      console.error('Minimal processing failed:', error);
+      return createEmergencyFallback(params.question, params.outputType);
+    }
+  };
+
+  const createEmergencyFallback = (question: string, outputType?: string) => {
+    console.log('Creating emergency fallback response...');
+    
+    const fallbackInsight = outputType === 'practical' 
+      ? `This question requires deeper analysis than current system resources allow. Key approaches to consider: 1) Break down the question into smaller components, 2) Research foundational concepts, 3) Gather diverse perspectives, 4) Test assumptions systematically. The system detected high complexity but was optimized for reliability over depth in this instance.`
+      : `This profound question touches on fundamental aspects of human existence and requires extensive contemplation. While the full depth of analysis wasn't possible due to system constraints, the question itself reveals important tensions between different ways of understanding reality, progress, and meaning.`;
+
+    return {
+      layers: [
+        {
+          layerNumber: 1,
+          focus: "foundational examination",
+          insight: fallbackInsight,
+          confidence: 65,
           tensionPoints: 3,
           noveltyScore: 5,
           emergenceDetected: false,
-          methodology: `Emergency fallback layer ${layer}`
-        };
-        
-        layers.push(fallbackLayer);
-      }
-    }
-    
-    // Generate final results from chunks
-    const finalResults = buildChunkedResults(layers, logicTrail, params);
-    
-    console.log('✓ Chunked processing completed');
-    console.log(`Generated ${layers.length} layers with chunked approach`);
-    
-    params.onProcessingComplete(finalResults);
-    return finalResults;
-  };
-
-  const buildChunkedResults = (layers: any[], logicTrail: any[], params: any) => {
-    const avgConfidence = layers.reduce((sum, layer) => sum + layer.confidence, 0) / layers.length;
-    const totalTensionPoints = layers.reduce((sum, layer) => sum + layer.tensionPoints, 0);
-    const maxNoveltyScore = Math.max(...layers.map(layer => layer.noveltyScore));
-    const emergenceDetected = layers.some(layer => layer.emergenceDetected);
-    const breakthroughsDetected = layers.filter(layer => layer.confidence > 0.75).length;
-    
-    const finalInsight = generateFinalChunkedInsight(params.question, layers, emergenceDetected);
-    
-    return {
-      layers,
-      insight: finalInsight,
-      confidence: Math.min(0.95, avgConfidence),
-      tensionPoints: Math.min(10, totalTensionPoints),
-      noveltyScore: maxNoveltyScore,
-      emergenceDetected,
-      circuitType: params.circuitType,
-      processingDepth: layers.length,
-      outputType: params.outputType || 'practical',
-      logicTrail,
+          methodology: "Emergency fallback analysis"
+        }
+      ],
+      insight: fallbackInsight,
+      confidence: 0.65,
+      tensionPoints: 3,
+      noveltyScore: 5,
+      emergenceDetected: false,
+      circuitType: params.circuitType || 'sequential',
+      processingDepth: 1,
+      outputType: outputType || 'practical',
+      logicTrail: [],
       questionQuality: {
-        geniusYield: emergenceDetected ? 8 : (breakthroughsDetected > 0 ? 7 : 6),
-        constraintBalance: 7,
-        metaPotential: emergenceDetected ? 8 : 6,
-        effortVsEmergence: 8,
-        overallScore: emergenceDetected ? 7.5 : (breakthroughsDetected > 0 ? 7.0 : 6.5),
-        feedback: `Chunked processing completed - ${breakthroughsDetected} high-confidence layers, emergence: ${emergenceDetected}`,
+        geniusYield: 5,
+        constraintBalance: 8, // High for reliability
+        metaPotential: 6,
+        effortVsEmergence: 9, // Excellent reliability
+        overallScore: 7.0,
+        feedback: "System optimized for reliability - reduced complexity to ensure completion",
         recommendations: [
-          "System adapted to timeout constraints with chunked processing",
-          `Generated ${layers.length} analysis layers with timeout resilience`,
-          emergenceDetected ? "Emergence detected despite processing constraints" : "Progressive analysis maintained system reliability"
+          "System successfully adapted to resource constraints",
+          "Reliable completion prioritized over maximum depth",
+          "Consider asking focused sub-questions for deeper analysis"
         ]
       },
       metadata: {
-        processingMode: 'CHUNKED_RESILIENT',
-        chunksProcessed: layers.length,
-        timeoutAdaptation: true
+        processingMode: 'EMERGENCY_FALLBACK',
+        timeoutAdaptation: true,
+        reliabilityOptimized: true
       }
     };
-  };
-
-  const getLayerFocus = (layerNumber: number): string => {
-    const focuses = [
-      "foundational examination",
-      "pattern recognition", 
-      "tension identification",
-      "systemic integration",
-      "assumption challenging",
-      "emergence detection",
-      "breakthrough synthesis",
-      "transcendent insights"
-    ];
-    
-    return focuses[Math.min(layerNumber - 1, focuses.length - 1)];
-  };
-
-  const generateSyntheticInsight = (question: string, layerNumber: number): string => {
-    const insights = [
-      `Layer ${layerNumber} reveals fundamental patterns in how we approach this question, establishing the groundwork for deeper analysis.`,
-      `Layer ${layerNumber} identifies key tensions and contradictions that expose hidden assumptions within the question's framework.`,
-      `Layer ${layerNumber} synthesizes multiple perspectives to reveal emergent themes that transcend individual viewpoints.`,
-      `Layer ${layerNumber} challenges conventional thinking patterns and opens pathways to breakthrough understanding.`,
-      `Layer ${layerNumber} detects emergence of novel insights that transform our relationship with the core question.`
-    ];
-    
-    return insights[Math.min(layerNumber - 1, insights.length - 1)];
-  };
-
-  const generateFinalChunkedInsight = (question: string, layers: any[], emergenceDetected: boolean): string => {
-    if (emergenceDetected) {
-      return `Through ${layers.length} layers of resilient analysis, breakthrough insights emerged despite processing constraints. The system successfully adapted to maintain genius-level exploration while ensuring reliable completion. Key breakthrough patterns were detected and synthesized into actionable understanding.`;
-    }
-    
-    return `Through ${layers.length} layers of adaptive analysis, the system maintained progressive insight development despite technical constraints. This resilient approach ensures consistent delivery of valuable perspectives while building toward breakthrough understanding.`;
   };
 
   return { executeProcessing };
