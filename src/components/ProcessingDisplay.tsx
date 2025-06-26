@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { LayerGridMap } from "./processing/LayerGridMap";
 import { MetricsCards } from "./processing/MetricsCards";
 import { ArchetypeContributionBars } from "./processing/ArchetypeContributionBars";
+import { InsightStream } from "./processing/InsightStream";
 import { Eye } from "lucide-react";
 
 interface ProcessingDisplayProps {
@@ -63,6 +64,13 @@ export const ProcessingDisplay = ({
             </blockquote>
           </div>
         </Card>
+
+        {/* Row 2.5: Progressive Insight Stream */}
+        <InsightStream 
+          currentArchetype={currentArchetype}
+          currentLayer={currentLayer}
+          isActive={true}
+        />
 
         {/* Row 3: Metrics Cards */}
         <MetricsCards 
