@@ -1,9 +1,15 @@
+
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 
 export interface CompressionFormats {
   ultraConcise: string;
   medium: string;
   comprehensive: string;
+  insightRating?: {
+    score: number;
+    category: string;
+    justification: string;
+  };
 }
 
 export async function generateCompressionFormats(
@@ -12,7 +18,7 @@ export async function generateCompressionFormats(
   originalQuestion: string,
   compressionSettings?: any
 ): Promise<CompressionFormats> {
-  console.log('Starting compression format generation with user settings...');
+  console.log('Starting enhanced compression format generation...');
   
   if (!openAIApiKey) {
     console.error('OpenAI API key not available for compression');
@@ -20,9 +26,9 @@ export async function generateCompressionFormats(
   }
   
   try {
-    const compressionPrompt = buildCompressionPrompt(insight, originalQuestion, compressionSettings);
+    const compressionPrompt = buildEnhancedCompressionPrompt(insight, originalQuestion, compressionSettings);
 
-    console.log('Calling OpenAI for compression formats with user preferences...');
+    console.log('Calling OpenAI for enhanced compression formats...');
     
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -35,11 +41,11 @@ export async function generateCompressionFormats(
         messages: [
           { 
             role: 'system', 
-            content: buildSystemPrompt(compressionSettings)
+            content: buildEnhancedSystemPrompt(compressionSettings)
           },
           { role: 'user', content: compressionPrompt }
         ],
-        max_tokens: 800,
+        max_tokens: 1000,
         temperature: 0.4,
       }),
     });
@@ -70,7 +76,7 @@ export async function generateCompressionFormats(
     }
     
     const jsonString = rawResponse.substring(jsonStart, jsonEnd + 1);
-    console.log('Cleaned JSON string:', jsonString.substring(0, 100) + '...');
+    console.log('Enhanced compression JSON:', jsonString.substring(0, 100) + '...');
     
     try {
       const parsed = JSON.parse(jsonString);
@@ -81,21 +87,24 @@ export async function generateCompressionFormats(
         return generateFallbackFormats(insight, originalQuestion, compressionSettings);
       }
       
-      // Ensure formats are genuinely different
+      // Extract insight rating if present
+      let insightRating = null;
+      if (parsed.insightRating) {
+        insightRating = {
+          score: parsed.insightRating.score || 3,
+          category: parsed.insightRating.category || 'Competent',
+          justification: parsed.insightRating.justification || 'Standard analysis quality'
+        };
+      }
+      
       const formats = {
         ultraConcise: parsed.ultraConcise,
         medium: parsed.medium,
-        comprehensive: parsed.comprehensive
+        comprehensive: parsed.comprehensive,
+        insightRating
       };
       
-      // Basic validation - ensure they're not identical
-      if (formats.medium.includes(formats.ultraConcise) && 
-          formats.comprehensive.startsWith(formats.medium.substring(0, 50))) {
-        console.warn('Detected similar formats, using enhanced fallback');
-        return generateEnhancedFallbackFormats(insight, originalQuestion, compressionSettings);
-      }
-      
-      console.log('Successfully generated compression formats');
+      console.log('Successfully generated enhanced compression formats with rating');
       return formats;
       
     } catch (parseError) {
@@ -105,13 +114,13 @@ export async function generateCompressionFormats(
     }
     
   } catch (error) {
-    console.error('Compression generation request failed:', error);
+    console.error('Enhanced compression generation request failed:', error);
     return generateFallbackFormats(insight, originalQuestion, compressionSettings);
   }
 }
 
-function buildSystemPrompt(compressionSettings?: any): string {
-  const basePrompt = 'You are a compression specialist. Generate three genuinely different formats of the same insight. Each format serves a different purpose and audience. Return only valid JSON without any markdown formatting or code blocks.';
+function buildEnhancedSystemPrompt(compressionSettings?: any): string {
+  const basePrompt = 'You are an expert compression specialist. Your task is to distill insights into their most essential form while preserving their conceptual power. Always include an insight strength rating. Return only valid JSON without any markdown formatting.';
   
   if (!compressionSettings) return basePrompt;
   
@@ -119,27 +128,19 @@ function buildSystemPrompt(compressionSettings?: any): string {
   
   if (compressionSettings.style && compressionSettings.style !== 'insight-summary') {
     const styleMap = {
-      'aphorism': 'Focus on creating memorable, quotable wisdom',
-      'philosophical-phrase': 'Emphasize deep philosophical implications',
-      'narrative-form': 'Present insights as engaging stories or scenarios',
-      'custom': 'Follow the custom instructions provided'
+      'aphorism': 'Craft compact, punchy statements that could live in a philosopher\'s notebook',
+      'philosophical-phrase': 'Condense into evocative sentences with conceptual gravity and paradox',
+      'narrative-form': 'Retell as allegorical micro-stories that embody truth through metaphor',
+      'custom': 'Follow the custom instructions provided exactly'
     };
     customization += ` ${styleMap[compressionSettings.style] || ''}.`;
-  }
-  
-  if (compressionSettings.length && compressionSettings.length !== 'medium') {
-    const lengthMap = {
-      'short': 'Keep all formats concise and punchy',
-      'poetic': 'Use extended metaphors and poetic language'
-    };
-    customization += ` ${lengthMap[compressionSettings.length] || ''}.`;
   }
   
   return basePrompt + customization;
 }
 
-function buildCompressionPrompt(insight: string, originalQuestion: string, compressionSettings?: any): string {
-  let basePrompt = `Transform this insight into three DISTINCTLY DIFFERENT formats:
+function buildEnhancedCompressionPrompt(insight: string, originalQuestion: string, compressionSettings?: any): string {
+  let basePrompt = `Transform this insight using enhanced compression techniques:
 
 ORIGINAL INSIGHT: ${insight}
 
@@ -150,78 +151,92 @@ ORIGINAL QUESTION: ${originalQuestion}`;
     basePrompt += `\n\nCUSTOM INSTRUCTIONS: ${compressionSettings.customInstructions}`;
   }
 
-  // Apply style preferences
-  if (compressionSettings?.style && compressionSettings.style !== 'insight-summary') {
-    const styleInstructions = {
-      'aphorism': 'Create insights that read like memorable aphorisms or maxims',
-      'philosophical-phrase': 'Frame insights as philosophical reflections on reality',
-      'narrative-form': 'Present insights through narrative examples and scenarios'
-    };
-    
-    if (styleInstructions[compressionSettings.style]) {
-      basePrompt += `\n\nSTYLE PREFERENCE: ${styleInstructions[compressionSettings.style]}`;
-    }
+  // Apply enhanced style instructions
+  const styleInstructions = getEnhancedStyleInstructions(compressionSettings?.style);
+  if (styleInstructions) {
+    basePrompt += `\n\nSTYLE INSTRUCTIONS: ${styleInstructions}`;
   }
 
-  // Apply length preferences
+  // Apply length preferences with enhanced targeting
   const lengthMap = {
-    'short': { ultra: 15, medium: 40, comprehensive: 100 },
-    'medium': { ultra: 20, medium: 80, comprehensive: 200 },
-    'poetic': { ultra: 25, medium: 120, comprehensive: 300 }
+    'short': { ultra: 15, medium: 40, comprehensive: 80 },
+    'medium': { ultra: 20, medium: 60, comprehensive: 120 },
+    'poetic': { ultra: 25, medium: 80, comprehensive: 150 }
   };
   
   const lengths = lengthMap[compressionSettings?.length || 'medium'];
 
-  basePrompt += `\n\nGenerate three completely different versions:
+  basePrompt += `\n\nGenerate three formats following these enhanced guidelines:
 
-1. ULTRA-CONCISE: A single powerful sentence that captures the core breakthrough (max ${lengths.ultra} words)
-2. MEDIUM: A focused paragraph that explains the key insight with practical implications (${lengths.medium-20}-${lengths.medium} words) 
-3. COMPREHENSIVE: An expanded exploration with context, implications, and actionable understanding (${lengths.comprehensive-50}-${lengths.comprehensive} words)
+**ULTRA-CONCISE (${lengths.ultra} words max):**
+Compress into a single, high-impact statement. Prioritize clarity and emotional weight. Don't summarize—distill. Cut all fluff.
 
-Each format should be GENUINELY DIFFERENT - not just truncated versions of each other.
+**MEDIUM (${lengths.medium} words max):**
+Compress into a single paragraph. Prioritize clarity, emotional resonance, and emergent conceptual novelty. Reveal the deepest underlying pattern as if it were always there. Deliver insight that feels etched in stone.
 
-Return ONLY valid JSON without any markdown formatting:
+**COMPREHENSIVE (${lengths.comprehensive} words max):**
+Expand with context and implications while maintaining the distilled essence. Focus on actionable understanding and deeper patterns.
+
+**INSIGHT STRENGTH RATING:**
+Rate the insight quality (1-6) and provide one-sentence justification:
+1 = Weak | 2 = Basic | 3 = Competent | 4 = Insightful | 5 = Sharp | 6 = Profound
+
+Return ONLY valid JSON:
 {
-  "ultraConcise": "single sentence here",
-  "medium": "focused paragraph here", 
-  "comprehensive": "expanded exploration here"
+  "ultraConcise": "distilled essence here",
+  "medium": "core insight paragraph here", 
+  "comprehensive": "expanded understanding here",
+  "insightRating": {
+    "score": 4,
+    "category": "Insightful",
+    "justification": "One sentence explaining the rating"
+  }
 }`;
 
   return basePrompt;
 }
 
+function getEnhancedStyleInstructions(style?: string): string | null {
+  const styleMap = {
+    'aphorism': 'Craft a compact, punchy statement that could live on the margin of a philosopher\'s notebook. Avoid platitudes. Say something sharp, strange, or slightly dangerous.',
+    'philosophical-phrase': 'Condense into a single, evocative sentence. Prioritize conceptual gravity, paradox, and metaphorical depth. Think less summary, more koan.',
+    'narrative-form': 'Retell as a short, allegorical story or micro-fable. Use metaphor and character to embody the concept. Focus on emotional truth over entertainment.',
+    'insight-summary': 'Compress into a single, high-impact paragraph. Prioritize clarity, emotional resonance, and emergent conceptual novelty. Don\'t summarize—distill.'
+  };
+  
+  return styleMap[style || 'insight-summary'] || null;
+}
+
 function generateFallbackFormats(insight: string, question: string, compressionSettings?: any): CompressionFormats {
-  console.log('Using fallback compression formats with user preferences');
+  console.log('Using enhanced fallback compression formats');
   
   const sentences = insight.split(/[.!?]/).filter(s => s.trim().length > 10);
   const firstSentence = sentences[0]?.trim() || insight.substring(0, 100);
   
-  // Apply style to fallback if specified
-  let styleModifier = '';
-  if (compressionSettings?.style === 'aphorism') {
-    styleModifier = 'As wisdom teaches us: ';
-  } else if (compressionSettings?.style === 'philosophical-phrase') {
-    styleModifier = 'Consider that ';
-  }
+  // Apply enhanced style to fallback
+  const styleModifier = getStyleModifier(compressionSettings?.style);
   
   return {
     ultraConcise: styleModifier + extractKeyPhrase(firstSentence),
-    medium: `The exploration of "${question}" reveals ${firstSentence.substring(0, 80)}... This insight opens new pathways for understanding.`,
-    comprehensive: `${insight.substring(0, 300)}${insight.length > 300 ? '...' : ''} This comprehensive analysis of "${question}" demonstrates the complexity of the underlying dynamics and suggests practical applications for further exploration.`
+    medium: `The exploration of "${question}" reveals a fundamental pattern: ${firstSentence.substring(0, 80)}... This insight cuts through surface complexity to reveal the underlying structure.`,
+    comprehensive: `${insight.substring(0, 200)}${insight.length > 200 ? '...' : ''} This comprehensive analysis of "${question}" demonstrates how seemingly complex dynamics often reduce to elegant principles, suggesting transformative approaches for both theoretical understanding and practical application.`,
+    insightRating: {
+      score: 3,
+      category: 'Competent',
+      justification: 'Standard processing quality with clear analysis but limited breakthrough potential.'
+    }
   };
 }
 
-function generateEnhancedFallbackFormats(insight: string, question: string, compressionSettings?: any): CompressionFormats {
-  console.log('Using enhanced fallback compression formats');
-  
-  const words = insight.split(' ');
-  const keyPhrase = extractKeyPhrase(insight);
-  
-  return {
-    ultraConcise: keyPhrase,
-    medium: `Examining "${question}" reveals how ${words.slice(10, 25).join(' ')}. This creates new understanding of the underlying relationships and their practical implications.`,
-    comprehensive: `The deep analysis of "${question}" uncovers multiple layers of meaning. ${insight.substring(0, 200)}${insight.length > 200 ? '...' : ''} These insights suggest transformative approaches to understanding and application, opening pathways for both theoretical exploration and practical implementation in related contexts.`
+function getStyleModifier(style?: string): string {
+  const modifiers = {
+    'aphorism': 'Truth carved in stone: ',
+    'philosophical-phrase': 'Consider the paradox: ',
+    'narrative-form': 'Imagine a seeker who discovers that ',
+    'insight-summary': 'The core insight emerges: '
   };
+  
+  return modifiers[style || 'insight-summary'] || '';
 }
 
 function extractKeyPhrase(text: string): string {
@@ -230,6 +245,6 @@ function extractKeyPhrase(text: string): string {
   const firstSentence = sentences[0]?.trim() || text;
   
   // Look for key patterns or just take first meaningful chunk
-  const keyWords = firstSentence.split(' ').slice(0, 8).join(' ');
+  const keyWords = firstSentence.split(' ').slice(0, 10).join(' ');
   return keyWords.length < firstSentence.length ? keyWords + '...' : keyWords;
 }
