@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -48,19 +47,25 @@ const Engine = () => {
     }
 
     try {
+      const chunkSize = totalLayers <= 5 ? 2 : 3; // Larger chunks for deeper analyses
+      
       const jobId = await submitJob({
         question: question.trim(),
         processingDepth: totalLayers,
         circuitType: "sequential",
-        enhancedMode: true
+        enhancedMode: true,
+        chunkSize: chunkSize
       });
 
       setCurrentJobId(jobId);
       setViewMode('monitor');
       
+      const isDeepAnalysis = totalLayers >= 10;
+      const estimatedMinutes = Math.ceil((totalLayers * 25) / 60);
+      
       toast({
-        title: "Analysis Started",
-        description: `Your ${totalLayers}-layer analysis is now processing in the background.`,
+        title: isDeepAnalysis ? "🚀 Deep Genius Analysis Started" : "🧠 Genius Analysis Started",
+        description: `Your ${totalLayers}-layer analysis is processing in ${Math.ceil(totalLayers / chunkSize)} chunks. Estimated time: ${estimatedMinutes} minutes.`,
         variant: "default",
       });
 
@@ -108,8 +113,16 @@ const Engine = () => {
   };
 
   const getEstimatedTime = (layers: number) => {
-    const estimatedSeconds = layers * 35; // 35 seconds per layer
+    const estimatedSeconds = layers * 25; // 25 seconds per layer (more realistic)
     return Math.ceil(estimatedSeconds / 60);
+  };
+
+  const getAnalysisType = (layers: number) => {
+    if (layers <= 3) return { type: "Quick Insight", description: "Rapid analysis" };
+    if (layers <= 5) return { type: "Standard Analysis", description: "Balanced depth" };
+    if (layers <= 10) return { type: "Deep Exploration", description: "Comprehensive understanding" };
+    if (layers <= 20) return { type: "Genius-Level Analysis", description: "Breakthrough potential" };
+    return { type: "Transcendent Analysis", description: "Ultimate understanding" };
   };
 
   // Show job history view
@@ -228,7 +241,7 @@ const Engine = () => {
             <Brain className="w-8 h-8 text-blue-600" />
           </div>
           <p className="text-gray-600 max-w-2xl mx-auto">
-            Deep cognitive analysis through multi-archetype processing. Analyses now run in the background so you never lose your work.
+            Revolutionary chunked processing enables unlimited depth analysis. Each layer builds exponentially toward breakthrough insights.
           </p>
           
           <div className="flex justify-center space-x-4">
@@ -277,7 +290,7 @@ const Engine = () => {
             <div className="space-y-6">
               <div className="text-center">
                 <h2 className="text-2xl font-semibold text-gray-800 mb-2">What would you like to explore?</h2>
-                <p className="text-gray-600">Enter a question that deserves deep thought</p>
+                <p className="text-gray-600">Enter a question for unlimited-depth genius analysis</p>
               </div>
               
               <Textarea
@@ -287,7 +300,7 @@ const Engine = () => {
                 className="min-h-32 text-lg resize-none border-2 focus:border-blue-500"
               />
               
-              {/* Configuration Bar */}
+              {/* Enhanced Configuration Bar */}
               <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                 <div className="flex items-center space-x-4">
                   <div className="flex items-center space-x-2">
@@ -301,7 +314,9 @@ const Engine = () => {
                       <option value={3}>3 Layers (Quick)</option>
                       <option value={5}>5 Layers (Standard)</option>
                       <option value={10}>10 Layers (Deep)</option>
-                      <option value={20}>20 Layers (Profound)</option>
+                      <option value={15}>15 Layers (Profound)</option>
+                      <option value={20}>20 Layers (Genius)</option>
+                      <option value={30}>30 Layers (Transcendent)</option>
                     </select>
                   </div>
                   
@@ -311,22 +326,40 @@ const Engine = () => {
                   </Badge>
                 </div>
                 
-                <Badge variant="secondary" className="text-xs">
-                  Background Processing
+                <Badge 
+                  variant="secondary" 
+                  className={`text-xs ${totalLayers >= 20 ? 'bg-purple-100 text-purple-800' : totalLayers >= 10 ? 'bg-blue-100 text-blue-800' : ''}`}
+                >
+                  {getAnalysisType(totalLayers).type}
                 </Badge>
+              </div>
+
+              {/* Analysis Type Description */}
+              <div className="text-center text-sm text-gray-600 bg-blue-50 p-3 rounded-lg">
+                <strong>{getAnalysisType(totalLayers).type}:</strong> {getAnalysisType(totalLayers).description}
+                {totalLayers >= 20 && (
+                  <div className="mt-1 text-purple-600 font-medium">
+                    🚀 Breakthrough potential: High probability of transcendent insights
+                  </div>
+                )}
               </div>
 
               <Button 
                 onClick={handleSubmitJob}
                 disabled={!question.trim() || loading}
-                className="w-full h-12 text-lg font-semibold bg-blue-600 hover:bg-blue-700"
+                className={`w-full h-12 text-lg font-semibold ${
+                  totalLayers >= 20 
+                    ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700' 
+                    : 'bg-blue-600 hover:bg-blue-700'
+                }`}
               >
                 <Play className="w-5 h-5 mr-2" />
-                {loading ? 'Starting Analysis...' : 'Begin Background Analysis'}
+                {loading ? 'Starting Analysis...' : `Begin ${getAnalysisType(totalLayers).type}`}
               </Button>
               
               <div className="text-center text-sm text-gray-500">
-                <p>✨ Your analysis will run in the background - you can close this page and come back later!</p>
+                <p>✨ Chunked processing ensures reliability even for deepest analyses!</p>
+                <p className="mt-1">🧠 Analysis continues in background - safe to close page</p>
               </div>
             </div>
           </Card>

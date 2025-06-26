@@ -1,4 +1,3 @@
-
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -75,10 +74,28 @@ export const JobStatusCard = ({ job, onViewResults, onRetry, className }: JobSta
     }
   };
 
-  const getProgress = () => {
+  const getChunkedProgress = () => {
     const progress = job.job_progress?.[0];
-    if (!progress) return 0;
-    return Math.min(95, (progress.current_layer / progress.total_layers) * 100);
+    if (!progress?.chunk_progress) return { percent: 0, text: 'Initializing...' };
+    
+    const { currentChunk, totalChunks, breakthroughPotential, tensionLevel } = progress.chunk_progress;
+    
+    if (job.status === 'completed') {
+      return { 
+        percent: 100, 
+        text: `Breakthrough: ${breakthroughPotential}%`,
+        isBreakthrough: breakthroughPotential >= 70
+      };
+    }
+    
+    const chunkPercent = totalChunks > 0 ? (currentChunk / totalChunks) * 100 : 0;
+    return { 
+      percent: Math.min(chunkPercent, 95), 
+      text: `Chunk ${currentChunk}/${totalChunks} • Breakthrough: ${breakthroughPotential}%`,
+      tensionLevel,
+      breakthroughPotential,
+      isBreakthrough: breakthroughPotential >= 70
+    };
   };
 
   const getTimeDisplay = () => {
@@ -93,6 +110,7 @@ export const JobStatusCard = ({ job, onViewResults, onRetry, className }: JobSta
 
   const progress = job.job_progress?.[0];
   const finalResult = job.final_results?.[0];
+  const chunkedProgress = getChunkedProgress();
 
   return (
     <Card className={`p-6 ${className}`}>
@@ -110,6 +128,13 @@ export const JobStatusCard = ({ job, onViewResults, onRetry, className }: JobSta
               </div>
             </div>
           </div>
+          
+          {/* Breakthrough Indicator */}
+          {chunkedProgress.isBreakthrough && (
+            <Badge className="bg-purple-100 text-purple-800 border-purple-200">
+              🚀 Breakthrough Detected
+            </Badge>
+          )}
         </div>
 
         {/* Question */}
@@ -120,21 +145,41 @@ export const JobStatusCard = ({ job, onViewResults, onRetry, className }: JobSta
           </blockquote>
         </div>
 
-        {/* Progress for processing jobs */}
+        {/* Chunked Progress for processing jobs */}
         {job.status === 'processing' && progress && (
-          <div className="space-y-2">
+          <div className="space-y-3">
             <div className="flex justify-between text-sm">
-              <span>Layer {progress.current_layer} of {progress.total_layers}</span>
-              <span>{Math.round(getProgress())}%</span>
+              <span>{chunkedProgress.text}</span>
+              <span>{Math.round(chunkedProgress.percent)}%</span>
             </div>
-            <Progress value={getProgress()} className="h-2" />
-            {progress.current_archetype && (
-              <div className="text-xs text-gray-600">
-                Current perspective: {progress.current_archetype}
+            <div className="relative">
+              <Progress 
+                value={chunkedProgress.percent} 
+                className={`h-3 ${chunkedProgress.isBreakthrough ? 'bg-purple-200' : ''}`} 
+              />
+              {chunkedProgress.isBreakthrough && (
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-400 via-pink-400 to-yellow-400 opacity-30 rounded-full animate-pulse"></div>
+              )}
+            </div>
+            
+            {/* Genius Metrics */}
+            <div className="grid grid-cols-2 gap-4 p-3 bg-gray-50 rounded-lg">
+              <div className="text-center">
+                <div className="text-lg font-semibold text-purple-600">
+                  {progress.chunk_progress?.breakthroughPotential || 0}%
+                </div>
+                <div className="text-xs text-gray-600">Breakthrough Potential</div>
               </div>
-            )}
+              <div className="text-center">
+                <div className="text-lg font-semibold text-red-600">
+                  {progress.chunk_progress?.tensionLevel || 0}/10
+                </div>
+                <div className="text-xs text-gray-600">Tension Level</div>
+              </div>
+            </div>
+            
             {progress.processing_phase && (
-              <div className="text-xs text-gray-600">
+              <div className="text-xs text-gray-600 italic">
                 {progress.processing_phase}
               </div>
             )}
@@ -150,15 +195,28 @@ export const JobStatusCard = ({ job, onViewResults, onRetry, className }: JobSta
           </div>
         )}
 
-        {/* Results preview for completed jobs */}
+        {/* Enhanced results preview for completed jobs */}
         {job.status === 'completed' && finalResult && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-            <div className="text-sm text-green-800 mb-2">
-              <strong>Analysis Complete</strong>
+          <div className={`border rounded-lg p-4 ${chunkedProgress.isBreakthrough ? 'bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200' : 'bg-green-50 border-green-200'}`}>
+            <div className="flex items-center justify-between mb-3">
+              <div className={`text-sm font-semibold ${chunkedProgress.isBreakthrough ? 'text-purple-800' : 'text-green-800'}`}>
+                {chunkedProgress.isBreakthrough ? '🚀 Breakthrough Analysis Complete' : '✅ Analysis Complete'}
+              </div>
+              <Badge variant="outline" className="text-xs">
+                Confidence: {Math.round((finalResult.confidence || 0) * 100)}%
+              </Badge>
             </div>
             <div className="text-sm text-gray-700 line-clamp-3">
               {finalResult.synthesis}
             </div>
+            
+            {/* Enhanced metrics display */}
+            {finalResult.full_results?.breakthroughPotential && (
+              <div className="mt-3 text-xs text-gray-600">
+                Final Breakthrough Score: {finalResult.full_results.breakthroughPotential}% • 
+                Layers Processed: {finalResult.full_results.processingDepth || job.processing_depth}
+              </div>
+            )}
           </div>
         )}
 

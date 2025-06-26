@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -17,7 +16,13 @@ interface Job {
     total_layers: number;
     current_archetype?: string;
     processing_phase?: string;
-    chunk_progress?: any;
+    chunk_progress?: {
+      currentChunk: number;
+      totalChunks: number;
+      breakthroughPotential: number;
+      tensionLevel: number;
+      chunkSize?: number;
+    };
     updated_at: string;
   }>;
   final_results?: Array<{
@@ -36,7 +41,7 @@ export const useJobMonitoring = (jobId?: string) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Submit a new job
+  // Submit a new job using chunked processing
   const submitJob = async (jobData: {
     question: string;
     processingDepth: number;
@@ -44,12 +49,15 @@ export const useJobMonitoring = (jobId?: string) => {
     enhancedMode: boolean;
     customArchetypes?: any;
     currentAssessment?: any;
+    chunkSize?: number;
   }) => {
     try {
       setLoading(true);
       setError(null);
 
-      const response = await fetch(`https://hyrxtqaccmrfvspcfhjj.supabase.co/functions/v1/genius-job-processor`, {
+      console.log('Submitting job to chunked processor:', jobData);
+
+      const response = await fetch(`https://hyrxtqaccmrfvspcfhjj.supabase.co/functions/v1/chunked-genius-processor`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -59,10 +67,11 @@ export const useJobMonitoring = (jobId?: string) => {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to submit job');
+        throw new Error('Failed to submit chunked job');
       }
 
       const result = await response.json();
+      console.log('Chunked job submitted:', result);
       return result.jobId;
     } catch (err: any) {
       setError(err.message);
@@ -75,7 +84,7 @@ export const useJobMonitoring = (jobId?: string) => {
   // Fetch job status
   const fetchJob = async (id: string) => {
     try {
-      const response = await fetch(`https://hyrxtqaccmrfvspcfhjj.supabase.co/functions/v1/genius-job-processor?jobId=${id}`, {
+      const response = await fetch(`https://hyrxtqaccmrfvspcfhjj.supabase.co/functions/v1/chunked-genius-processor?jobId=${id}`, {
         headers: {
           'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh5cnh0cWFjY21yZnZzcGNmaGpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTAzMzY5MDQsImV4cCI6MjA2NTkxMjkwNH0.y7pwI3YIOO0EsuBMGa71LlqQijJezykhLyuMh-hbxMY`
         }
@@ -98,7 +107,7 @@ export const useJobMonitoring = (jobId?: string) => {
   const fetchJobs = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`https://hyrxtqaccmrfvspcfhjj.supabase.co/functions/v1/genius-job-processor`, {
+      const response = await fetch(`https://hyrxtqaccmrfvspcfhjj.supabase.co/functions/v1/chunked-genius-processor`, {
         headers: {
           'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh5cnh0cWFjY21yZnZzcGNmaGpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTAzMzY5MDQsImV4cCI6MjA2NTkxMjkwNH0.y7pwI3YIOO0EsuBMGa71LlqQijJezykhLyuMh-hbxMY`
         }
@@ -119,12 +128,12 @@ export const useJobMonitoring = (jobId?: string) => {
     }
   };
 
-  // Real-time subscription for job updates
+  // Real-time subscription for job updates with chunked progress
   useEffect(() => {
     if (!jobId) return;
 
     const channel = supabase
-      .channel('job-updates')
+      .channel('chunked-job-updates')
       .on(
         'postgres_changes',
         {
@@ -143,6 +152,18 @@ export const useJobMonitoring = (jobId?: string) => {
           event: '*',
           schema: 'public',
           table: 'job_progress',
+          filter: `job_id=eq.${jobId}`
+        },
+        () => {
+          fetchJob(jobId);
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'final_results',
           filter: `job_id=eq.${jobId}`
         },
         () => {
