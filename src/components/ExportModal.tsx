@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Download, FileText, Database, Code } from "lucide-react";
+import { Download, FileText, Database } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface ExportModalProps {
   isOpen: boolean;
@@ -15,10 +16,11 @@ interface ExportModalProps {
 }
 
 export const ExportModal = ({ isOpen, onClose, results, question }: ExportModalProps) => {
-  const [format, setFormat] = useState("pdf");
+  const [format, setFormat] = useState("text");
   const [includeTrail, setIncludeTrail] = useState(true);
   const [includeLayers, setIncludeLayers] = useState(true);
   const [includeMetrics, setIncludeMetrics] = useState(true);
+  const { toast } = useToast();
 
   // Early return if no results to prevent null access errors
   if (!results) {
@@ -29,80 +31,116 @@ export const ExportModal = ({ isOpen, onClose, results, question }: ExportModalP
     const timestamp = new Date().toISOString().split('T')[0];
     const filename = `genius-machine-insight-${timestamp}`;
 
-    if (format === "json") {
-      const exportData = {
-        question,
-        timestamp: new Date().toISOString(),
-        insight: results.insight,
-        confidence: results.confidence,
-        tensionPoints: results.tensionPoints,
-        processingDepth: results.processingDepth,
-        circuitType: results.circuitType,
-        ...(includeMetrics && {
-          metrics: {
-            confidence: results.confidence,
-            tensionPoints: results.tensionPoints,
-            processingDepth: results.processingDepth,
-            circuitType: results.circuitType
-          }
-        }),
-        ...(includeLayers && results.layers && { layers: results.layers }),
-        ...(includeTrail && { logicTrail: results.logicTrail })
-      };
+    try {
+      if (format === "json") {
+        const exportData = {
+          question,
+          timestamp: new Date().toISOString(),
+          insight: results.insight,
+          confidence: results.confidence,
+          tensionPoints: results.tensionPoints,
+          processingDepth: results.processingDepth,
+          circuitType: results.circuitType,
+          ...(includeMetrics && {
+            metrics: {
+              confidence: results.confidence,
+              tensionPoints: results.tensionPoints,
+              processingDepth: results.processingDepth,
+              circuitType: results.circuitType,
+              noveltyScore: results.noveltyScore,
+              emergenceDetected: results.emergenceDetected
+            }
+          }),
+          ...(includeLayers && results.layers && { layers: results.layers }),
+          ...(includeTrail && results.logicTrail && { logicTrail: results.logicTrail }),
+          ...(results.compressionFormats && { compressionFormats: results.compressionFormats })
+        };
 
-      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${filename}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } else if (format === "text") {
-      let content = `GENIUS MACHINE ANALYSIS\n`;
-      content += `Generated: ${new Date().toLocaleString()}\n`;
-      content += `${'='.repeat(50)}\n\n`;
-      content += `QUESTION:\n${question}\n\n`;
-      content += `BREAKTHROUGH INSIGHT:\n"${results.insight}"\n\n`;
+        const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${filename}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+      } else if (format === "text") {
+        let content = `GENIUS MACHINE ANALYSIS REPORT\n`;
+        content += `Generated: ${new Date().toLocaleString()}\n`;
+        content += `${'='.repeat(60)}\n\n`;
+        content += `QUESTION:\n${question}\n\n`;
+        content += `BREAKTHROUGH INSIGHT:\n"${results.insight}"\n\n`;
+        
+        if (includeMetrics) {
+          content += `ANALYSIS METRICS:\n`;
+          content += `- Confidence Level: ${Math.round(results.confidence * 100)}%\n`;
+          content += `- Tension Points: ${results.tensionPoints}\n`;
+          content += `- Processing Depth: ${results.processingDepth} layers\n`;
+          content += `- Circuit Type: ${results.circuitType}\n`;
+          if (results.noveltyScore) content += `- Novelty Score: ${results.noveltyScore}/10\n`;
+          if (results.emergenceDetected) content += `- Breakthrough Detected: Yes\n`;
+          content += `\n`;
+        }
+
+        if (results.compressionFormats) {
+          content += `INSIGHT FORMATS:\n`;
+          content += `${'-'.repeat(30)}\n`;
+          content += `Ultra-Concise: ${results.compressionFormats.ultraConcise}\n\n`;
+          content += `Medium: ${results.compressionFormats.medium}\n\n`;
+          content += `Comprehensive: ${results.compressionFormats.comprehensive}\n\n`;
+        }
+
+        if (includeLayers && results.layers) {
+          content += `PROCESSING LAYERS:\n`;
+          content += `${'-'.repeat(30)}\n`;
+          results.layers.forEach((layer: any, index: number) => {
+            content += `\nLayer ${layer.layerNumber} (${layer.circuitType || 'Unknown'}):\n`;
+            content += `Insight: ${layer.insight}\n`;
+            content += `Confidence: ${Math.round(layer.confidence * 100)}%\n`;
+            if (layer.tensionPoints) content += `Tension Points: ${layer.tensionPoints}\n`;
+          });
+          content += `\n`;
+        }
+
+        if (includeTrail && results.logicTrail) {
+          content += `LOGIC TRAIL:\n`;
+          content += `${'-'.repeat(30)}\n`;
+          results.logicTrail.forEach((entry: any, index: number) => {
+            content += `\n${index + 1}. ${entry.archetype}:\n${entry.contribution}\n`;
+          });
+        }
+
+        const blob = new Blob([content], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${filename}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+
+      toast({
+        title: "Export Successful",
+        description: `Your insight has been exported as ${format.toUpperCase()} file.`,
+      });
+
+      onClose();
       
-      if (includeMetrics) {
-        content += `METRICS:\n`;
-        content += `- Confidence: ${Math.round(results.confidence * 100)}%\n`;
-        content += `- Tension Points: ${results.tensionPoints}\n`;
-        content += `- Processing Depth: ${results.processingDepth} layers\n`;
-        content += `- Circuit Type: ${results.circuitType}\n\n`;
-      }
-
-      if (includeLayers && results.layers) {
-        content += `PROCESSING LAYERS:\n`;
-        results.layers.forEach((layer: any, index: number) => {
-          content += `\nLayer ${layer.layerNumber} (${layer.circuitType}):\n`;
-          content += `Insight: ${layer.insight}\n`;
-          content += `Confidence: ${Math.round(layer.confidence * 100)}%\n`;
-        });
-        content += `\n`;
-      }
-
-      if (includeTrail) {
-        content += `LOGIC TRAIL:\n`;
-        results.logicTrail.forEach((entry: any, index: number) => {
-          content += `\n${index + 1}. ${entry.archetype}:\n${entry.contribution}\n`;
-        });
-      }
-
-      const blob = new Blob([content], { type: 'text/plain' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${filename}.txt`;
-      a.click();
-      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Export failed:', error);
+      toast({
+        title: "Export Failed",
+        description: "There was an error exporting your insight. Please try again.",
+        variant: "destructive",
+      });
     }
-
-    onClose();
   };
 
   const formatIcons = {
-    pdf: FileText,
     text: FileText,
     json: Database
   };
@@ -138,7 +176,7 @@ export const ExportModal = ({ isOpen, onClose, results, question }: ExportModalP
                 <SelectItem value="text">
                   <div className="flex items-center space-x-2">
                     <FileText className="w-4 h-4" />
-                    <span>Text File (.txt)</span>
+                    <span>Text Report (.txt)</span>
                   </div>
                 </SelectItem>
                 <SelectItem value="json">
@@ -160,7 +198,7 @@ export const ExportModal = ({ isOpen, onClose, results, question }: ExportModalP
                   checked={includeMetrics}
                   onCheckedChange={(checked) => setIncludeMetrics(checked === true)}
                 />
-                <Label htmlFor="metrics" className="text-sm">Confidence metrics</Label>
+                <Label htmlFor="metrics" className="text-sm">Analysis metrics & scores</Label>
               </div>
               {results.layers && (
                 <div className="flex items-center space-x-2">
@@ -169,17 +207,19 @@ export const ExportModal = ({ isOpen, onClose, results, question }: ExportModalP
                     checked={includeLayers}
                     onCheckedChange={(checked) => setIncludeLayers(checked === true)}
                   />
-                  <Label htmlFor="layers" className="text-sm">Processing layers</Label>
+                  <Label htmlFor="layers" className="text-sm">Processing layers detail</Label>
                 </div>
               )}
-              <div className="flex items-center space-x-2">
-                <Checkbox 
-                  id="trail"
-                  checked={includeTrail}
-                  onCheckedChange={(checked) => setIncludeTrail(checked === true)}
-                />
-                <Label htmlFor="trail" className="text-sm">Logic trail</Label>
-              </div>
+              {results.logicTrail && (
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="trail"
+                    checked={includeTrail}
+                    onCheckedChange={(checked) => setIncludeTrail(checked === true)}
+                  />
+                  <Label htmlFor="trail" className="text-sm">AI perspective trail</Label>
+                </div>
+              )}
             </div>
           </div>
         </div>

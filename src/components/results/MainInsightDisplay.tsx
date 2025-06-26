@@ -37,17 +37,6 @@ export const MainInsightDisplay = ({
 }: MainInsightDisplayProps) => {
   const [currentFormat, setCurrentFormat] = useState<InsightFormat>('medium');
 
-  // DEBUG: Log compression formats to understand why they're not rendering
-  console.log('MainInsightDisplay compression debugging:', {
-    hasCompressionFormats: !!compressionFormats,
-    compressionKeys: compressionFormats ? Object.keys(compressionFormats) : [],
-    ultraConcise: compressionFormats?.ultraConcise ? 'Present' : 'Missing',
-    medium: compressionFormats?.medium ? 'Present' : 'Missing', 
-    comprehensive: compressionFormats?.comprehensive ? 'Present' : 'Missing',
-    fallbackInsight: insight ? 'Present' : 'Missing',
-    currentFormat
-  });
-
   const getNoveltyColor = (score: number) => {
     if (score >= 8) return "bg-red-500";
     if (score >= 6) return "bg-yellow-500";
@@ -85,7 +74,6 @@ export const MainInsightDisplay = ({
 
   const getCurrentInsight = () => {
     if (!compressionFormats) {
-      console.log('No compression formats available, using fallback insight');
       return cleanInsight(insight);
     }
 
@@ -106,11 +94,9 @@ export const MainInsightDisplay = ({
 
     // Fallback to main insight if selected format is empty
     if (!selectedInsight || selectedInsight.trim() === '') {
-      console.log(`Selected format '${currentFormat}' is empty, falling back to main insight`);
       return cleanInsight(insight);
     }
 
-    console.log(`Using ${currentFormat} format:`, selectedInsight.substring(0, 50) + '...');
     return selectedInsight;
   };
 
@@ -128,9 +114,6 @@ export const MainInsightDisplay = ({
   };
 
   const displayInsight = getCurrentInsight();
-
-  // Show compression debug info in development
-  const showDebugInfo = process.env.NODE_ENV === 'development';
 
   return (
     <Card className="p-8 border-3 border-gray-300 bg-gradient-to-br from-yellow-50 via-green-50 to-blue-50 shadow-2xl">
@@ -168,28 +151,11 @@ export const MainInsightDisplay = ({
             />
           )}
 
-          {/* Debug Info - Only in development */}
-          {showDebugInfo && (
-            <div className="mb-4 p-2 bg-yellow-100 rounded text-xs text-left">
-              <strong>Debug Info:</strong><br />
-              Compression Available: {compressionFormats ? 'Yes' : 'No'}<br />
-              Current Format: {currentFormat}<br />
-              Display Length: {displayInsight.length} chars
-            </div>
-          )}
-
           <div className={`transition-all duration-300 ${currentFormat === 'ultra' ? 'py-8' : 'py-4'}`}>
             <p className={getInsightStyle()}>
               {currentFormat === 'ultra' ? displayInsight : `"${displayInsight}"`}
             </p>
           </div>
-
-          {/* Fallback message if compression formats are missing */}
-          {!compressionFormats && (
-            <div className="mt-2 text-sm text-gray-500 bg-gray-100 rounded p-2">
-              📝 Note: Compression formats not available for this insight
-            </div>
-          )}
         </div>
 
         {/* Enhanced Metrics with Pixel Robot Charm */}
