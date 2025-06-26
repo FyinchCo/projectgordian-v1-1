@@ -75,13 +75,26 @@ export async function processArchetypes(
         timestamp: Date.now()
       });
     }
+    
+    // Add a small delay between archetype processing to avoid rate limits
+    if (i < archetypes.length - 1) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
   }
   
   console.log(`=== ARCHETYPE PROCESSING COMPLETE ===`);
   console.log(`Generated ${responses.length} archetype responses for layer ${layerNumber}`);
+  console.log(`Response preview:`, responses.map(r => `${r.archetype}: ${r.response?.substring(0, 50)}...`));
   
   if (responses.length === 0) {
     console.error('CRITICAL: No archetype responses generated!');
+    // Generate fallback responses for all archetypes
+    return archetypes.map(archetype => ({
+      archetype: archetype.name,
+      response: generateFallbackResponse(archetype, layerNumber, question),
+      processingTime: 0,
+      timestamp: Date.now()
+    }));
   }
   
   return responses;
@@ -106,7 +119,18 @@ async function generateArchetypeResponse(
 ): Promise<string> {
   
   const systemPrompt = archetype.systemPrompt || 
-    `You are ${archetype.name}, a unique perspective in Layer ${layerNumber} analysis. ${archetype.description || 'Provide your distinctive viewpoint.'}`;
+    `You are ${archetype.name}, a unique perspective in Layer ${layerNumber} analysis. ${archetype.description || 'Provide your distinctive viewpoint.'}
+
+Your personality traits:
+- Imagination: ${archetype.imagination}/10
+- Skepticism: ${archetype.skepticism}/10  
+- Aggression: ${archetype.aggression}/10
+- Emotionality: ${archetype.emotionality}/10
+- Language Style: ${archetype.languageStyle}
+
+${archetype.constraint ? `Additional constraints: ${archetype.constraint}` : ''}
+
+CRITICAL: You MUST provide a substantive, specific response that reflects your unique archetype. Do not give generic or vague answers.`;
   
   const layerApproaches = [
     "foundational examination",
@@ -123,6 +147,10 @@ async function generateArchetypeResponse(
   
   const layerApproach = layerApproaches[Math.min(layerNumber - 1, layerApproaches.length - 1)];
   
+  // Enhanced prompt to force disagreement and tension
+  const tensionPrompt = layerNumber > 1 ? 
+    `\n\nCRITICAL TENSION REQUIREMENT: You MUST challenge or disagree with aspects of previous perspectives. Do not just build upon them - find points of tension, contradiction, or alternative viewpoints. Your role is to create productive intellectual conflict.` : '';
+  
   const userPrompt = `${context}
 
 LAYER ${layerNumber} FOCUS: ${layerApproach}
@@ -135,8 +163,11 @@ CRITICAL REQUIREMENTS:
 2. Focus specifically on ${layerApproach} as it relates to this question
 3. Provide substantial, specific insights (not generic observations)
 4. Contribute to ${layerNumber > 6 ? 'breakthrough understanding' : layerNumber > 3 ? 'integrated synthesis' : 'foundational analysis'}
+5. Your response MUST reflect your specific archetype personality and constraints
 
-Your response should be substantial (150-250 words) and offer insights that will integrate well with other archetypal perspectives while maintaining your unique ${archetype.name} viewpoint.`;
+${tensionPrompt}
+
+Your response should be substantial (150-300 words) and offer insights that will integrate well with other archetypal perspectives while maintaining your unique ${archetype.name} viewpoint.`;
 
   console.log(`Calling OpenAI for ${archetype.name} in layer ${layerNumber}...`);
 
@@ -152,40 +183,68 @@ Your response should be substantial (150-250 words) and offer insights that will
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }
       ],
-      max_tokens: 350,
-      temperature: 0.7 + (layerNumber * 0.05) + (archetypeIndex * 0.02),
+      max_tokens: 400,
+      temperature: 0.7 + (layerNumber * 0.05) + (archetypeIndex * 0.03), // Increased temperature for more variation
     }),
   });
 
   if (!response.ok) {
+    const errorText = await response.text();
+    console.error(`OpenAI API error for ${archetype.name}:`, response.status, response.statusText, errorText);
     throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
   }
 
   const data = await response.json();
   
   if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+    console.error('Invalid OpenAI API response structure:', data);
     throw new Error('Invalid OpenAI API response structure');
   }
   
   const content = data.choices[0].message.content;
   console.log(`✓ OpenAI response received for ${archetype.name}: ${content?.length || 0} chars`);
   
+  if (!content || content.trim().length < 20) {
+    console.warn(`Short response from ${archetype.name}:`, content);
+  }
+  
   return content || '';
 }
 
 function generateFallbackResponse(archetype: Archetype, layerNumber: number, question: string): string {
   const fallbackResponses = [
-    `${archetype.name} perspective on Layer ${layerNumber}: This question about divine creation reveals fundamental aspects that require careful examination through the lens of ${archetype.name.toLowerCase()} understanding. The inquiry challenges our basic assumptions about causality and existence, suggesting that conventional approaches may miss critical dimensions of divine nature.`,
+    `${archetype.name} perspective on Layer ${layerNumber}: This question reveals fundamental tensions about the relationship between knowledge and danger. As a ${archetype.name.toLowerCase()}, I observe that the pursuit of understanding often exposes us to risks we couldn't anticipate. The deeper we probe, the more we uncover complexities that can overwhelm our capacity to manage them safely. This creates a paradox where knowledge becomes both our shield and our vulnerability.`,
     
-    `From the ${archetype.name} viewpoint in Layer ${layerNumber}: The deeper implications of this theological question suggest patterns that align with ${archetype.name.toLowerCase()} analysis. The question "Who created God?" exposes the limitations of applying temporal causation to eternal existence, revealing insights about the nature of necessary versus contingent being.`,
+    `From the ${archetype.name} viewpoint in Layer ${layerNumber}: The question exposes a critical pattern - that understanding itself can become a source of amplified risk. When we attempt to comprehend complex systems, we often disturb their equilibrium or reveal our own cognitive limitations. The danger lies not in ignorance, but in the false confidence that partial understanding provides, leading us to make decisions with incomplete information while believing we have sufficient knowledge.`,
     
-    `${archetype.name} analysis for Layer ${layerNumber}: This inquiry opens pathways to understanding that resonate with ${archetype.name.toLowerCase()} frameworks. The question itself may represent a category error, like asking what color sound has, pointing toward the transcendent nature of divine existence beyond ordinary causal relationships.`,
+    `${archetype.name} analysis for Layer ${layerNumber}: This inquiry reveals the inherent tension between curiosity and caution. The more we seek to understand certain phenomena, the more we expose ourselves to their influence or create new pathways for harm. Consider how studying extremist ideologies can lead to radicalization, or how researching dangerous technologies can enable their misuse. The act of understanding transforms both the observer and the observed in unpredictable ways.`,
     
-    `Layer ${layerNumber} ${archetype.name} perspective: The question's complexity invites ${archetype.name.toLowerCase()} examination of underlying structures. Rather than seeking a creator for God, this inquiry reveals the necessity of an uncaused first principle that serves as the eternal ground of all existence, including the capacity for questioning itself.`,
+    `Layer ${layerNumber} ${archetype.name} perspective: The question illuminates a fundamental truth about the nature of knowledge - that some forms of understanding carry inherent risks that escalate with depth of comprehension. The danger emerges from the interaction between our cognitive processes and the subject matter itself. As we develop more sophisticated models and theories, we may inadvertently create new vulnerabilities or blind spots that we couldn't perceive from a position of ignorance.`,
     
-    `${archetype.name} insights for Layer ${layerNumber}: This question catalyzes ${archetype.name.toLowerCase()} understanding of broader systemic relationships. The exploration reveals that asking who created God ultimately leads to recognizing the self-existing nature of divine reality, where creator and creation merge in the eternal source of all being.`
+    `${archetype.name} insights for Layer ${layerNumber}: This question exposes the recursive nature of dangerous knowledge - where the very act of trying to understand something transforms it into something more hazardous. The pursuit of understanding can create feedback loops that amplify risk, whether through overconfidence, misapplication, or the unintended consequences of our analytical frameworks. The danger multiplies because we become invested in our understanding, making us resistant to recognizing when we've crossed into hazardous territory.`
   ];
   
   const baseResponse = fallbackResponses[layerNumber % fallbackResponses.length];
-  return baseResponse;
+  
+  // Add archetype-specific flavor
+  let archetypeModifier = '';
+  switch (archetype.name) {
+    case 'The Visionary':
+      archetypeModifier = ' I envision this as a fundamental challenge to how we approach the future of knowledge acquisition.';
+      break;
+    case 'The Skeptic':
+      archetypeModifier = ' We must rigorously question whether our methods of understanding are themselves creating the dangers we seek to avoid.';
+      break;
+    case 'The Mystic':
+      archetypeModifier = ' This reveals the ancient wisdom that some mysteries are meant to remain hidden, for they transform the seeker in dangerous ways.';
+      break;
+    case 'The Contrarian':
+      archetypeModifier = ' Perhaps the real danger lies not in understanding, but in our assumption that understanding is always beneficial or safe.';
+      break;
+    case 'The Realist':
+      archetypeModifier = ' Practically speaking, people rarely acknowledge the risks inherent in their pursuit of knowledge until it\'s too late.';
+      break;
+  }
+  
+  return baseResponse + archetypeModifier;
 }

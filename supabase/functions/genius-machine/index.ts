@@ -1,288 +1,169 @@
 
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { processLayer } from './layer-processor.ts';
-import { evaluateQuestionQuality } from './question-quality.ts';
-import { defaultArchetypes } from './archetypes.ts';
-import { detectAssumptions } from './analysis.ts';
-import { LayerResult } from './types.ts';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-function getArchetypes(customArchetypes: string) {
-  switch (customArchetypes) {
-    case 'default':
-      return defaultArchetypes;
-    default:
-      return defaultArchetypes;
-  }
-}
-
-async function analyzeAssumptions(question: string) {
-  try {
-    return await detectAssumptions(question);
-  } catch (error) {
-    console.error('Assumption analysis failed:', error);
-    return {
-      assumptions: ["Analysis temporarily unavailable"],
-      challengingQuestions: ["What underlying assumptions might we be missing?"],
-      resistanceScore: 5
-    };
-  }
-}
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.2';
+import { corsHeaders } from '../_shared/cors.ts';
+import { processArchetypes } from './archetype-processor.ts';
+import { synthesizeLayer, generateFinalResults } from './synthesis-processor.ts';
+import { defaultArchetypes, buildSystemPromptFromPersonality } from './archetypes.ts';
+import { Archetype, LayerResult } from './types.ts';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-    const { 
-      question, 
-      processingDepth = 1, 
-      circuitType = 'sequential',
-      customArchetypes = 'default',
-      enhancedMode = false
-    } = await req.json();
-
-    console.log('=== PROCESSING REQUEST START ===');
-    console.log('Request details:', {
-      question: question.substring(0, 100) + '...',
-      requestedDepth: processingDepth,
-      circuitType,
-      enhancedMode,
-      customArchetypes
-    });
-
-    if (!question) {
-      return new Response(JSON.stringify({ error: 'Question is required' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+    const { question, processingDepth = 3, circuitType = 'sequential', customArchetypes, enhancedMode = true } = await req.json();
+    
+    console.log('=== GENIUS MACHINE REQUEST ===');
+    console.log('Question:', question?.substring(0, 100) + '...');
+    console.log('Processing depth:', processingDepth);
+    console.log('Circuit type:', circuitType);
+    console.log('Custom archetypes:', customArchetypes ? customArchetypes.length : 0);
+    
+    if (!question || typeof question !== 'string' || question.trim().length < 10) {
+      throw new Error('Question must be a string with at least 10 characters');
     }
 
-    const archetypes = getArchetypes(customArchetypes);
-    console.log(`Using ${archetypes.length} archetypes for processing`);
+    // Build archetypes array
+    let archetypes: Archetype[];
     
-    if (!archetypes || archetypes.length === 0) {
-      throw new Error('No archetypes available for processing');
+    if (customArchetypes && Array.isArray(customArchetypes) && customArchetypes.length > 0) {
+      console.log('Using custom archetypes');
+      archetypes = customArchetypes.map(arch => ({
+        name: arch.name || 'Custom Archetype',
+        description: arch.description || 'A custom archetype',
+        languageStyle: arch.languageStyle || 'logical',
+        imagination: typeof arch.imagination === 'number' ? arch.imagination : 5,
+        skepticism: typeof arch.skepticism === 'number' ? arch.skepticism : 5,
+        aggression: typeof arch.aggression === 'number' ? arch.aggression : 5,
+        emotionality: typeof arch.emotionality === 'number' ? arch.emotionality : 5,
+        constraint: arch.constraint || '',
+        systemPrompt: buildSystemPromptFromPersonality(
+          arch.name || 'Custom Archetype',
+          arch.description || 'A custom archetype',
+          arch.languageStyle || 'logical',
+          typeof arch.imagination === 'number' ? arch.imagination : 5,
+          typeof arch.skepticism === 'number' ? arch.skepticism : 5,
+          typeof arch.aggression === 'number' ? arch.aggression : 5,
+          typeof arch.emotionality === 'number' ? arch.emotionality : 5,
+          arch.constraint
+        )
+      }));
+    } else {
+      console.log('Using default archetypes');
+      archetypes = defaultArchetypes;
     }
     
-    console.log('Running assumption analysis...');
-    const assumptionAnalysis = await analyzeAssumptions(question);
+    console.log(`Configured ${archetypes.length} archetypes:`, archetypes.map(a => a.name));
     
-    // ENSURE SEQUENTIAL PROCESSING OF ALL REQUESTED LAYERS
-    const requestedDepth = Math.max(1, Math.min(processingDepth, 50));
-    const processedLayers: LayerResult[] = [];
+    // Process layers
+    const layers: LayerResult[] = [];
+    const actualDepth = Math.min(Math.max(processingDepth, 1), 10);
     
-    console.log(`=== STARTING SEQUENTIAL LAYER PROCESSING ===`);
-    console.log(`Target: ${requestedDepth} layers (MUST process ALL requested layers)`);
+    console.log(`Starting ${actualDepth} layer processing...`);
     
-    // Process each layer sequentially from 1 to requestedDepth
-    for (let layerNumber = 1; layerNumber <= requestedDepth; layerNumber++) {
-      console.log(`\n--- PROCESSING LAYER ${layerNumber} of ${requestedDepth} ---`);
-      console.log(`Current processed layers: ${processedLayers.length}`);
+    for (let layerNumber = 1; layerNumber <= actualDepth; layerNumber++) {
+      console.log(`\n=== PROCESSING LAYER ${layerNumber}/${actualDepth} ===`);
       
       try {
-        const previousLayers = [...processedLayers];
-        
-        console.log(`Layer ${layerNumber}: Processing with ${previousLayers.length} previous layers as context`);
-        
-        const layerResult = await processLayer(
-          layerNumber, 
-          question, 
-          archetypes, 
-          circuitType, 
-          previousLayers,
-          enhancedMode
+        // Process archetypes for this layer
+        const archetypeResponses = await processArchetypes(
+          archetypes,
+          question,
+          circuitType,
+          layers,
+          layerNumber
         );
         
-        if (!layerResult) {
-          throw new Error(`Layer ${layerNumber} returned null result`);
+        console.log(`Layer ${layerNumber}: Got ${archetypeResponses.length} archetype responses`);
+        
+        if (archetypeResponses.length === 0) {
+          console.error(`No archetype responses for layer ${layerNumber}`);
+          break;
         }
         
-        if (layerNumber !== layerResult.layerNumber) {
-          console.error(`Layer ${layerNumber} validation failed: expected layer ${layerNumber}, got ${layerResult.layerNumber}`);
-          throw new Error(`Layer ${layerNumber} processing validation failed`);
+        // Synthesize the layer
+        const layerResult = await synthesizeLayer(
+          archetypeResponses,
+          question,
+          layerNumber,
+          circuitType,
+          layers
+        );
+        
+        layers.push(layerResult);
+        console.log(`✓ Layer ${layerNumber} completed successfully`);
+        
+        // Add delay between layers to avoid rate limits
+        if (layerNumber < actualDepth) {
+          await new Promise(resolve => setTimeout(resolve, 500));
         }
-        
-        if (!layerResult.synthesis || !layerResult.synthesis.insight) {
-          console.error(`Layer ${layerNumber} missing synthesis or insight`);
-          throw new Error(`Layer ${layerNumber} missing required synthesis`);
-        }
-        
-        const isDuplicate = processedLayers.some(prevLayer => {
-          const prevInsight = prevLayer.synthesis.insight.toLowerCase();
-          const currentInsight = layerResult.synthesis.insight.toLowerCase();
-          return prevInsight.includes(currentInsight.substring(0, 50)) ||
-                 currentInsight.includes(prevInsight.substring(0, 50));
-        });
-        
-        if (isDuplicate) {
-          console.warn(`Layer ${layerNumber} generated duplicate insight, enhancing uniqueness...`);
-          layerResult.synthesis.insight = `Layer ${layerNumber} breakthrough: ${layerResult.synthesis.insight} This represents a ${layerNumber > 6 ? 'transcendent' : 'progressive'} advancement beyond previous layers, introducing ${layerNumber}-level complexity and depth.`;
-        }
-        
-        processedLayers.push(layerResult);
-        
-        console.log(`✓ Layer ${layerNumber} completed successfully:`);
-        console.log(`- Insight length: ${layerResult.synthesis.insight.length} chars`);
-        console.log(`- Confidence: ${Math.round(layerResult.synthesis.confidence * 100)}%`);
-        console.log(`- Archetype responses: ${layerResult.archetypeResponses?.length || 0}`);
-        console.log(`- Total layers so far: ${processedLayers.length}`);
         
       } catch (layerError) {
-        console.error(`Layer ${layerNumber} processing failed:`, layerError);
+        console.error(`Layer ${layerNumber} failed:`, layerError);
         
-        const fallbackLayer: LayerResult = {
-          layerNumber: layerNumber,
-          archetypeResponses: [],
-          synthesis: {
-            insight: generateLayerSpecificFallback(layerNumber, question),
-            confidence: Math.max(0.4, 0.6 + (layerNumber * 0.02) + (Math.random() * 0.1)),
-            tensionPoints: Math.max(1, Math.min(8, Math.floor(layerNumber / 2) + 1 + Math.floor(Math.random() * 2))),
-            noveltyScore: Math.max(3, Math.min(10, 3 + Math.floor(layerNumber / 1.5) + Math.floor(Math.random() * 2))),
-            emergenceDetected: layerNumber > 6
-          },
-          timestamp: Date.now()
-        };
-        
-        processedLayers.push(fallbackLayer);
-        console.log(`Added fallback layer ${layerNumber}, continuing to next layer...`);
+        // If we have at least one successful layer, continue
+        if (layers.length > 0) {
+          console.log(`Continuing with ${layers.length} completed layers`);
+          break;
+        } else {
+          throw layerError;
+        }
       }
     }
-
-    if (processedLayers.length !== requestedDepth) {
-      console.error(`CRITICAL ERROR: Expected ${requestedDepth} layers but processed ${processedLayers.length}`);
-      console.error('Layer numbers in result:', processedLayers.map(l => l.layerNumber));
-    } else {
-      console.log(`✓ SUCCESS: All ${processedLayers.length} layers processed successfully`);
-    }
-
-    const uniqueInsights = new Set(processedLayers.map(l => l.synthesis.insight.substring(0, 100)));
-    if (uniqueInsights.size < processedLayers.length) {
-      console.warn(`WARNING: ${processedLayers.length - uniqueInsights.size} duplicate insights detected`);
-    }
-
-    const finalLayer = processedLayers[processedLayers.length - 1];
-    if (!finalLayer || !finalLayer.synthesis) {
-      throw new Error('No valid final layer was processed');
+    
+    if (layers.length === 0) {
+      throw new Error('No layers were successfully processed');
     }
     
-    const finalSynthesis = finalLayer.synthesis;
+    console.log(`\n=== GENERATING FINAL RESULTS ===`);
+    console.log(`Processed ${layers.length} layers successfully`);
     
-    // Generate compression formats for the final insight
-    console.log('Generating compression formats for final insight...');
-    let compressionFormats = null;
-    try {
-      const { generateCompressionFormats } = await import('./compression.ts');
-      compressionFormats = await generateCompressionFormats(
-        finalSynthesis.insight,
-        finalSynthesis,
-        question
-      );
-      console.log('Compression formats generated successfully');
-    } catch (compressionError) {
-      console.error('Compression formats generation failed:', compressionError);
-      // Continue without compression formats
-    }
+    // Generate final results
+    const finalResults = await generateFinalResults(layers, question, circuitType);
     
-    // Evaluate question quality
-    let questionQuality = null;
-    if (finalSynthesis.confidence > 0.2) {
-      try {
-        console.log('Evaluating question quality...');
-        questionQuality = await evaluateQuestionQuality(question, finalSynthesis, processedLayers);
-        console.log('Question quality evaluation completed');
-      } catch (qualityError) {
-        console.error('Question quality evaluation failed:', qualityError);
-        questionQuality = {
-          geniusYield: Math.max(4, Math.min(8, 5 + Math.floor(Math.random() * 3))),
-          constraintBalance: Math.max(5, Math.min(9, 6 + Math.floor(Math.random() * 3))),
-          metaPotential: Math.max(4, Math.min(8, 5 + Math.floor(Math.random() * 3))),
-          effortVsEmergence: Math.max(5, Math.min(9, 6 + Math.floor(Math.random() * 3))),
-          overallScore: Math.max(5, Math.min(8, 6 + Math.floor(Math.random() * 2))),
-          feedback: "Question quality assessment completed with standard metrics.",
-          recommendations: ["Consider refining question specificity for enhanced insights.", "Explore multi-layered processing for deeper breakthrough potential."]
-        };
-      }
-    }
-
-    console.log(`=== PROCESSING COMPLETE ===`);
-    console.log(`Final summary: ${processedLayers.length} layers, ${uniqueInsights.size} unique insights`);
-
-    const response = {
-      insight: finalSynthesis.insight,
-      confidence: finalSynthesis.confidence,
-      tensionPoints: finalSynthesis.tensionPoints,
-      noveltyScore: finalSynthesis.noveltyScore,
-      emergenceDetected: finalSynthesis.emergenceDetected,
-      processingDepth: processedLayers.length,
-      layers: processedLayers,
-      questionQuality: questionQuality,
-      assumptionAnalysis: assumptionAnalysis,
-      logicTrail: finalLayer.archetypeResponses || [],
-      compressionFormats: compressionFormats,
-      metadata: {
-        timestamp: Date.now(),
-        requestedDepth: requestedDepth,
-        actualDepth: processedLayers.length,
-        layerProcessingSuccess: processedLayers.length === requestedDepth,
-        uniqueInsights: uniqueInsights.size,
-        compressionAvailable: !!compressionFormats,
-        version: '2.3'
-      }
-    };
-
-    return new Response(JSON.stringify(response), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    console.log('✓ Final results generated');
+    console.log('Response summary:', {
+      insight: finalResults.insight?.substring(0, 100) + '...',
+      confidence: finalResults.confidence,
+      tensionPoints: finalResults.tensionPoints,
+      logicTrailLength: finalResults.logicTrail?.length || 0,
+      layersProcessed: layers.length
     });
-
-  } catch (error) {
-    console.error('Error in genius-machine function:', error);
     
-    return new Response(JSON.stringify({ 
-      error: 'Processing error occurred',
-      insight: 'The system encountered technical difficulties. Please try again.',
-      confidence: 0.2,
+    return new Response(JSON.stringify(finalResults), {
+      headers: { 
+        ...corsHeaders, 
+        'Content-Type': 'application/json' 
+      },
+    });
+    
+  } catch (error) {
+    console.error('=== GENIUS MACHINE ERROR ===');
+    console.error('Error details:', error);
+    console.error('Stack trace:', error.stack);
+    
+    const errorResponse = {
+      error: true,
+      message: error.message || 'Processing failed',
+      insight: 'Processing encountered an error. The system is designed to handle complex philosophical questions, but this particular analysis could not be completed.',
+      confidence: 0.1,
       tensionPoints: 0,
-      noveltyScore: 1,
+      noveltyScore: 0,
       emergenceDetected: false,
-      processingDepth: 0,
       layers: [],
-      questionQuality: null,
-      assumptionAnalysis: null,
-      compressionFormats: null,
-      metadata: {
-        timestamp: Date.now(),
-        error: error.message,
-        version: '2.3'
-      }
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      logicTrail: [],
+      circuitType: 'error',
+      processingDepth: 0
+    };
+    
+    return new Response(JSON.stringify(errorResponse), {
+      status: 200, // Return 200 to avoid client-side error handling
+      headers: { 
+        ...corsHeaders, 
+        'Content-Type': 'application/json' 
+      },
     });
   }
 });
-
-function generateLayerSpecificFallback(layerNumber: number, question: string): string {
-  const layerFocuses = [
-    "foundational examination reveals",
-    "pattern recognition uncovers",
-    "tension exploration exposes", 
-    "systemic integration demonstrates",
-    "assumption challenging discovers",
-    "emergence detection identifies",
-    "meta-transcendence achieves",
-    "breakthrough synthesis reveals",
-    "ultimate perspective shows",
-    "transcendent unity manifests"
-  ];
-  
-  const focus = layerFocuses[Math.min(layerNumber - 1, layerFocuses.length - 1)];
-  
-  return `Layer ${layerNumber} ${focus} that the question "${question}" operates as a catalyst for understanding the relationship between finite inquiry and infinite reality. This layer demonstrates how theological questions about divine creation point toward the limitations of causal thinking when applied to eternal existence, revealing insights about necessary versus contingent being that ${layerNumber > 6 ? 'transcend ordinary conceptual frameworks' : 'build systematically toward deeper understanding'}.`;
-}
