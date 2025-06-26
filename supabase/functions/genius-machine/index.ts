@@ -1,9 +1,11 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.2';
 import { corsHeaders } from '../_shared/cors.ts';
 import { processArchetypesWithPersonality } from './enhanced-archetype-processor.ts';
 import { synthesizeLayerWithTensionEscalation, generateFinalResultsWithTensionEscalation } from './enhanced-synthesis-processor.ts';
 import { defaultArchetypes, buildSystemPromptFromPersonality } from './archetypes.ts';
+import { generateCompressionFormats } from './compression.ts';
 import { Archetype, LayerResult } from './types.ts';
 
 serve(async (req) => {
@@ -18,7 +20,8 @@ serve(async (req) => {
       circuitType = 'sequential', 
       customArchetypes, 
       enhancedMode = true,
-      compressionSettings 
+      compressionSettings,
+      outputType
     } = await req.json();
     
     console.log('=== ENHANCED GENIUS MACHINE REQUEST ===');
@@ -27,6 +30,7 @@ serve(async (req) => {
     console.log('Enhanced personality processing: ENABLED');
     console.log('Tension escalation logic: ENABLED');
     console.log('Compression settings:', compressionSettings);
+    console.log('Output type:', outputType);
     
     if (!question || typeof question !== 'string' || question.trim().length < 10) {
       throw new Error('Question must be a string with at least 10 characters');
@@ -130,18 +134,19 @@ serve(async (req) => {
     // Generate final results with enhanced analysis
     const finalResults = await generateFinalResultsWithTensionEscalation(layers, question, circuitType);
     
-    // Generate compression formats with user settings
+    // Generate compression formats with user settings and outputType
     if (finalResults.insight) {
       try {
-        console.log('Generating compression formats with user settings...');
+        console.log('Generating compression formats with user settings and output type:', outputType);
         const compressionFormats = await generateCompressionFormats(
           finalResults.insight,
           finalResults,
           question,
-          compressionSettings
+          compressionSettings,
+          outputType
         );
         finalResults.compressionFormats = compressionFormats;
-        console.log('✓ Compression formats generated with user preferences');
+        console.log('✓ Compression formats generated with user preferences and output type');
       } catch (compressionError) {
         console.error('Failed to generate compression formats:', compressionError);
         // Continue without compression formats rather than failing entire request
@@ -155,7 +160,8 @@ serve(async (req) => {
       tensionPoints: finalResults.tensionPoints,
       noveltyScore: finalResults.noveltyScore,
       emergenceDetected: finalResults.emergenceDetected,
-      layersProcessed: layers.length
+      layersProcessed: layers.length,
+      outputType: outputType
     });
     
     return new Response(JSON.stringify(finalResults), {
