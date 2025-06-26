@@ -8,6 +8,7 @@ interface ProcessingSectionProps {
   processingDepth: number[];
   circuitType: string;
   chunkProgress?: { current: number; total: number };
+  processingPhase?: string;
 }
 
 export const ProcessingSection = ({ 
@@ -16,7 +17,8 @@ export const ProcessingSection = ({
   currentLayer, 
   processingDepth, 
   circuitType,
-  chunkProgress 
+  chunkProgress,
+  processingPhase
 }: ProcessingSectionProps) => {
   return (
     <ProcessingDisplay 
@@ -26,6 +28,7 @@ export const ProcessingSection = ({
       totalLayers={processingDepth[0]}
       circuitType={circuitType}
       chunkProgress={chunkProgress}
+      processingPhase={processingPhase}
     />
   );
 };

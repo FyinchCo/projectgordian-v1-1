@@ -1,3 +1,4 @@
+
 import { useMetaLearning } from "@/hooks/useMetaLearning";
 import { useToast } from "@/hooks/use-toast";
 import { useProcessingExecutor } from "./processing/processingExecutor";
@@ -17,6 +18,7 @@ interface ProcessingLogicProps {
   onCurrentArchetypeChange: (archetype: string) => void;
   onCurrentLayerChange: (layer: number) => void;
   onChunkProgressChange: (progress: { current: number; total: number }) => void;
+  onProcessingPhaseChange?: (phase: string) => void;
 }
 
 export const ProcessingLogic = ({
@@ -32,7 +34,8 @@ export const ProcessingLogic = ({
   onProcessingError,
   onCurrentArchetypeChange,
   onCurrentLayerChange,
-  onChunkProgressChange
+  onChunkProgressChange,
+  onProcessingPhaseChange
 }: ProcessingLogicProps) => {
   const { toast } = useToast();
   const { executeProcessing } = useProcessingExecutor();
@@ -57,7 +60,7 @@ export const ProcessingLogic = ({
       customInstructions: ""
     };
     
-    console.log('=== RELIABLE PROCESSING START ===');
+    console.log('=== ENHANCED REAL-TIME PROCESSING START ===');
     console.log('Configuration:', {
       question: question.trim().substring(0, 100) + '...',
       requestedDepth: processingDepth[0],
@@ -65,12 +68,18 @@ export const ProcessingLogic = ({
       customArchetypes: customArchetypes ? customArchetypes.length : 0,
       enhancedMode,
       outputType,
-      compressionSettings
+      compressionSettings,
+      realTimeProgress: true
     });
     
     onProcessingStart();
     onCurrentLayerChange(1);
     onChunkProgressChange({ current: 0, total: 0 });
+    
+    // Enhanced progress tracking
+    if (onProcessingPhaseChange) {
+      onProcessingPhaseChange('Initializing enhanced processing system...');
+    }
     
     try {
       const finalResults = await executeProcessing({
@@ -84,12 +93,14 @@ export const ProcessingLogic = ({
         outputType,
         onProcessingComplete,
         onCurrentLayerChange,
-        onChunkProgressChange
+        onChunkProgressChange,
+        onCurrentArchetypeChange,
+        onProcessingPhaseChange
       });
       
       // Handle meta-learning recording with proper type checking
       if (finalResults && 'questionQuality' in finalResults && finalResults.questionQuality) {
-        console.log('Recording learning cycle...');
+        console.log('Recording enhanced learning cycle...');
         try {
           const assessment = currentAssessment || {
             complexityScore: processingDepth[0],
@@ -107,7 +118,8 @@ export const ProcessingLogic = ({
             circuitType,
             enhancedMode,
             archetypeConfigurations: currentAssessment?.archetypeConfigurations || [],
-            tensionParameters: currentAssessment?.tensionParameters || {}
+            tensionParameters: currentAssessment?.tensionParameters || {},
+            realTimeProgress: true
           };
           
           recordProcessingResults(
@@ -123,27 +135,27 @@ export const ProcessingLogic = ({
       }
       
     } catch (error: any) {
-      console.error('=== RELIABLE PROCESSING ERROR ===');
+      console.error('=== ENHANCED PROCESSING ERROR ===');
       console.error('Error details:', error);
       
       // Enhanced error handling with better user messages
       let userTitle = "Processing Error";
-      let userDescription = "Analysis encountered an issue. The system has reliable fallbacks - please try again.";
+      let userDescription = "Analysis encountered an issue. The enhanced system has multiple fallbacks - please try again.";
       let variant: "default" | "destructive" = "destructive";
       
       const errorMessage = error?.message || '';
       
       if (errorMessage.includes('timeout')) {
         userTitle = "Processing Timeout";
-        userDescription = "Analysis took longer than expected. Try reducing processing depth or try again - the system will adapt.";
+        userDescription = "Analysis took longer than expected. The system automatically optimized for reliability - try again for enhanced results.";
         variant = "default";
       } else if (errorMessage.includes('partial')) {
         userTitle = "Partial Results Available";
-        userDescription = "Some processing completed successfully. Results may have reduced quality but are still valuable.";
+        userDescription = "Some processing completed successfully. Results may have reduced quality but contain valuable insights.";
         variant = "default";
       } else {
         userTitle = "System Temporarily Unavailable";
-        userDescription = "The analysis service is currently experiencing issues. Please try again in a moment.";
+        userDescription = "The enhanced analysis service is temporarily unavailable. Please try again in a moment.";
       }
       
       toast({
@@ -154,10 +166,13 @@ export const ProcessingLogic = ({
       
       onProcessingError();
     } finally {
-      console.log('=== RELIABLE PROCESSING CLEANUP ===');
+      console.log('=== ENHANCED PROCESSING CLEANUP ===');
       onCurrentArchetypeChange("");
       onCurrentLayerChange(1);
       onChunkProgressChange({ current: 0, total: 0 });
+      if (onProcessingPhaseChange) {
+        onProcessingPhaseChange('Processing complete');
+      }
     }
   };
 

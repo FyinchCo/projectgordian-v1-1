@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { ProcessingSection } from "@/components/ProcessingSection";
 import { ResultsSection } from "@/components/ResultsSection";
@@ -21,6 +22,7 @@ const Index = () => {
   const [customArchetypes, setCustomArchetypes] = useState(null);
   const [currentAssessment, setCurrentAssessment] = useState(null);
   const [chunkProgress, setChunkProgress] = useState({ current: 0, total: 0 });
+  const [processingPhase, setProcessingPhase] = useState("Initializing...");
   const { toast } = useToast();
 
   const { outputType, setOutputType } = useOutputType('practical');
@@ -55,15 +57,22 @@ const Index = () => {
   const handleProcessingStart = () => {
     setIsProcessing(true);
     setResults(null);
+    setProcessingPhase("Initializing enhanced processing system...");
   };
 
   const handleProcessingComplete = (finalResults: any) => {
     setResults(finalResults);
     setIsProcessing(false);
+    setProcessingPhase("Analysis complete with breakthrough insights");
   };
 
   const handleProcessingError = () => {
     setIsProcessing(false);
+    setProcessingPhase("Processing encountered an error");
+  };
+
+  const handleProcessingPhaseChange = (phase: string) => {
+    setProcessingPhase(phase);
   };
 
   const handleExportInsight = () => {
@@ -74,9 +83,10 @@ const Index = () => {
     setResults(null);
     setQuestion("");
     setCurrentAssessment(null);
+    setProcessingPhase("Ready to process");
   };
 
-  // Get the processing logic handler function with outputType
+  // Get the processing logic handler function with enhanced tracking
   const processingLogicComponent = ProcessingLogic({
     question,
     processingDepth,
@@ -90,7 +100,8 @@ const Index = () => {
     onProcessingError: handleProcessingError,
     onCurrentArchetypeChange: setCurrentArchetype,
     onCurrentLayerChange: setCurrentLayer,
-    onChunkProgressChange: setChunkProgress
+    onChunkProgressChange: setChunkProgress,
+    onProcessingPhaseChange: handleProcessingPhaseChange
   });
 
   // Show password gate if not authenticated
@@ -128,6 +139,7 @@ const Index = () => {
             processingDepth={processingDepth}
             circuitType={circuitType}
             chunkProgress={chunkProgress}
+            processingPhase={processingPhase}
           />
         )}
 

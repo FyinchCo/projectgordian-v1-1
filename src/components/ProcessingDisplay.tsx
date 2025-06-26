@@ -5,7 +5,7 @@ import { MetricsCards } from "./processing/MetricsCards";
 import { ArchetypeContributionBars } from "./processing/ArchetypeContributionBars";
 import { InsightStream } from "./processing/InsightStream";
 import { ProcessingClock } from "./processing/ProcessingClock";
-import { Eye } from "lucide-react";
+import { Eye, Zap, Brain } from "lucide-react";
 
 interface ProcessingDisplayProps {
   currentArchetype: string;
@@ -14,6 +14,7 @@ interface ProcessingDisplayProps {
   totalLayers?: number;
   circuitType?: string;
   chunkProgress?: { current: number; total: number };
+  processingPhase?: string;
 }
 
 export const ProcessingDisplay = ({ 
@@ -22,18 +23,19 @@ export const ProcessingDisplay = ({
   currentLayer = 1,
   totalLayers = 20,
   circuitType = 'sequential',
-  chunkProgress
+  chunkProgress,
+  processingPhase = "Processing..."
 }: ProcessingDisplayProps) => {
-  // Determine connection status based on progress
+  // Determine connection status based on progress and phase
   const getConnectionStatus = () => {
-    if (chunkProgress && chunkProgress.current === 0) {
+    if (processingPhase?.includes('Initializing')) {
       return 'connecting';
     }
-    if (chunkProgress && chunkProgress.current > 0 && chunkProgress.current < chunkProgress.total) {
-      return 'processing';
-    }
-    if (chunkProgress && chunkProgress.current === chunkProgress.total) {
+    if (processingPhase?.includes('complete') || processingPhase?.includes('Complete')) {
       return 'completed';
+    }
+    if (chunkProgress && chunkProgress.current > 0) {
+      return 'processing';
     }
     return 'connecting';
   };
@@ -47,10 +49,10 @@ export const ProcessingDisplay = ({
         <div className="text-center space-y-4">
           <div className="space-y-2">
             <h1 className="font-cormorant text-4xl font-normal text-black tracking-tight">
-              Cognitive Descent
+              Enhanced Cognitive Descent
             </h1>
             <div className="text-sm text-gray-500 uppercase tracking-wider font-mono">
-              {circuitType} Processing • {connectionStatus === 'connecting' ? 'Establishing Connection' : 'Archetypal Reasoning'}
+              {circuitType} Processing • Real-Time Analysis
             </div>
           </div>
           
@@ -65,19 +67,32 @@ export const ProcessingDisplay = ({
           </div>
         </div>
 
-        {/* Connection Status Message */}
-        {connectionStatus === 'connecting' && (
-          <Card className="p-6 bg-blue-50 border border-blue-200">
-            <div className="text-center">
-              <div className="text-blue-700 font-medium">
-                Establishing connection to AI processing services...
-              </div>
-              <div className="text-blue-600 text-sm mt-2">
-                This may take up to 60 seconds depending on system load
+        {/* Enhanced Phase Status Display */}
+        <Card className="p-6 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200">
+          <div className="text-center space-y-4">
+            <div className="flex items-center justify-center space-x-3">
+              {connectionStatus === 'connecting' && <Brain className="w-6 h-6 text-blue-600 animate-pulse" />}
+              {connectionStatus === 'processing' && <Zap className="w-6 h-6 text-green-600 animate-pulse" />}
+              {connectionStatus === 'completed' && <Eye className="w-6 h-6 text-purple-600" />}
+              <div className="text-lg font-medium text-gray-800">
+                {processingPhase}
               </div>
             </div>
-          </Card>
-        )}
+            
+            {currentArchetype && connectionStatus === 'processing' && (
+              <div className="text-sm text-gray-600">
+                Current Archetype: <span className="font-medium text-blue-700">{currentArchetype}</span>
+              </div>
+            )}
+            
+            {chunkProgress && chunkProgress.total > 0 && (
+              <div className="text-sm text-gray-500">
+                Layer {chunkProgress.current} of {chunkProgress.total} • 
+                {Math.round((chunkProgress.current / chunkProgress.total) * 100)}% Complete
+              </div>
+            )}
+          </div>
+        </Card>
 
         {/* Only show processing details when actually processing */}
         {connectionStatus !== 'connecting' && (
@@ -113,13 +128,14 @@ export const ProcessingDisplay = ({
               isActive={connectionStatus === 'processing'}
             />
 
-            {/* Row 3: Metrics Cards */}
+            {/* Row 3: Enhanced Metrics Cards */}
             <MetricsCards 
               currentLayer={currentLayer}
               totalLayers={totalLayers}
               currentArchetype={currentArchetype}
-              efficiency={connectionStatus === 'processing' ? 85 : 0}
+              efficiency={connectionStatus === 'processing' ? 90 : connectionStatus === 'completed' ? 95 : 0}
               chunkProgress={chunkProgress}
+              processingPhase={processingPhase}
             />
 
             {/* Row 4: Archetype Contribution Bars */}

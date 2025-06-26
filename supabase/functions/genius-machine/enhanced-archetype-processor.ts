@@ -1,4 +1,3 @@
-
 import { Archetype, ArchetypeResponse, LayerResult } from './types.ts';
 import { buildLayerContext } from './layer-context-builder.ts';
 import { buildSequentialTensionContext } from './context/sequentialContextBuilder.ts';
@@ -11,7 +10,8 @@ export async function processArchetypesWithPersonality(
   question: string,
   circuitType: string,
   previousLayers: LayerResult[] = [],
-  layerNumber: number = 1
+  layerNumber: number = 1,
+  progressCallback?: (archetypeIndex: number, archetypeName: string) => void
 ): Promise<ArchetypeResponse[]> {
   console.log(`=== RESTORED GENIUS ARCHETYPE PROCESSING ===`);
   console.log(`Layer ${layerNumber}: Processing ${archetypes.length} archetypes with REAL AI`);
@@ -27,6 +27,11 @@ export async function processArchetypesWithPersonality(
   for (let i = 0; i < archetypes.length; i++) {
     const archetype = archetypes[i];
     console.log(`Processing REAL archetype ${i + 1}/${archetypes.length}: ${archetype.name}`);
+    
+    // Send progress update
+    if (progressCallback) {
+      progressCallback(i, archetype.name);
+    }
     
     // Build sequential tension - make later archetypes disagree with earlier ones
     const sequentialContext = responses.length > 0 ? 

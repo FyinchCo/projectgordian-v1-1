@@ -2,18 +2,28 @@
 import { Archetype, LayerResult } from '../types.ts';
 import { processArchetypesWithPersonality } from '../enhanced-archetype-processor.ts';
 import { synthesizeLayerWithTensionEscalation } from '../enhanced-synthesis-processor.ts';
+import { ProgressReporter } from './progressReporter.ts';
 
 export async function processLayers(
   archetypes: Archetype[],
   question: string,
   circuitType: string,
-  processingDepth: number
+  processingDepth: number,
+  progressCallback?: (progress: any) => void
 ): Promise<LayerResult[]> {
   const layers: LayerResult[] = [];
   let consecutiveFailures = 0;
   const maxConsecutiveFailures = 3;
   
-  console.log(`Starting ${processingDepth} layer processing with optimized gates...`);
+  const progressReporter = new ProgressReporter(processingDepth, archetypes.length);
+  
+  console.log(`Starting ${processingDepth} layer processing with real-time progress...`);
+  
+  // Send initial progress
+  if (progressCallback) {
+    const initialProgress = progressReporter.createProgress('initializing', 1);
+    progressCallback(initialProgress);
+  }
   
   for (let layerNumber = 1; layerNumber <= processingDepth; layerNumber++) {
     console.log(`\n=== PROCESSING LAYER ${layerNumber}/${processingDepth} ===`);
@@ -25,13 +35,38 @@ export async function processLayers(
         break;
       }
       
-      // Process archetypes with enhanced reliability
+      // Update progress for layer start
+      if (progressCallback) {
+        const layerProgress = progressReporter.createProgress(
+          'processing', 
+          layerNumber, 
+          archetypes[0]?.name || 'Unknown',
+          0,
+          layers.length
+        );
+        progressCallback(layerProgress);
+      }
+      
+      // Process archetypes with progress updates
       const archetypeResponses = await processArchetypesWithPersonality(
         archetypes,
         question,
         circuitType,
         layers,
-        layerNumber
+        layerNumber,
+        (archetypeIndex, archetypeName) => {
+          // Real-time archetype progress updates
+          if (progressCallback) {
+            const archetypeProgress = progressReporter.createProgress(
+              'processing',
+              layerNumber,
+              archetypeName,
+              archetypeIndex,
+              layers.length
+            );
+            progressCallback(archetypeProgress);
+          }
+        }
       );
       
       console.log(`Layer ${layerNumber}: Got ${archetypeResponses.length} responses`);
@@ -40,6 +75,18 @@ export async function processLayers(
         console.error(`No responses for layer ${layerNumber}`);
         consecutiveFailures++;
         continue;
+      }
+      
+      // Update progress for synthesis phase
+      if (progressCallback) {
+        const synthesisProgress = progressReporter.createProgress(
+          'synthesizing',
+          layerNumber,
+          'Synthesizing insights...',
+          archetypes.length,
+          layers.length
+        );
+        progressCallback(synthesisProgress);
       }
       
       // Synthesize layer with tension escalation
@@ -54,6 +101,18 @@ export async function processLayers(
       layers.push(layerResult);
       consecutiveFailures = 0; // Reset on success
       console.log(`✓ Layer ${layerNumber} completed successfully`);
+      
+      // Update progress for layer completion
+      if (progressCallback) {
+        const completionProgress = progressReporter.createProgress(
+          layerNumber === processingDepth ? 'completing' : 'processing',
+          layerNumber,
+          `Layer ${layerNumber} complete`,
+          archetypes.length,
+          layers.length
+        );
+        progressCallback(completionProgress);
+      }
       
       // Optimized delay between layers
       if (layerNumber < processingDepth) {
@@ -72,6 +131,18 @@ export async function processLayers(
         throw new Error(`Failed to process any layers after ${consecutiveFailures} attempts`);
       }
     }
+  }
+  
+  // Final completion progress
+  if (progressCallback) {
+    const finalProgress = progressReporter.createProgress(
+      'completed',
+      processingDepth,
+      'Analysis complete',
+      archetypes.length,
+      layers.length
+    );
+    progressCallback(finalProgress);
   }
   
   if (layers.length === 0) {
