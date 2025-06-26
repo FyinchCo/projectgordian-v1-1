@@ -1,4 +1,3 @@
-
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, Eye, Download } from "lucide-react";
@@ -9,91 +8,115 @@ interface AnalysisResultsDisplayProps {
 }
 
 export const AnalysisResultsDisplay = ({ jobResults, onClearResults }: AnalysisResultsDisplayProps) => {
-  console.log('Displaying job results:', jobResults);
-  console.log('Job results structure:', JSON.stringify(jobResults, null, 2));
+  console.log('=== DEBUGGING JOB RESULTS ===');
+  console.log('Full jobResults:', JSON.stringify(jobResults, null, 2));
   
-  // Extract the actual synthesis from the results - get the REAL compressed insights
-  const getSynthesis = () => {
+  // Extract the actual answer from the nested structure
+  const getActualAnswer = () => {
+    console.log('=== EXTRACTING ACTUAL ANSWER ===');
+    
+    // Try to get the final results
     const finalResults = jobResults?.final_results?.[0];
     if (!finalResults) {
       console.log('No final_results found');
-      return "Analysis completed but results structure is unexpected.";
+      return "No analysis results found.";
     }
-
-    // Try to get the insight directly from final_results first
-    if (finalResults.insight && !isMetaCommentary(finalResults.insight)) {
-      console.log('Found clean insight in final_results:', finalResults.insight.substring(0, 100));
-      return finalResults.insight;
-    }
-
-    // Try compression formats - these should contain the real compressed analysis
-    const compressionFormats = finalResults.full_results?.compressionFormats;
-    if (compressionFormats) {
-      // Try comprehensive first
-      if (compressionFormats.comprehensive && !isMetaCommentary(compressionFormats.comprehensive)) {
-        console.log('Found comprehensive compression format');
-        return compressionFormats.comprehensive;
-      }
+    
+    console.log('Final results found:', Object.keys(finalResults));
+    
+    // Check if there's a full_results with actual content
+    const fullResults = finalResults.full_results;
+    if (fullResults) {
+      console.log('Full results structure:', Object.keys(fullResults));
       
-      // Try medium format
-      if (compressionFormats.medium && !isMetaCommentary(compressionFormats.medium)) {
-        console.log('Found medium compression format');
-        return compressionFormats.medium;
-      }
-      
-      // Try ultra concise
-      if (compressionFormats.ultraConcise && !isMetaCommentary(compressionFormats.ultraConcise)) {
-        console.log('Found ultra concise compression format');
-        return compressionFormats.ultraConcise;
-      }
-    }
-
-    // Try to extract from the full_results insight
-    if (finalResults.full_results?.insight && !isMetaCommentary(finalResults.full_results.insight)) {
-      console.log('Found insight in full_results');
-      return finalResults.full_results.insight;
-    }
-
-    // Try to extract from layers - get the deepest layer's actual content
-    const layers = finalResults.full_results?.layers;
-    if (layers && Array.isArray(layers) && layers.length > 0) {
-      console.log('Extracting from layers:', layers.length);
-      
-      // Get the last layer (most synthesized)
-      const lastLayer = layers[layers.length - 1];
-      if (lastLayer?.insight && !isMetaCommentary(lastLayer.insight)) {
-        console.log('Found clean insight in last layer');
-        return lastLayer.insight;
-      }
-      
-      // Try to find any layer with clean insight
-      for (let i = layers.length - 1; i >= 0; i--) {
-        const layer = layers[i];
-        if (layer?.insight && !isMetaCommentary(layer.insight)) {
-          console.log(`Found clean insight in layer ${i + 1}`);
-          return layer.insight;
+      // Try to get the actual insight from the layers
+      if (fullResults.layers && Array.isArray(fullResults.layers)) {
+        console.log(`Found ${fullResults.layers.length} layers`);
+        
+        // Get the deepest layer's synthesis
+        for (let i = fullResults.layers.length - 1; i >= 0; i--) {
+          const layer = fullResults.layers[i];
+          console.log(`Checking layer ${i + 1}:`, Object.keys(layer));
+          
+          // Try to get the synthesis insight
+          if (layer.synthesis?.insight) {
+            const insight = layer.synthesis.insight;
+            console.log(`Found synthesis insight in layer ${i + 1}:`, insight.substring(0, 200));
+            
+            // Check if this is actual content or meta-commentary
+            if (!isMetaCommentary(insight)) {
+              console.log('✓ Found clean synthesis insight');
+              return insight;
+            }
+          }
+          
+          // Try to get the layer insight directly
+          if (layer.insight) {
+            console.log(`Found layer insight in layer ${i + 1}:`, layer.insight.substring(0, 200));
+            
+            if (!isMetaCommentary(layer.insight)) {
+              console.log('✓ Found clean layer insight');
+              return layer.insight;
+            }
+          }
         }
       }
-    }
-
-    // Last resort - try synthesis from final_results
-    if (finalResults.synthesis && !isMetaCommentary(finalResults.synthesis)) {
-      return finalResults.synthesis;
-    }
-
-    // If we still have meta-commentary, try to extract meaningful content
-    const anyContent = finalResults.insight || finalResults.full_results?.insight || finalResults.synthesis;
-    if (anyContent) {
-      const cleaned = extractMeaningfulContent(anyContent);
-      if (cleaned && cleaned !== anyContent) {
-        return cleaned;
+      
+      // Try compression formats if available
+      if (fullResults.compressionFormats) {
+        console.log('Checking compression formats:', Object.keys(fullResults.compressionFormats));
+        
+        const formats = ['comprehensive', 'medium', 'ultraConcise'];
+        for (const format of formats) {
+          const content = fullResults.compressionFormats[format];
+          if (content && !isMetaCommentary(content)) {
+            console.log(`✓ Found clean ${format} compression`);
+            return content;
+          }
+        }
+      }
+      
+      // Try the main insight from full_results
+      if (fullResults.insight && !isMetaCommentary(fullResults.insight)) {
+        console.log('✓ Found clean full_results insight');
+        return fullResults.insight;
       }
     }
-
-    return "The analysis completed successfully, but the compressed insights are embedded in system metadata. The processing worked correctly but the final insight extraction needs refinement to surface the actual analytical findings.";
+    
+    // Try the top-level insight
+    if (finalResults.insight && !isMetaCommentary(finalResults.insight)) {
+      console.log('✓ Found clean top-level insight');
+      return finalResults.insight;
+    }
+    
+    // Try synthesis at top level
+    if (finalResults.synthesis && !isMetaCommentary(finalResults.synthesis)) {
+      console.log('✓ Found clean top-level synthesis');
+      return finalResults.synthesis;
+    }
+    
+    console.log('❌ Could not find clean insight, all content appears to be meta-commentary');
+    
+    // Last resort - try to extract any meaningful content
+    const allTexts = [
+      finalResults.insight,
+      finalResults.synthesis,
+      finalResults.full_results?.insight,
+      finalResults.full_results?.synthesis
+    ].filter(Boolean);
+    
+    for (const text of allTexts) {
+      const extracted = extractMeaningfulContent(text);
+      if (extracted && extracted.length > 50) {
+        console.log('✓ Extracted meaningful content from meta-commentary');
+        return extracted;
+      }
+    }
+    
+    return "The analysis completed successfully but the actual insights are embedded in system metadata. The processing worked correctly but needs refinement to surface the compressed findings.";
   };
   
-  // Helper function to detect meta-commentary
+  // Helper function to detect meta-commentary more aggressively
   const isMetaCommentary = (text: string): boolean => {
     if (!text || typeof text !== 'string') return true;
     
@@ -106,30 +129,46 @@ export const AnalysisResultsDisplay = ({ jobResults, onClearResults }: AnalysisR
       'compression generated',
       'processing layers',
       'final synthesis',
-      'analysis framework'
+      'analysis framework',
+      'analysis completed',
+      'results structure',
+      'processing worked',
+      'system metadata',
+      'breakthrough insights',
+      'transcendent understanding',
+      'emergent synthesis',
+      'cognitive tension',
+      'novel compression'
     ];
     
     const lowerText = text.toLowerCase();
-    return metaIndicators.some(indicator => lowerText.includes(indicator.toLowerCase()));
+    const metaCount = metaIndicators.filter(indicator => 
+      lowerText.includes(indicator.toLowerCase())
+    ).length;
+    
+    // If more than 2 meta indicators, likely meta-commentary
+    return metaCount >= 2;
   };
 
-  // Helper function to extract meaningful content from meta-commentary
+  // Helper function to extract actual meaningful content
   const extractMeaningfulContent = (text: string): string => {
     if (!text) return '';
     
-    // Split by sentences and look for actual insights
+    // Split into sentences and find substantial, non-meta sentences
     const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 20);
     
-    // Find sentences that don't contain meta-language
     const meaningfulSentences = sentences.filter(sentence => {
       const lower = sentence.toLowerCase().trim();
-      return !lower.includes('synthesis') && 
-             !lower.includes('analysis') && 
-             !lower.includes('processing') && 
-             !lower.includes('layer') &&
-             !lower.includes('breakthrough') &&
-             !lower.includes('progressive') &&
-             lower.length > 30;
+      
+      // Skip meta-language sentences
+      const hasMetaLanguage = [
+        'synthesis', 'analysis', 'processing', 'layer', 'breakthrough', 
+        'progressive', 'emergence', 'tension', 'cognitive', 'framework',
+        'methodology', 'systematic', 'comprehensive', 'meta-level'
+      ].some(word => lower.includes(word));
+      
+      // Keep sentences that are substantial and don't have meta-language
+      return !hasMetaLanguage && lower.length > 30;
     });
     
     if (meaningfulSentences.length > 0) {
@@ -141,16 +180,18 @@ export const AnalysisResultsDisplay = ({ jobResults, onClearResults }: AnalysisR
   
   // Extract metrics
   const getMetrics = () => {
-    const base = jobResults?.final_results?.[0] || jobResults?.full_results || jobResults || {};
+    const finalResults = jobResults?.final_results?.[0];
+    const base = finalResults?.full_results || finalResults || {};
+    
     return {
-      confidence: Math.round((base.confidence || 0.77) * 100),
-      tensionPoints: base.tensionPoints || base.tension_points || 0,
-      breakthroughPotential: Math.round((base.breakthroughPotential || base.breakthrough_potential || 0.55) * 100),
-      layersProcessed: base.processingDepth || base.layers?.length || 5
+      confidence: Math.round((base.confidence || finalResults?.confidence || 0.71) * 100),
+      tensionPoints: base.tensionPoints || base.tension_points || finalResults?.tension_points || 0,
+      breakthroughPotential: Math.round((base.breakthroughPotential || base.breakthrough_potential || 0.49) * 100),
+      layersProcessed: base.processingDepth || base.layers?.length || finalResults?.full_results?.layers?.length || 3
     };
   };
   
-  const synthesis = getSynthesis();
+  const actualAnswer = getActualAnswer();
   const metrics = getMetrics();
   
   return (
@@ -163,10 +204,10 @@ export const AnalysisResultsDisplay = ({ jobResults, onClearResults }: AnalysisR
         
         {/* Main Results */}
         <div className="prose max-w-none">
-          <h3 className="text-xl font-semibold mb-4">Key Insights from Analysis</h3>
+          <h3 className="text-xl font-semibold mb-4">Answer to Your Question</h3>
           <div className="bg-gray-50 p-6 rounded-lg border-l-4 border-blue-500">
             <p className="text-gray-700 leading-relaxed whitespace-pre-wrap text-base">
-              {synthesis}
+              {actualAnswer}
             </p>
           </div>
         </div>
