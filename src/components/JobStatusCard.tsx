@@ -1,3 +1,4 @@
+
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -28,6 +29,13 @@ interface Job {
     current_archetype?: string;
     processing_phase?: string;
     updated_at: string;
+    chunk_progress?: {
+      currentChunk: number;
+      totalChunks: number;
+      breakthroughPotential: number;
+      tensionLevel: number;
+      chunkSize?: number;
+    };
   }>;
   final_results?: Array<{
     synthesis: string;
