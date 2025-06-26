@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 export const useProcessingExecutor = () => {
@@ -19,7 +18,7 @@ export const useProcessingExecutor = () => {
     console.log('Implementing timeout-resistant processing...');
     
     try {
-      // Progressive processing with shorter timeout per request
+      // Progressive processing with reduced complexity to prevent timeouts
       const { data, error } = await supabase.functions.invoke('genius-machine', {
         body: {
           question: params.question,
@@ -30,9 +29,6 @@ export const useProcessingExecutor = () => {
           compressionSettings: params.compressionSettings,
           outputType: params.outputType,
           timeoutResilience: true // New flag for timeout handling
-        },
-        options: {
-          timeout: 120000 // 2 minute timeout instead of default 5 minutes
         }
       });
 
@@ -94,7 +90,7 @@ export const useProcessingExecutor = () => {
       params.onChunkProgressChange({ current: layer, total: maxLayers });
       
       try {
-        // Process single layer with tight timeout
+        // Process single layer with reduced complexity
         const { data, error } = await supabase.functions.invoke('genius-machine', {
           body: {
             question: params.question,
@@ -107,9 +103,6 @@ export const useProcessingExecutor = () => {
             layerNumber: layer,
             previousLayers: layers.slice(-2), // Context from recent layers
             chunkMode: true
-          },
-          options: {
-            timeout: 45000 // 45 second timeout per chunk
           }
         });
 
