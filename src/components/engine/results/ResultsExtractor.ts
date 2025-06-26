@@ -1,117 +1,85 @@
 export class ResultsExtractor {
   static extractAnswer(jobResults: any): string {
     console.log('=== EXTRACTING ACTUAL ANSWER ===');
+    console.log('Job results structure:', Object.keys(jobResults || {}));
     
-    // Try to get the final results
-    const finalResults = jobResults?.final_results?.[0];
-    if (!finalResults) {
-      console.log('No final_results found');
+    // Handle the new direct structure - no final_results wrapper
+    if (!jobResults) {
+      console.log('No jobResults found');
       return "No analysis results found.";
     }
     
-    console.log('Final results found:', Object.keys(finalResults));
-    
-    // Check if there's a full_results with actual content
-    const fullResults = finalResults.full_results;
-    if (fullResults) {
-      console.log('Full results structure:', Object.keys(fullResults));
+    // Try to get insights from the layers array first (this is where the real content is)
+    if (jobResults.layers && Array.isArray(jobResults.layers)) {
+      console.log(`Found ${jobResults.layers.length} layers`);
       
-      // Try to get the actual insight from the layers
-      if (fullResults.layers && Array.isArray(fullResults.layers)) {
-        console.log(`Found ${fullResults.layers.length} layers`);
+      // Get the most substantive insight from the layers
+      for (let i = jobResults.layers.length - 1; i >= 0; i--) {
+        const layer = jobResults.layers[i];
+        console.log(`Checking layer ${i + 1}:`, Object.keys(layer));
         
-        // Get the deepest layer's synthesis
-        for (let i = fullResults.layers.length - 1; i >= 0; i--) {
-          const layer = fullResults.layers[i];
-          console.log(`Checking layer ${i + 1}:`, Object.keys(layer));
-          
-          // Try to get the synthesis insight
-          if (layer.synthesis?.insight) {
-            const insight = layer.synthesis.insight;
-            console.log(`Found synthesis insight in layer ${i + 1}:`, insight.substring(0, 200));
-            
-            // Check if this is actual content or meta-commentary
-            if (!this.isMetaCommentary(insight)) {
-              console.log('✓ Found clean synthesis insight');
-              return insight;
-            }
-          }
-          
-          // Try to get the layer insight directly
-          if (layer.insight) {
-            console.log(`Found layer insight in layer ${i + 1}:`, layer.insight.substring(0, 200));
-            
-            if (!this.isMetaCommentary(layer.insight)) {
-              console.log('✓ Found clean layer insight');
-              return layer.insight;
-            }
-          }
+        if (layer.insight && !this.isMetaCommentary(layer.insight)) {
+          console.log(`✓ Found clean insight in layer ${i + 1}`);
+          return layer.insight;
         }
-      }
-      
-      // Try compression formats if available
-      if (fullResults.compressionFormats) {
-        console.log('Checking compression formats:', Object.keys(fullResults.compressionFormats));
-        
-        const formats = ['comprehensive', 'medium', 'ultraConcise'];
-        for (const format of formats) {
-          const content = fullResults.compressionFormats[format];
-          if (content && !this.isMetaCommentary(content)) {
-            console.log(`✓ Found clean ${format} compression`);
-            return content;
-          }
-        }
-      }
-      
-      // Try the main insight from full_results
-      if (fullResults.insight && !this.isMetaCommentary(fullResults.insight)) {
-        console.log('✓ Found clean full_results insight');
-        return fullResults.insight;
       }
     }
     
-    // Try the top-level insight
-    if (finalResults.insight && !this.isMetaCommentary(finalResults.insight)) {
+    // Try compressionFormats if available
+    if (jobResults.compressionFormats) {
+      console.log('Checking compression formats:', Object.keys(jobResults.compressionFormats));
+      
+      const formats = ['comprehensive', 'medium', 'ultraConcise'];
+      for (const format of formats) {
+        const content = jobResults.compressionFormats[format];
+        if (content && !this.isMetaCommentary(content)) {
+          console.log(`✓ Found clean ${format} compression`);
+          return content;
+        }
+      }
+    }
+    
+    // Try the main insight (but this is usually meta-commentary)
+    if (jobResults.insight && !this.isMetaCommentary(jobResults.insight)) {
       console.log('✓ Found clean top-level insight');
-      return finalResults.insight;
+      return jobResults.insight;
     }
     
-    // Try synthesis at top level
-    if (finalResults.synthesis && !this.isMetaCommentary(finalResults.synthesis)) {
-      console.log('✓ Found clean top-level synthesis');
-      return finalResults.synthesis;
-    }
+    console.log('❌ Could not find clean insight, extracting from layers');
     
-    console.log('❌ Could not find clean insight, all content appears to be meta-commentary');
-    
-    // Last resort - try to extract any meaningful content
-    const allTexts = [
-      finalResults.insight,
-      finalResults.synthesis,
-      finalResults.full_results?.insight,
-      finalResults.full_results?.synthesis
-    ].filter(Boolean);
-    
-    for (const text of allTexts) {
-      const extracted = this.extractMeaningfulContent(text);
-      if (extracted && extracted.length > 50) {
-        console.log('✓ Extracted meaningful content from meta-commentary');
-        return extracted;
+    // Last resort - extract the best content from layers even if it has some meta-language
+    if (jobResults.layers && Array.isArray(jobResults.layers)) {
+      for (let i = jobResults.layers.length - 1; i >= 0; i--) {
+        const layer = jobResults.layers[i];
+        if (layer.insight && layer.insight.length > 100) {
+          const extracted = this.extractMeaningfulContent(layer.insight);
+          if (extracted && extracted.length > 50) {
+            console.log(`✓ Extracted meaningful content from layer ${i + 1}`);
+            return extracted;
+          }
+        }
       }
     }
     
-    return "The analysis completed successfully but the actual insights are embedded in system metadata. The processing worked correctly but needs refinement to surface the compressed findings.";
+    return "Analysis completed successfully. The system processed multiple layers of insights but encountered difficulty extracting the final compressed answer. Please try running the analysis again.";
   }
 
   static extractMetrics(jobResults: any) {
-    const finalResults = jobResults?.final_results?.[0];
-    const base = finalResults?.full_results || finalResults || {};
+    // Handle the new direct structure
+    if (!jobResults) {
+      return {
+        confidence: 0,
+        tensionPoints: 0,
+        breakthroughPotential: 0,
+        layersProcessed: 0
+      };
+    }
     
     return {
-      confidence: Math.round((base.confidence || finalResults?.confidence || 0.71) * 100),
-      tensionPoints: base.tensionPoints || base.tension_points || finalResults?.tension_points || 0,
-      breakthroughPotential: Math.round((base.breakthroughPotential || base.breakthrough_potential || 0.49) * 100),
-      layersProcessed: base.processingDepth || base.layers?.length || finalResults?.full_results?.layers?.length || 3
+      confidence: Math.round((jobResults.confidence || 0.5) * 100),
+      tensionPoints: jobResults.tensionPoints || 0,
+      breakthroughPotential: jobResults.breakthroughPotential || 0,
+      layersProcessed: jobResults.processingDepth || jobResults.layers?.length || 0
     };
   }
 
@@ -136,7 +104,9 @@ export class ResultsExtractor {
       'transcendent understanding',
       'emergent synthesis',
       'cognitive tension',
-      'novel compression'
+      'novel compression',
+      'cumulative intelligence process',
+      'genius-level comprehension'
     ];
     
     const lowerText = text.toLowerCase();
