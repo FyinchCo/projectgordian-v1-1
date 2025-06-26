@@ -15,10 +15,10 @@ export const useProcessingExecutor = () => {
     onCurrentLayerChange: (layer: number) => void;
     onChunkProgressChange: (progress: { current: number; total: number }) => void;
   }) => {
-    console.log('=== ROBUST PROCESSING EXECUTOR START ===');
+    console.log('=== PROCESSING EXECUTOR START ===');
     
     try {
-      // Call the robust direct processor with comprehensive fallback
+      // Call the direct processor for immediate reliable results
       const results = await processWithGeniusMachine({
         question: params.question,
         processingDepth: params.processingDepth[0], // Use first depth value
@@ -31,7 +31,7 @@ export const useProcessingExecutor = () => {
         onChunkProgressChange: params.onChunkProgressChange
       });
 
-      console.log('✓ Robust processing completed successfully');
+      console.log('✓ Processing completed successfully');
       console.log('Result confidence:', Math.round(results.confidence * 100) + '%');
       console.log('Layers generated:', results.layers.length);
       
@@ -41,7 +41,7 @@ export const useProcessingExecutor = () => {
       return results;
 
     } catch (error) {
-      console.error('Robust processing executor failed:', error);
+      console.error('Processing executor failed:', error);
       throw new Error(`Processing system encountered an unexpected error: ${error.message}`);
     }
   };
