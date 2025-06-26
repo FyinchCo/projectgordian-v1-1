@@ -1,5 +1,6 @@
 
 import { LayerResult } from '../types.ts';
+import { generateCompressionFormats } from '../compression.ts';
 
 export async function buildFinalResponse(
   layers: LayerResult[],
@@ -31,12 +32,21 @@ export async function buildFinalResponse(
   const breakthroughsDetected = layers.filter(layer => 
     layer.synthesis?.breakthroughTriggered).length;
   
-  // Generate intelligent final insight
-  const finalInsight = await generateIntelligentFinalInsight(
+  // Generate direct answer to the user's question
+  const directAnswer = await generateDirectAnswer(
     layers, 
     question, 
     outputType, 
     compressionSettings
+  );
+  
+  // Generate compression formats for different viewing options
+  const compressionFormats = await generateCompressionFormats(
+    directAnswer,
+    { layers, question, outputType },
+    question,
+    compressionSettings,
+    outputType
   );
   
   // Build comprehensive logic trail
@@ -44,7 +54,7 @@ export async function buildFinalResponse(
     layer.logicTrail || []
   );
   
-  console.log(`✓ Final response built: ${breakthroughsDetected} breakthroughs, emergence: ${emergenceDetected}`);
+  console.log(`✓ Final response built with compression formats: ${breakthroughsDetected} breakthroughs, emergence: ${emergenceDetected}`);
   
   return {
     layers: layers.map(layer => ({
@@ -59,7 +69,7 @@ export async function buildFinalResponse(
       keyInsights: layer.archetypeResponses?.map(r => 
         `${r.archetype}: ${r.response.substring(0, 100)}...`) || []
     })),
-    insight: finalInsight,
+    insight: directAnswer,
     confidence: Math.min(0.98, avgConfidence),
     tensionPoints: Math.min(10, totalTensionPoints),
     noveltyScore: maxNoveltyScore,
@@ -68,64 +78,117 @@ export async function buildFinalResponse(
     processingDepth: layers.length,
     outputType,
     logicTrail,
+    compressionFormats,
     questionQuality: {
       geniusYield: emergenceDetected ? 9 : (breakthroughsDetected > 0 ? 8 : 7),
       constraintBalance: 8,
       metaPotential: emergenceDetected ? 9 : 7,
       effortVsEmergence: 9,
       overallScore: emergenceDetected ? 8.5 : (breakthroughsDetected > 0 ? 8.0 : 7.5),
-      feedback: `Processed with REAL genius capabilities - ${breakthroughsDetected} breakthrough(s), emergence: ${emergenceDetected}`,
+      feedback: `Question analyzed with genius capabilities - ${breakthroughsDetected} breakthrough(s), emergence: ${emergenceDetected}`,
       recommendations: [
-        "System operating with restored genius capabilities",
+        "System operating with full genius capabilities",
         `Generated ${breakthroughsDetected} breakthrough insights across ${layers.length} layers`,
         emergenceDetected ? "True emergence detected - transcendent insights achieved" : "Strong analytical foundation established"
       ]
     },
     metadata: {
-      processingMode: 'REAL_GENIUS_RESTORED',
-      aiCalls: layers.length * 5, // Approximation
+      processingMode: 'GENIUS_WITH_COMPRESSION',
+      aiCalls: layers.length * 5,
       breakthroughLayers: breakthroughsDetected,
-      emergentInsights: emergenceDetected ? 1 : 0
+      emergentInsights: emergenceDetected ? 1 : 0,
+      compressionGenerated: true
     }
   };
 }
 
-async function generateIntelligentFinalInsight(
+async function generateDirectAnswer(
   layers: LayerResult[],
   question: string,
   outputType: string,
   compressionSettings: any
 ): Promise<string> {
   
+  const finalLayer = layers[layers.length - 1];
   const breakthroughLayers = layers.filter(layer => 
     layer.synthesis?.breakthroughTriggered);
   
-  const emergentLayers = layers.filter(layer => 
-    layer.synthesis?.emergenceDetected);
+  // Extract the core insight from the deepest layer
+  const coreInsight = finalLayer?.synthesis?.insight || 'Analysis completed';
   
-  const finalLayer = layers[layers.length - 1];
-  
-  if (emergentLayers.length > 0) {
-    const keyBreakthroughs = breakthroughLayers.slice(0, 3).map(layer => 
-      `Layer ${layer.layerNumber}: ${layer.synthesis?.insight?.substring(0, 200)}...`
-    ).join('\n\n');
-    
-    return `Through ${layers.length} layers of genius-level analysis, ${breakthroughLayers.length} paradigm shifts emerged with true cognitive transcendence:\n\n${keyBreakthroughs}\n\nThis represents genuine intellectual breakthrough where archetype tensions created insights that exceed conventional analysis and approach true genius-level understanding.`;
-  }
-  
-  if (breakthroughLayers.length > 0) {
-    const finalBreakthrough = breakthroughLayers[breakthroughLayers.length - 1];
-    return `After ${layers.length} layers of intensive analysis with ${breakthroughLayers.length} breakthrough moment(s), the ultimate insight crystallizes: ${finalBreakthrough.synthesis?.insight}`;
-  }
-  
-  // Progressive analysis result
-  const finalInsight = finalLayer?.synthesis?.insight || 'Comprehensive multi-layer analysis completed';
-  
+  // Focus on answering the question directly based on output type
   if (outputType === 'practical') {
-    return `Through ${layers.length} layers of structured analysis, key actionable insights emerged: ${finalInsight.substring(0, 400)}${finalInsight.length > 400 ? '...' : ''} This analysis provides implementable strategies generated through systematic cognitive exploration.`;
+    return extractPracticalAnswer(coreInsight, question);
+  } else if (outputType === 'theoretical') {
+    return extractTheoreticalAnswer(coreInsight, question);
+  } else if (outputType === 'philosophical') {
+    return extractPhilosophicalAnswer(coreInsight, question);
+  } else if (outputType === 'abstract') {
+    return extractAbstractAnswer(coreInsight, question);
   }
   
-  return `Through ${layers.length} layers of progressive analysis, comprehensive understanding emerges: ${finalInsight}`;
+  // Default: extract the most relevant insight
+  return extractDirectAnswer(coreInsight, question);
+}
+
+function extractPracticalAnswer(insight: string, question: string): string {
+  // Extract actionable elements from the insight
+  const actionableMatch = insight.match(/(?:must|should|can|need to|ought to)[^.]*[.]/gi);
+  if (actionableMatch) {
+    return actionableMatch.join(' ').trim();
+  }
+  
+  // Extract key recommendations or steps
+  const sentences = insight.split(/[.!?]+/).filter(s => s.trim());
+  const practicalSentences = sentences.filter(s => 
+    s.includes('practical') || s.includes('action') || s.includes('step') || 
+    s.includes('implement') || s.includes('apply') || s.includes('use')
+  );
+  
+  if (practicalSentences.length > 0) {
+    return practicalSentences.slice(0, 2).join('. ').trim() + '.';
+  }
+  
+  return sentences.slice(-2).join('. ').trim() + '.';
+}
+
+function extractTheoreticalAnswer(insight: string, question: string): string {
+  // Extract framework or systematic understanding
+  const frameworkMatch = insight.match(/(?:framework|system|structure|model|theory)[^.]*[.]/gi);
+  if (frameworkMatch) {
+    return frameworkMatch.join(' ').trim();
+  }
+  
+  return insight.split(/[.!?]+/).slice(0, 3).join('. ').trim() + '.';
+}
+
+function extractPhilosophicalAnswer(insight: string, question: string): string {
+  // Extract deeper meaning and assumptions
+  const deepMatch = insight.match(/(?:essence|nature|fundamental|reality|existence|being)[^.]*[.]/gi);
+  if (deepMatch) {
+    return deepMatch.join(' ').trim();
+  }
+  
+  return insight.split(/[.!?]+/).slice(1, 4).join('. ').trim() + '.';
+}
+
+function extractAbstractAnswer(insight: string, question: string): string {
+  // Extract patterns and connections
+  const patternMatch = insight.match(/(?:pattern|connection|relationship|web|network|interplay)[^.]*[.]/gi);
+  if (patternMatch) {
+    return patternMatch.join(' ').trim();
+  }
+  
+  return insight.split(/[.!?]+/).slice(0, 2).join('. ').trim() + '.';
+}
+
+function extractDirectAnswer(insight: string, question: string): string {
+  // Simple extraction of the most relevant part
+  const sentences = insight.split(/[.!?]+/).filter(s => s.trim());
+  if (sentences.length >= 2) {
+    return sentences.slice(0, 2).join('. ').trim() + '.';
+  }
+  return insight.substring(0, 300) + (insight.length > 300 ? '...' : '');
 }
 
 function getLayerFocus(layerNumber: number): string {
@@ -159,6 +222,7 @@ export function buildErrorResponse(error: any): any {
     processingDepth: 0,
     outputType: 'error',
     logicTrail: [],
+    compressionFormats: null,
     questionQuality: {
       overallScore: 1.0,
       feedback: 'System error prevented processing',

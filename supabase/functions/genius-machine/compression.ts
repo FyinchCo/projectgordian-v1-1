@@ -13,14 +13,14 @@ export async function generateCompressionFormats(
   
   if (!openAIApiKey) {
     console.warn('OpenAI API key not available for compression generation');
-    return generateFallbackCompressions(insight, outputType);
+    return generateFallbackCompressions(insight, outputType, question);
   }
 
   try {
     const style = outputType || compressionSettings?.style || 'practical';
     const customInstructions = compressionSettings?.customInstructions || '';
     
-    const compressionPrompt = buildCompressionPrompt(
+    const compressionPrompt = buildDirectAnswerCompressionPrompt(
       insight, 
       question, 
       style, 
@@ -39,91 +39,92 @@ export async function generateCompressionFormats(
         messages: [
           {
             role: 'system',
-            content: 'You are a compression specialist who creates focused, actionable summaries in different formats.'
+            content: 'You are a compression specialist who creates direct, actionable answers in different formats. Focus on answering the question, not describing the process.'
           },
           {
             role: 'user',
             content: compressionPrompt
           }
         ],
-        max_tokens: 800,
+        max_tokens: 1000,
         temperature: 0.3,
       }),
     });
 
     if (!response.ok) {
       console.error('Compression API error:', response.status, response.statusText);
-      return generateFallbackCompressions(insight, outputType);
+      return generateFallbackCompressions(insight, outputType, question);
     }
 
     const data = await response.json();
     const content = data.choices[0]?.message?.content;
     
     if (!content) {
-      return generateFallbackCompressions(insight, outputType);
+      return generateFallbackCompressions(insight, outputType, question);
     }
 
-    return parseCompressionResponse(content, insight, outputType);
+    return parseCompressionResponse(content, insight, outputType, question);
     
   } catch (error) {
     console.error('Error generating compression formats:', error);
-    return generateFallbackCompressions(insight, outputType);
+    return generateFallbackCompressions(insight, outputType, question);
   }
 }
 
-function buildCompressionPrompt(
+function buildDirectAnswerCompressionPrompt(
   insight: string, 
   question: string, 
   style: string, 
   customInstructions: string,
   results: any
 ): string {
-  return `Transform this insight into 5 different compression formats:
+  return `Transform this analysis into direct answers to the user's question in 3 formats:
 
-ORIGINAL INSIGHT: "${insight}"
-QUESTION: "${question}"
-STYLE FOCUS: ${style}
+USER'S QUESTION: "${question}"
+ANALYSIS INSIGHT: "${insight}"
+ANSWER STYLE: ${style}
 CUSTOM INSTRUCTIONS: ${customInstructions}
 
-Create exactly these 5 formats:
+Create 3 direct answer formats that respond to the user's question:
 
-PRACTICAL: Action-oriented bullet points and next steps
-TECHNICAL: Structured analysis with key components  
-CREATIVE: Engaging narrative that captures the essence
-EXECUTIVE: High-level strategic summary for decision makers
-ACADEMIC: Rigorous analytical framework with supporting logic
+ULTRA-CONCISE (15-25 words): The most essential answer distilled to its core
+MEDIUM (40-80 words): A balanced answer with key reasoning  
+COMPREHENSIVE (100-150 words): A complete answer with context and implications
 
-Each format should be 2-4 sentences maximum and capture the core insight while serving its specific audience.`;
+Each format should:
+- Directly answer the user's question
+- NOT describe the analysis process
+- Focus on the insight itself, not how it was generated
+- Be useful and actionable for the user
+
+Respond in JSON format:
+{
+  "ultraConcise": "direct answer here",
+  "medium": "balanced answer with reasoning here", 
+  "comprehensive": "complete answer with full context here"
+}`;
 }
 
-function parseCompressionResponse(content: string, insight: string, outputType?: string): CompressionFormats {
-  const sections = content.split(/PRACTICAL:|TECHNICAL:|CREATIVE:|EXECUTIVE:|ACADEMIC:/)
-    .map(s => s.trim())
-    .filter(s => s.length > 0);
-
-  const fallback = generateFallbackCompressions(insight, outputType);
-  
-  return {
-    practical: sections[0] || fallback.practical,
-    technical: sections[1] || fallback.technical,
-    creative: sections[2] || fallback.creative,
-    executive: sections[3] || fallback.executive,
-    academic: sections[4] || fallback.academic,
-  };
+function parseCompressionResponse(content: string, insight: string, outputType?: string, question?: string): CompressionFormats {
+  try {
+    const parsed = JSON.parse(content);
+    return {
+      ultraConcise: parsed.ultraConcise || insight.substring(0, 100),
+      medium: parsed.medium || insight.substring(0, 300),
+      comprehensive: parsed.comprehensive || insight
+    };
+  } catch (error) {
+    console.warn('Failed to parse compression JSON, using fallback');
+    return generateFallbackCompressions(insight, outputType, question);
+  }
 }
 
-function generateFallbackCompressions(insight: string, outputType?: string): CompressionFormats {
-  const core = insight.substring(0, 200);
+function generateFallbackCompressions(insight: string, outputType?: string, question?: string): CompressionFormats {
+  const sentences = insight.split(/[.!?]+/).filter(s => s.trim());
   
   return {
-    practical: `• Key insight: ${core}...\n• Next steps: Apply this understanding to current challenges\n• Action items: Review implications and adjust approach accordingly`,
-    
-    technical: `Core Analysis: ${core}...\nStructural Elements: Multi-layered reasoning process\nImplementation: Systematic application of derived insights`,
-    
-    creative: `This exploration reveals ${core}... Like layers of an onion, each level of analysis unveils deeper truths about the nature of our inquiry.`,
-    
-    executive: `Strategic Insight: ${core}...\nBusiness Impact: Enhanced decision-making framework\nRecommendation: Integrate findings into strategic planning`,
-    
-    academic: `Analytical Framework: ${core}...\nMethodological Approach: Systematic multi-perspective analysis\nConclusion: Findings support comprehensive understanding of complex systems`
+    ultraConcise: sentences[0]?.substring(0, 100) || insight.substring(0, 100),
+    medium: sentences.slice(0, 2).join('. ') || insight.substring(0, 300),
+    comprehensive: insight
   };
 }
