@@ -16,8 +16,16 @@ export const useProcessingExecutor = () => {
     onChunkProgressChange: (progress: { current: number; total: number }) => void;
   }) => {
     console.log('=== PROCESSING EXECUTOR START ===');
+    console.log('Executor received params:', {
+      question: params.question.substring(0, 50) + '...',
+      processingDepth: params.processingDepth,
+      circuitType: params.circuitType,
+      enhancedMode: params.enhancedMode
+    });
     
     try {
+      console.log('Calling processWithGeniusMachine...');
+      
       // Call the direct processor for immediate reliable results
       const results = await processWithGeniusMachine({
         question: params.question,
@@ -34,14 +42,17 @@ export const useProcessingExecutor = () => {
       console.log('✓ Processing completed successfully');
       console.log('Result confidence:', Math.round(results.confidence * 100) + '%');
       console.log('Layers generated:', results.layers.length);
+      console.log('Calling onProcessingComplete...');
       
       // Call completion handler
       params.onProcessingComplete(results);
       
+      console.log('✓ Processing executor completed successfully');
       return results;
 
     } catch (error) {
       console.error('Processing executor failed:', error);
+      console.error('Error stack:', error.stack);
       throw new Error(`Processing system encountered an unexpected error: ${error.message}`);
     }
   };

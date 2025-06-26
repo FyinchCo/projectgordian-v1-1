@@ -44,27 +44,33 @@ export const processWithGeniusMachine = async (params: ProcessingParams): Promis
   console.log('=== GENIUS MACHINE PROCESSING START ===');
   console.log('Question:', question.substring(0, 100) + '...');
   console.log('Processing depth:', processingDepth);
+  console.log('Starting immediate local processing...');
 
   // Start with intelligent local processing immediately
-  console.log('Using intelligent local processing for maximum reliability...');
   return await generateIntelligentLocalResults(params);
 };
 
 async function generateIntelligentLocalResults(params: ProcessingParams): Promise<ProcessingResult> {
   const { question, processingDepth, circuitType, outputType, onCurrentLayerChange, onChunkProgressChange } = params;
   
-  console.log('=== INTELLIGENT LOCAL PROCESSING ===');
+  console.log('=== INTELLIGENT LOCAL PROCESSING START ===');
+  console.log('Processing depth requested:', processingDepth);
   
   const layers = [];
   const logicTrail = [];
   
   // Simulate progressive processing with realistic timing
   for (let layerNum = 1; layerNum <= processingDepth; layerNum++) {
+    console.log(`Starting layer ${layerNum}/${processingDepth}`);
+    
+    // Update UI immediately
     onCurrentLayerChange(layerNum);
     onChunkProgressChange({ current: layerNum, total: processingDepth });
     
-    // Add realistic processing delay
-    await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 400));
+    // Add realistic processing delay to show progress
+    const delay = 600 + Math.random() * 200; // 600-800ms per layer
+    console.log(`Layer ${layerNum}: waiting ${delay}ms...`);
+    await new Promise(resolve => setTimeout(resolve, delay));
     
     const layer = generateIntelligentLayer(layerNum, question, layers);
     layers.push(layer);
@@ -89,6 +95,8 @@ async function generateIntelligentLocalResults(params: ProcessingParams): Promis
   const emergenceDetected = processingDepth > 6 && avgConfidence > 0.7;
   
   console.log('✓ Intelligent local processing completed successfully');
+  console.log('Generated layers:', layers.length);
+  console.log('Final confidence:', Math.round((avgConfidence + 0.1) * 100) + '%');
   
   return {
     layers,
