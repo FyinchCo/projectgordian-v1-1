@@ -1,7 +1,7 @@
-
 import { Archetype, ArchetypeResponse, LayerResult } from './types.ts';
 
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
 
 // Enhanced personality-driven archetype processing
 export async function processArchetypesWithPersonality(
@@ -122,6 +122,108 @@ async function generatePersonalityDrivenResponse(
   archetypeIndex: number
 ): Promise<string> {
   
+  // Determine which AI provider to use based on archetype
+  const shouldUseClaude = archetype.name === 'The Mystic' && anthropicApiKey;
+  
+  if (shouldUseClaude) {
+    console.log(`Using Claude for ${archetype.name}`);
+    return await generateClaudeResponse(question, archetype, context, layerNumber, archetypeIndex);
+  } else {
+    console.log(`Using OpenAI for ${archetype.name}`);
+    return await generateOpenAIResponse(question, archetype, context, layerNumber, archetypeIndex);
+  }
+}
+
+async function generateClaudeResponse(
+  question: string,
+  archetype: Archetype,
+  context: string,
+  layerNumber: number,
+  archetypeIndex: number
+): Promise<string> {
+  
+  const personalityPrompt = buildPersonalityPrompt(archetype, layerNumber);
+  
+  const layerFocuses = [
+    "foundational challenge and disruption",
+    "pattern contradiction and alternative frameworks", 
+    "aggressive tension amplification and conflict",
+    "paradigm warfare and synthesis battles",
+    "assumption destruction and reframing",
+    "emergence through intellectual combat",
+    "meta-level transcendence via friction",
+    "breakthrough synthesis through contradiction",
+    "ultimate wisdom via creative destruction",
+    "transcendent unity forged from chaos"
+  ];
+  
+  const layerFocus = layerFocuses[Math.min(layerNumber - 1, layerFocuses.length - 1)];
+  
+  const tensionPrompt = layerNumber > 1 ? 
+    `\n\nMINIMUM TENSION REQUIREMENT: You MUST create intellectual friction. Challenge, contradict, or completely reframe what others have said. Your role is to generate productive disagreement that forces deeper thinking. DO NOT be polite or agreeable.` : '';
+  
+  const userPrompt = `${context}
+
+LAYER ${layerNumber} FOCUS: ${layerFocus}
+QUESTION: ${question}
+
+As ${archetype.name} in Layer ${layerNumber}, channel your distinct personality (Imagination: ${archetype.imagination}/10, Skepticism: ${archetype.skepticism}/10, Aggression: ${archetype.aggression}/10, Emotionality: ${archetype.emotionality}/10) to provide a perspective focused on ${layerFocus}.
+
+PERSONALITY ACTIVATION REQUIREMENTS:
+1. Express your unique ${archetype.languageStyle} voice authentically
+2. Apply your personality constraints: ${archetype.constraint || 'None'}
+3. Create intellectual friction appropriate to your aggression level (${archetype.aggression}/10)
+4. Balance imagination (${archetype.imagination}/10) with skepticism (${archetype.skepticism}/10)
+5. Let emotionality (${archetype.emotionality}/10) drive your language intensity
+
+${tensionPrompt}
+
+Your response should be substantial (150-300 words) and reflect your distinct archetypal personality while focusing on ${layerFocus}.`;
+
+  console.log(`Calling Claude for personality-driven ${archetype.name} in layer ${layerNumber}...`);
+
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'x-api-key': anthropicApiKey,
+      'Content-Type': 'application/json',
+      'anthropic-version': '2023-06-01'
+    },
+    body: JSON.stringify({
+      model: 'claude-3-5-sonnet-20241022',
+      max_tokens: 450,
+      messages: [
+        { 
+          role: 'user', 
+          content: `${personalityPrompt}\n\n${userPrompt}` 
+        }
+      ],
+      temperature: calculatePersonalityTemperature(archetype, layerNumber, archetypeIndex),
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error(`Claude API error for ${archetype.name}:`, response.status, response.statusText, errorText);
+    throw new Error(`Claude API error: ${response.status} ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  const content = data.content[0]?.text;
+  
+  console.log(`✓ Claude personality response received for ${archetype.name}: ${content?.length || 0} chars`);
+  
+  return content || '';
+}
+
+async function generateOpenAIResponse(
+  question: string,
+  archetype: Archetype,
+  context: string,
+  layerNumber: number,
+  archetypeIndex: number
+): Promise<string> {
+  
   // Enhanced personality-driven system prompt
   const personalityPrompt = buildPersonalityPrompt(archetype, layerNumber);
   
@@ -188,7 +290,7 @@ Your response should be substantial (150-300 words) and reflect your distinct ar
   const data = await response.json();
   const content = data.choices[0].message.content;
   
-  console.log(`✓ Personality-driven response received for ${archetype.name}: ${content?.length || 0} chars`);
+  console.log(`✓ OpenAI personality response received for ${archetype.name}: ${content?.length || 0} chars`);
   
   return content || '';
 }
