@@ -1,7 +1,6 @@
 
-import { ArchetypeThoughtBubble } from "./ArchetypeThoughtBubble";
-import { ProcessingHeader } from "./ProcessingHeader";
-import { CurrentFocusCards } from "./CurrentFocusCards";
+import { DescentVisualization } from "./DescentVisualization";
+import { EnhancedArchetypeGrid } from "./EnhancedArchetypeGrid";
 import { getProcessingInsights } from "./processingInsights";
 import { PixelRobot } from "../PixelRobot";
 import { useState, useEffect } from "react";
@@ -13,8 +12,6 @@ interface ProcessingVisualizationProps {
   circuitType: string;
   chunkProgress?: { current: number; total: number };
 }
-
-const archetypes = ["The Visionary", "The Skeptic", "The Mystic", "The Contrarian", "The Realist"];
 
 export const ProcessingVisualization = ({
   currentArchetype,
@@ -40,86 +37,75 @@ export const ProcessingVisualization = ({
     return () => clearInterval(interval);
   }, []);
 
-  // Enhanced phase tracking
+  // Enhanced phase tracking with archetypal language
   useEffect(() => {
     if (currentArchetype === "Compression Agent") {
-      setCurrentPhase("Synthesizing multi-perspective breakthrough...");
+      setCurrentPhase("Neural synthesis active - breakthrough imminent");
     } else if (currentArchetype) {
-      const insight = getProcessingInsights(currentArchetype);
-      setCurrentPhase(`${insight.focus} - ${insight.contribution}`);
+      const archetypePhases = {
+        "The Visionary": "Scanning possibility horizons...",
+        "The Skeptic": "Stress-testing foundations...", 
+        "The Mystic": "Sensing deeper currents...",
+        "The Contrarian": "Challenging orthodox thinking...",
+        "The Realist": "Grounding in practical reality..."
+      };
+      setCurrentPhase(archetypePhases[currentArchetype] || "Cognitive processing active...");
     } else {
-      setCurrentPhase("Preparing cognitive architecture...");
+      setCurrentPhase("Awakening archetypal consciousness...");
     }
   }, [currentArchetype]);
   
   // Calculate enhanced progress
   const overallProgress = Math.min(((currentLayer - 1) / totalLayers) * 100 + 
-    (currentArchetype !== "Compression Agent" ? 
-      (archetypes.indexOf(currentArchetype) + 1) / (archetypes.length + 1) * (100 / totalLayers) : 
-      100 / totalLayers), 100);
-
-  const getCurrentArchetypeIndex = () => {
-    if (currentArchetype === "Compression Agent") return archetypes.length;
-    return archetypes.indexOf(currentArchetype);
-  };
-
-  const currentIndex = getCurrentArchetypeIndex();
+    (currentArchetype !== "Compression Agent" ? 15 : 20), 100);
 
   return (
-    <div className="space-y-6">
-      {/* Friendly Processing Header */}
-      <div className="bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-200 rounded-xl p-6 shadow-lg">
-        <div className="flex items-center justify-center space-x-4 mb-4">
-          <PixelRobot size={48} mood="working" animate={true} />
-          <div className="text-center">
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">
-              Working on Your Question! 
-            </h2>
-            <p className="text-gray-600 font-medium">
-              My AI friends and I are thinking hard about this...
-            </p>
-          </div>
-          <PixelRobot size={48} mood="thinking" animate={true} />
-        </div>
-        
-        <ProcessingHeader
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black">
+      <div className="space-y-8 max-w-7xl mx-auto p-8">
+        {/* Main Descent Interface */}
+        <DescentVisualization
           currentLayer={currentLayer}
           totalLayers={totalLayers}
-          circuitType={circuitType}
           overallProgress={overallProgress}
-          currentPhase={currentPhase}
           processingTime={processingTime}
           efficiencyScore={efficiencyScore}
+          currentPhase={currentPhase}
           chunkProgress={chunkProgress}
         />
-      </div>
 
-      {/* Enhanced Archetype Grid with Contribution Details */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        {archetypes.map((archetype, index) => (
-          <ArchetypeThoughtBubble
-            key={archetype}
-            archetype={archetype}
-            isActive={currentArchetype === archetype}
-            isCompleted={currentLayer > 1 || currentIndex > index}
-            processingInsights={getProcessingInsights(archetype)}
-          />
-        ))}
-        
-        {/* Enhanced Synthesis Agent */}
-        <ArchetypeThoughtBubble
-          archetype="Synthesis Agent"
-          isActive={currentArchetype === "Compression Agent"}
-          isCompleted={false}
-          processingInsights={getProcessingInsights("Compression Agent")}
+        {/* Enhanced Archetype Grid */}
+        <EnhancedArchetypeGrid 
+          currentArchetype={currentArchetype}
+          currentLayer={currentLayer}
         />
-      </div>
 
-      {/* Current Focus Cards */}
-      <CurrentFocusCards 
-        currentArchetype={currentArchetype}
-        insights={insights}
-      />
+        {/* Atmospheric Bottom Section */}
+        <div className="text-center space-y-4 py-8">
+          <div className="flex justify-center items-center space-x-4 mb-6">
+            <PixelRobot size={48} mood="working" animate={true} />
+            <div className="text-center">
+              <p className="text-gray-400 text-lg">
+                {currentArchetype === "Compression Agent" 
+                  ? "All perspectives converging into unified insight..."
+                  : "Archetypal minds engaged in deep cognitive work..."
+                }
+              </p>
+            </div>
+            <PixelRobot size={48} mood="thinking" animate={true} />
+          </div>
+          
+          {/* Dynamic Activity Indicators */}
+          <div className="flex justify-center space-x-2">
+            {[...Array(7)].map((_, i) => (
+              <div 
+                key={i}
+                className="w-3 h-3 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full animate-bounce"
+                style={{ animationDelay: `${i * 0.1}s` }} 
+              />
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
