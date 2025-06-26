@@ -53,8 +53,9 @@ export class CircuitBreaker {
     } catch (error) {
       this.onFailure(serviceKey);
       
-      // If we have a fallback and circuit is now open, use it
-      if (circuit.state === 'OPEN' && fallback) {
+      // Re-check circuit state after failure handling
+      const updatedCircuit = this.getCircuit(serviceKey);
+      if (updatedCircuit.state === 'OPEN' && fallback) {
         console.log(`Circuit breaker ${serviceKey}: Using fallback after failure`);
         return await fallback();
       }
