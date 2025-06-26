@@ -1,27 +1,53 @@
-import { CompressionFormats, CompressionSettings } from './types.ts';
-import { buildEnhancedSystemPrompt, buildEnhancedCompressionPrompt } from './promptBuilders.ts';
-import { generateFallbackFormats } from './fallbackGenerator.ts';
 
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+import { getCompressionInstructions } from './styleInstructions.ts';
+import { generateFallbackCompression } from './fallbackGenerator.ts';
 
 export async function processCompressionWithOpenAI(
   insight: string,
   originalQuestion: string,
-  compressionSettings?: CompressionSettings,
+  compressionSettings?: any,
   outputType?: string
-): Promise<CompressionFormats> {
-  console.log('Starting enhanced compression format generation with output type:', outputType);
-  
-  if (!openAIApiKey) {
-    console.error('OpenAI API key not available for compression');
-    return generateFallbackFormats(insight, originalQuestion, compressionSettings);
-  }
-  
+) {
   try {
-    const compressionPrompt = buildEnhancedCompressionPrompt(insight, originalQuestion, compressionSettings, outputType);
+    if (!openAIApiKey) {
+      console.log('No OpenAI key available, using fallback compression');
+      return generateFallbackCompression(insight, originalQuestion, compressionSettings, outputType);
+    }
 
-    console.log('Calling OpenAI for enhanced compression formats...');
+    const style = compressionSettings?.style || 'insight-summary';
+    const instructions = getCompressionInstructions(style, outputType);
     
+    console.log('Processing compression with OpenAI:', { style, outputType });
+    
+    // Generate all three compression formats
+    const compressionPromises = [
+      generateCompression(insight, 'ultra-concise', outputType, instructions),
+      generateCompression(insight, 'medium', outputType, instructions),  
+      generateCompression(insight, 'comprehensive', outputType, instructions)
+    ];
+    
+    const [ultraConcise, medium, comprehensive] = await Promise.all(compressionPromises);
+    
+    return {
+      ultraConcise: ultraConcise || insight.substring(0, 100) + '...',
+      medium: medium || insight.substring(0, 300) + '...',
+      comprehensive: comprehensive || insight
+    };
+    
+  } catch (error) {
+    console.error('Compression processing failed:', error);
+    return generateFallbackCompression(insight, originalQuestion, compressionSettings, outputType);
+  }
+}
+
+async function generateCompression(
+  insight: string,
+  format: string,
+  outputType?: string,
+  instructions?: string
+) {
+  try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -31,91 +57,29 @@ export async function processCompressionWithOpenAI(
       body: JSON.stringify({
         model: 'gpt-4o-mini',
         messages: [
-          { 
-            role: 'system', 
-            content: buildEnhancedSystemPrompt(compressionSettings, outputType)
+          {
+            role: 'system',
+            content: `You are a master of insight compression. Transform insights while preserving their essential breakthrough nature. ${instructions || ''}`
           },
-          { role: 'user', content: compressionPrompt }
+          {
+            role: 'user',
+            content: `Transform this insight for ${format} format${outputType ? ` with ${outputType} output type` : ''}:\n\n${insight}`
+          }
         ],
-        max_tokens: 1000,
-        temperature: 0.4,
+        max_tokens: format === 'ultra-concise' ? 50 : format === 'medium' ? 200 : 400,
+        temperature: 0.3
       }),
     });
 
     if (!response.ok) {
-      console.error('OpenAI API error for compression:', response.status, response.statusText);
-      return generateFallbackFormats(insight, originalQuestion, compressionSettings);
+      throw new Error(`OpenAI API error: ${response.status}`);
     }
 
     const data = await response.json();
-    let rawResponse = data.choices[0]?.message?.content || '';
-    
-    if (!rawResponse) {
-      console.error('Empty response from OpenAI for compression');
-      return generateFallbackFormats(insight, originalQuestion, compressionSettings);
-    }
-    
-    return parseCompressionResponse(rawResponse, insight, originalQuestion, compressionSettings);
+    return data.choices[0]?.message?.content || '';
     
   } catch (error) {
-    console.error('Enhanced compression generation request failed:', error);
-    return generateFallbackFormats(insight, originalQuestion, compressionSettings);
-  }
-}
-
-function parseCompressionResponse(
-  rawResponse: string,
-  insight: string,
-  originalQuestion: string,
-  compressionSettings?: CompressionSettings
-): CompressionFormats {
-  // Clean up response - remove any markdown formatting
-  rawResponse = rawResponse.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-  
-  // Remove any leading/trailing non-JSON content
-  const jsonStart = rawResponse.indexOf('{');
-  const jsonEnd = rawResponse.lastIndexOf('}');
-  
-  if (jsonStart === -1 || jsonEnd === -1) {
-    console.error('No valid JSON found in compression response');
-    return generateFallbackFormats(insight, originalQuestion, compressionSettings);
-  }
-  
-  const jsonString = rawResponse.substring(jsonStart, jsonEnd + 1);
-  console.log('Enhanced compression JSON:', jsonString.substring(0, 100) + '...');
-  
-  try {
-    const parsed = JSON.parse(jsonString);
-    
-    // Validate that all required fields exist
-    if (!parsed.ultraConcise || !parsed.medium || !parsed.comprehensive) {
-      console.error('Missing required fields in compression response');
-      return generateFallbackFormats(insight, originalQuestion, compressionSettings);
-    }
-    
-    // Extract insight rating if present
-    let insightRating = null;
-    if (parsed.insightRating) {
-      insightRating = {
-        score: parsed.insightRating.score || 3,
-        category: parsed.insightRating.category || 'Competent',
-        justification: parsed.insightRating.justification || 'Standard analysis quality'
-      };
-    }
-    
-    const formats = {
-      ultraConcise: parsed.ultraConcise,
-      medium: parsed.medium,
-      comprehensive: parsed.comprehensive,
-      insightRating
-    };
-    
-    console.log('Successfully generated enhanced compression formats with rating');
-    return formats;
-    
-  } catch (parseError) {
-    console.error('JSON parsing failed for compression:', parseError);
-    console.error('Raw response was:', rawResponse);
-    return generateFallbackFormats(insight, originalQuestion, compressionSettings);
+    console.error(`Failed to generate ${format} compression:`, error);
+    return null;
   }
 }
