@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { useState, useEffect } from "react";
 import { ArchetypeHeader } from "./ArchetypeHeader";
 import { ThoughtProcessDisplay } from "./ThoughtProcessDisplay";
-import { getArchetypeColor, getThinkingStages } from "./archetypeConfig";
+import { getThinkingStages } from "./archetypeConfig";
 
 interface ArchetypeThoughtBubbleProps {
   archetype: string;
@@ -27,9 +27,8 @@ export const ArchetypeThoughtBubble = ({
 }: ArchetypeThoughtBubbleProps) => {
   const [currentStageIndex, setCurrentStageIndex] = useState(0);
   const [displayText, setDisplayText] = useState("");
-  const [contributionQuality] = useState(Math.floor(Math.random() * 20) + 80); // 80-99%
+  const [contributionQuality] = useState(Math.floor(Math.random() * 20) + 80);
   
-  const colorClass = getArchetypeColor(archetype);
   const thinkingStages = getThinkingStages(archetype);
 
   // Animate through thinking stages when active
@@ -38,12 +37,12 @@ export const ArchetypeThoughtBubble = ({
 
     const interval = setInterval(() => {
       setCurrentStageIndex((prev) => (prev + 1) % thinkingStages.length);
-    }, 2500); // Slightly slower for better readability
+    }, 3000);
 
     return () => clearInterval(interval);
   }, [isActive, thinkingStages.length]);
 
-  // Enhanced typewriter effect
+  // Elegant typewriter effect
   useEffect(() => {
     if (!isActive) {
       setDisplayText("");
@@ -61,36 +60,51 @@ export const ArchetypeThoughtBubble = ({
       } else {
         clearInterval(typeInterval);
       }
-    }, 40); // Slightly faster typing
+    }, 50);
 
     return () => clearInterval(typeInterval);
   }, [currentStageIndex, isActive, thinkingStages]);
 
-  return (
-    <Card className={`p-5 transition-all duration-500 ${
-      isActive ? `${colorClass} scale-105 shadow-lg ring-2 ring-opacity-50 ring-current` : 
-      isCompleted ? "bg-green-50 border-green-200 shadow-md" : 
-      "bg-gray-50 border-gray-200 opacity-60"
-    }`}>
-      <div className="space-y-4">
-        <ArchetypeHeader 
-          archetype={archetype}
-          isActive={isActive}
-          isCompleted={isCompleted}
-          contributionQuality={contributionQuality}
-          processingInsights={processingInsights}
-        />
+  if (!isActive) return null;
 
-        <div className="min-h-[100px]">
-          <ThoughtProcessDisplay 
-            archetype={archetype}
-            isActive={isActive}
-            isCompleted={isCompleted}
-            displayText={displayText}
-            currentStageIndex={currentStageIndex}
-            contributionQuality={contributionQuality}
-            processingInsights={processingInsights}
-          />
+  return (
+    <Card className="p-8 border border-gray-300 bg-white shadow-zen">
+      <div className="space-y-6">
+        {/* Elegant Header */}
+        <div className="text-center border-b border-gray-200 pb-4">
+          <h3 className="font-cormorant text-2xl font-normal text-black">
+            {archetype}
+          </h3>
+          <div className="text-sm text-gray-500 uppercase tracking-wider font-mono mt-1">
+            Active Cognitive Process
+          </div>
+        </div>
+
+        {/* Thought Process Display */}
+        <div className="min-h-[120px] flex items-center justify-center">
+          <div className="text-center space-y-4 max-w-2xl">
+            <div className="text-lg font-inter text-gray-800 leading-relaxed italic">
+              "{displayText}"
+              <span className="animate-pulse ml-1 not-italic">|</span>
+            </div>
+            
+            {/* Stage Progress */}
+            <div className="flex justify-center space-x-2">
+              {thinkingStages.map((_, index) => (
+                <div 
+                  key={index}
+                  className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                    index === currentStageIndex ? 'bg-black scale-125' : 
+                    index < currentStageIndex ? 'bg-gray-400' : 'bg-gray-200'
+                  }`}
+                />
+              ))}
+            </div>
+            
+            <div className="text-xs font-mono text-gray-500 uppercase tracking-wider">
+              Stage {currentStageIndex + 1} of {thinkingStages.length}
+            </div>
+          </div>
         </div>
       </div>
     </Card>
