@@ -1,4 +1,3 @@
-
 import { SynthesisResult } from './types.ts';
 
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
@@ -12,38 +11,20 @@ export interface CompressionFormats {
 export async function generateCompressionFormats(
   insight: string,
   synthesisResult: SynthesisResult,
-  originalQuestion: string
+  originalQuestion: string,
+  compressionSettings?: any
 ): Promise<CompressionFormats> {
-  console.log('Starting compression format generation...');
+  console.log('Starting compression format generation with user settings...');
   
   if (!openAIApiKey) {
     console.error('OpenAI API key not available for compression');
-    return generateFallbackFormats(insight, originalQuestion);
+    return generateFallbackFormats(insight, originalQuestion, compressionSettings);
   }
   
   try {
-    const compressionPrompt = `Transform this insight into three DISTINCTLY DIFFERENT formats:
+    const compressionPrompt = buildCompressionPrompt(insight, originalQuestion, compressionSettings);
 
-ORIGINAL INSIGHT: ${insight}
-
-ORIGINAL QUESTION: ${originalQuestion}
-
-Generate three completely different versions:
-
-1. ULTRA-CONCISE: A single powerful sentence that captures the core breakthrough (max 20 words)
-2. MEDIUM: A focused paragraph that explains the key insight with practical implications (50-80 words) 
-3. COMPREHENSIVE: An expanded exploration with context, implications, and actionable understanding (150-200 words)
-
-Each format should be GENUINELY DIFFERENT - not just truncated versions of each other.
-
-Return ONLY valid JSON without any markdown formatting:
-{
-  "ultraConcise": "single sentence here",
-  "medium": "focused paragraph here", 
-  "comprehensive": "expanded exploration here"
-}`;
-
-    console.log('Calling OpenAI for compression formats...');
+    console.log('Calling OpenAI for compression formats with user preferences...');
     
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -56,7 +37,7 @@ Return ONLY valid JSON without any markdown formatting:
         messages: [
           { 
             role: 'system', 
-            content: 'You are a compression specialist. Generate three genuinely different formats of the same insight. Each format serves a different purpose and audience. Return only valid JSON without any markdown formatting or code blocks.' 
+            content: buildSystemPrompt(compressionSettings)
           },
           { role: 'user', content: compressionPrompt }
         ],
@@ -67,7 +48,7 @@ Return ONLY valid JSON without any markdown formatting:
 
     if (!response.ok) {
       console.error('OpenAI API error for compression:', response.status, response.statusText);
-      return generateFallbackFormats(insight, originalQuestion);
+      return generateFallbackFormats(insight, originalQuestion, compressionSettings);
     }
 
     const data = await response.json();
@@ -75,7 +56,7 @@ Return ONLY valid JSON without any markdown formatting:
     
     if (!rawResponse) {
       console.error('Empty response from OpenAI for compression');
-      return generateFallbackFormats(insight, originalQuestion);
+      return generateFallbackFormats(insight, originalQuestion, compressionSettings);
     }
     
     // Clean up response - remove any markdown formatting
@@ -87,7 +68,7 @@ Return ONLY valid JSON without any markdown formatting:
     
     if (jsonStart === -1 || jsonEnd === -1) {
       console.error('No valid JSON found in compression response');
-      return generateFallbackFormats(insight, originalQuestion);
+      return generateFallbackFormats(insight, originalQuestion, compressionSettings);
     }
     
     const jsonString = rawResponse.substring(jsonStart, jsonEnd + 1);
@@ -99,7 +80,7 @@ Return ONLY valid JSON without any markdown formatting:
       // Validate that all required fields exist
       if (!parsed.ultraConcise || !parsed.medium || !parsed.comprehensive) {
         console.error('Missing required fields in compression response');
-        return generateFallbackFormats(insight, originalQuestion);
+        return generateFallbackFormats(insight, originalQuestion, compressionSettings);
       }
       
       // Ensure formats are genuinely different
@@ -113,7 +94,7 @@ Return ONLY valid JSON without any markdown formatting:
       if (formats.medium.includes(formats.ultraConcise) && 
           formats.comprehensive.startsWith(formats.medium.substring(0, 50))) {
         console.warn('Detected similar formats, using enhanced fallback');
-        return generateEnhancedFallbackFormats(insight, originalQuestion);
+        return generateEnhancedFallbackFormats(insight, originalQuestion, compressionSettings);
       }
       
       console.log('Successfully generated compression formats');
@@ -122,29 +103,117 @@ Return ONLY valid JSON without any markdown formatting:
     } catch (parseError) {
       console.error('JSON parsing failed for compression:', parseError);
       console.error('Raw response was:', rawResponse);
-      return generateFallbackFormats(insight, originalQuestion);
+      return generateFallbackFormats(insight, originalQuestion, compressionSettings);
     }
     
   } catch (error) {
     console.error('Compression generation request failed:', error);
-    return generateFallbackFormats(insight, originalQuestion);
+    return generateFallbackFormats(insight, originalQuestion, compressionSettings);
   }
 }
 
-function generateFallbackFormats(insight: string, question: string): CompressionFormats {
-  console.log('Using basic fallback compression formats');
+function buildSystemPrompt(compressionSettings?: any): string {
+  const basePrompt = 'You are a compression specialist. Generate three genuinely different formats of the same insight. Each format serves a different purpose and audience. Return only valid JSON without any markdown formatting or code blocks.';
+  
+  if (!compressionSettings) return basePrompt;
+  
+  let customization = '';
+  
+  if (compressionSettings.style && compressionSettings.style !== 'insight-summary') {
+    const styleMap = {
+      'aphorism': 'Focus on creating memorable, quotable wisdom',
+      'philosophical-phrase': 'Emphasize deep philosophical implications',
+      'narrative-form': 'Present insights as engaging stories or scenarios',
+      'custom': 'Follow the custom instructions provided'
+    };
+    customization += ` ${styleMap[compressionSettings.style] || ''}.`;
+  }
+  
+  if (compressionSettings.length && compressionSettings.length !== 'medium') {
+    const lengthMap = {
+      'short': 'Keep all formats concise and punchy',
+      'poetic': 'Use extended metaphors and poetic language'
+    };
+    customization += ` ${lengthMap[compressionSettings.length] || ''}.`;
+  }
+  
+  return basePrompt + customization;
+}
+
+function buildCompressionPrompt(insight: string, originalQuestion: string, compressionSettings?: any): string {
+  let basePrompt = `Transform this insight into three DISTINCTLY DIFFERENT formats:
+
+ORIGINAL INSIGHT: ${insight}
+
+ORIGINAL QUESTION: ${originalQuestion}`;
+
+  // Apply custom instructions if provided
+  if (compressionSettings?.customInstructions?.trim()) {
+    basePrompt += `\n\nCUSTOM INSTRUCTIONS: ${compressionSettings.customInstructions}`;
+  }
+
+  // Apply style preferences
+  if (compressionSettings?.style && compressionSettings.style !== 'insight-summary') {
+    const styleInstructions = {
+      'aphorism': 'Create insights that read like memorable aphorisms or maxims',
+      'philosophical-phrase': 'Frame insights as philosophical reflections on reality',
+      'narrative-form': 'Present insights through narrative examples and scenarios'
+    };
+    
+    if (styleInstructions[compressionSettings.style]) {
+      basePrompt += `\n\nSTYLE PREFERENCE: ${styleInstructions[compressionSettings.style]}`;
+    }
+  }
+
+  // Apply length preferences
+  const lengthMap = {
+    'short': { ultra: 15, medium: 40, comprehensive: 100 },
+    'medium': { ultra: 20, medium: 80, comprehensive: 200 },
+    'poetic': { ultra: 25, medium: 120, comprehensive: 300 }
+  };
+  
+  const lengths = lengthMap[compressionSettings?.length || 'medium'];
+
+  basePrompt += `\n\nGenerate three completely different versions:
+
+1. ULTRA-CONCISE: A single powerful sentence that captures the core breakthrough (max ${lengths.ultra} words)
+2. MEDIUM: A focused paragraph that explains the key insight with practical implications (${lengths.medium-20}-${lengths.medium} words) 
+3. COMPREHENSIVE: An expanded exploration with context, implications, and actionable understanding (${lengths.comprehensive-50}-${lengths.comprehensive} words)
+
+Each format should be GENUINELY DIFFERENT - not just truncated versions of each other.
+
+Return ONLY valid JSON without any markdown formatting:
+{
+  "ultraConcise": "single sentence here",
+  "medium": "focused paragraph here", 
+  "comprehensive": "expanded exploration here"
+}`;
+
+  return basePrompt;
+}
+
+function generateFallbackFormats(insight: string, question: string, compressionSettings?: any): CompressionFormats {
+  console.log('Using fallback compression formats with user preferences');
   
   const sentences = insight.split(/[.!?]/).filter(s => s.trim().length > 10);
   const firstSentence = sentences[0]?.trim() || insight.substring(0, 100);
   
+  // Apply style to fallback if specified
+  let styleModifier = '';
+  if (compressionSettings?.style === 'aphorism') {
+    styleModifier = 'As wisdom teaches us: ';
+  } else if (compressionSettings?.style === 'philosophical-phrase') {
+    styleModifier = 'Consider that ';
+  }
+  
   return {
-    ultraConcise: extractKeyPhrase(firstSentence),
+    ultraConcise: styleModifier + extractKeyPhrase(firstSentence),
     medium: `The exploration of "${question}" reveals ${firstSentence.substring(0, 80)}... This insight opens new pathways for understanding.`,
     comprehensive: `${insight.substring(0, 300)}${insight.length > 300 ? '...' : ''} This comprehensive analysis of "${question}" demonstrates the complexity of the underlying dynamics and suggests practical applications for further exploration.`
   };
 }
 
-function generateEnhancedFallbackFormats(insight: string, question: string): CompressionFormats {
+function generateEnhancedFallbackFormats(insight: string, question: string, compressionSettings?: any): CompressionFormats {
   console.log('Using enhanced fallback compression formats');
   
   const words = insight.split(' ');

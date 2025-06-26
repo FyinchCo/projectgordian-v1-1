@@ -46,13 +46,24 @@ export const ProcessingLogic = ({
       return;
     }
     
+    // Load compression settings from localStorage
+    const savedCompression = localStorage.getItem('genius-machine-compression');
+    const compressionSettings = savedCompression ? JSON.parse(savedCompression) : {
+      style: "insight-summary",
+      length: "medium",
+      includeTrail: true,
+      includeFullTranscript: false,
+      customInstructions: ""
+    };
+    
     console.log('=== RELIABLE PROCESSING START ===');
     console.log('Configuration:', {
       question: question.trim().substring(0, 100) + '...',
       requestedDepth: processingDepth[0],
       circuitType,
       customArchetypes: customArchetypes ? customArchetypes.length : 0,
-      enhancedMode
+      enhancedMode,
+      compressionSettings
     });
     
     onProcessingStart();
@@ -67,6 +78,7 @@ export const ProcessingLogic = ({
         enhancedMode,
         customArchetypes,
         currentAssessment,
+        compressionSettings,
         onProcessingComplete,
         onCurrentLayerChange,
         onChunkProgressChange

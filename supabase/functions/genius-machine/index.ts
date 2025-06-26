@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.2';
 import { corsHeaders } from '../_shared/cors.ts';
@@ -13,13 +12,21 @@ serve(async (req) => {
   }
 
   try {
-    const { question, processingDepth = 3, circuitType = 'sequential', customArchetypes, enhancedMode = true } = await req.json();
+    const { 
+      question, 
+      processingDepth = 3, 
+      circuitType = 'sequential', 
+      customArchetypes, 
+      enhancedMode = true,
+      compressionSettings 
+    } = await req.json();
     
     console.log('=== ENHANCED GENIUS MACHINE REQUEST ===');
     console.log('Question:', question?.substring(0, 100) + '...');
     console.log('Processing depth:', processingDepth);
     console.log('Enhanced personality processing: ENABLED');
     console.log('Tension escalation logic: ENABLED');
+    console.log('Compression settings:', compressionSettings);
     
     if (!question || typeof question !== 'string' || question.trim().length < 10) {
       throw new Error('Question must be a string with at least 10 characters');
@@ -122,6 +129,24 @@ serve(async (req) => {
     
     // Generate final results with enhanced analysis
     const finalResults = await generateFinalResultsWithTensionEscalation(layers, question, circuitType);
+    
+    // Generate compression formats with user settings
+    if (finalResults.insight) {
+      try {
+        console.log('Generating compression formats with user settings...');
+        const compressionFormats = await generateCompressionFormats(
+          finalResults.insight,
+          finalResults,
+          question,
+          compressionSettings
+        );
+        finalResults.compressionFormats = compressionFormats;
+        console.log('✓ Compression formats generated with user preferences');
+      } catch (compressionError) {
+        console.error('Failed to generate compression formats:', compressionError);
+        // Continue without compression formats rather than failing entire request
+      }
+    }
     
     console.log('✓ Enhanced final results generated');
     console.log('Enhanced response summary:', {
