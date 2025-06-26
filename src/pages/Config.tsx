@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -39,6 +38,15 @@ const Config = () => {
     includeFullTranscript: false,
     customInstructions: ""
   });
+
+  // Get the current outputType from localStorage to sync with main page
+  const [currentOutputType, setCurrentOutputType] = useState('practical');
+
+  useEffect(() => {
+    // Read the current outputType from localStorage or other shared state
+    const savedOutputType = localStorage.getItem('genius-machine-output-type') || 'practical';
+    setCurrentOutputType(savedOutputType);
+  }, []);
 
   // Load saved configuration on mount
   useEffect(() => {
@@ -210,7 +218,7 @@ const Config = () => {
             <CompressionTab
               compressionSettings={compressionSettings}
               onUpdateCompressionSettings={updateCompressionSettings}
-              outputType={outputType}
+              outputType={currentOutputType}
             />
           </TabsContent>
         </Tabs>
