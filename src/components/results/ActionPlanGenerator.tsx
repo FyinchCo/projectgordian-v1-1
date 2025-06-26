@@ -31,11 +31,9 @@ export const ActionPlanGenerator = ({ insight, question }: ActionPlanGeneratorPr
       
       // Check if it's a section header (contains numbers like 1., 2., etc. or keywords)
       if (trimmedLine.match(/^\d+\./) || 
-          trimmedLine.toLowerCase().includes('action items') ||
-          trimmedLine.toLowerCase().includes('timeline') ||
-          trimmedLine.toLowerCase().includes('metrics') ||
-          trimmedLine.toLowerCase().includes('obstacles') ||
-          trimmedLine.toLowerCase().includes('resources')) {
+          trimmedLine.toLowerCase().includes('step') ||
+          trimmedLine.toLowerCase().includes('phase') ||
+          trimmedLine.toLowerCase().includes('stage')) {
         
         if (inList) {
           formattedPlan += '\n';
@@ -51,8 +49,7 @@ export const ActionPlanGenerator = ({ insight, question }: ActionPlanGeneratorPr
         
       } else if (trimmedLine.length > 20 && !trimmedLine.endsWith(':')) {
         // Convert regular sentences to bullet points
-        formattedPlan += `• ${trimmedLine}\n`;
-        inList = true;
+        formattedPlan += `${trimmedLine}\n\n`;
         
       } else if (trimmedLine.endsWith(':')) {
         // Sub-header
@@ -72,43 +69,33 @@ export const ActionPlanGenerator = ({ insight, question }: ActionPlanGeneratorPr
     try {
       const { data, error } = await supabase.functions.invoke('genius-machine', {
         body: {
-          question: `Transform this breakthrough insight into a practical action plan with specific, bulleted steps:
+          question: `Based on this breakthrough insight, create a strategic action plan that captures the essence of implementing this concept in practice:
 
 ORIGINAL QUESTION: ${question}
 
 BREAKTHROUGH INSIGHT: ${insight}
 
-Create a structured action plan with clear bullet points under these sections:
+Create a strategic, high-level action plan with 3-4 key phases or steps. Each step should:
+- Have a clear, memorable title
+- Include a brief description of what it involves
+- Show the input/output or transformation that happens
+- Use conceptual language rather than technical implementation details
 
-**1. KEY ACTION ITEMS**
-• [Specific actionable step 1]
-• [Specific actionable step 2]
-• [Specific actionable step 3]
+Format like this example structure:
+1. [Clear Phase Title]
+[Description of what this phase involves and why it matters]
+Input/Output: [What goes in → What comes out]
 
-**2. IMPLEMENTATION TIMELINE**
-• Immediate (next 24-48 hours): [specific actions]
-• Short-term (next 1-2 weeks): [specific actions]
-• Long-term (next 1-3 months): [specific actions]
+⸻
 
-**3. SUCCESS METRICS**
-• [How to measure progress - specific metric 1]
-• [How to measure progress - specific metric 2]
-• [How to measure progress - specific metric 3]
+2. [Next Phase Title] 
+[Description and purpose]
+Transformation: [How this builds on the previous phase]
 
-**4. POTENTIAL OBSTACLES & SOLUTIONS**
-• Obstacle: [specific challenge] → Solution: [specific approach]
-• Obstacle: [specific challenge] → Solution: [specific approach]
-
-**5. RESOURCE REQUIREMENTS**
-• [Specific resource or tool needed]
-• [Specific resource or tool needed]
-• [Specific resource or tool needed]
-
-Format everything as clear, actionable bullet points that someone can immediately follow.`,
+Make this feel like a manifesto or strategic framework someone could actually follow to implement the core insight. Focus on the human experience and the conceptual flow rather than technical steps.`,
           processingDepth: 1,
           circuitType: 'sequential',
-          enhancedMode: false,
-          customArchetypes: 'default'
+          enhancedMode: false
         }
       });
 
@@ -119,8 +106,8 @@ Format everything as clear, actionable bullet points that someone can immediatel
       setShowGenerator(false);
       
       toast({
-        title: "Action Plan Ready! 🎉",
-        description: "Your breakthrough insight has been converted into practical next steps.",
+        title: "Strategic Action Plan Ready! 🎉",
+        description: "Your breakthrough insight has been transformed into a strategic framework.",
       });
     } catch (error) {
       toast({
@@ -139,22 +126,22 @@ Format everything as clear, actionable bullet points that someone can immediatel
         <div className="space-y-4">
           <div className="flex items-center justify-center space-x-3 mb-4">
             <PixelRobot size={32} mood="celebrating" animate={true} />
-            <h3 className="font-bold text-xl text-green-800">Your Action Plan is Ready!</h3>
+            <h3 className="font-bold text-xl text-green-800">Strategic Action Plan Ready!</h3>
             <ListChecks className="w-6 h-6 text-green-600" />
           </div>
-          <div className="prose prose-sm max-w-none">
-            <div className="whitespace-pre-wrap text-gray-800 leading-relaxed font-mono text-sm bg-white p-4 rounded-lg border">
+          <div className="prose prose-lg max-w-none">
+            <div className="whitespace-pre-wrap text-gray-800 leading-relaxed bg-white p-6 rounded-lg border-2 border-gray-200 shadow-inner">
               {actionPlan.split('\n').map((line, index) => {
                 if (line.startsWith('**') && line.endsWith('**')) {
-                  return <div key={index} className="font-bold text-blue-800 mt-4 mb-2 text-base">{line.replace(/\*\*/g, '')}</div>;
+                  return <div key={index} className="font-bold text-blue-900 mt-6 mb-3 text-xl border-b-2 border-blue-200 pb-2">{line.replace(/\*\*/g, '')}</div>;
                 } else if (line.startsWith('*') && line.endsWith('*')) {
-                  return <div key={index} className="font-semibold text-gray-700 mt-2 mb-1">{line.replace(/\*/g, '')}</div>;
-                } else if (line.startsWith('•')) {
-                  return <div key={index} className="ml-4 mb-1 text-gray-800">{line}</div>;
+                  return <div key={index} className="font-semibold text-blue-700 mt-3 mb-2 text-lg">{line.replace(/\*/g, '')}</div>;
+                } else if (line.includes('⸻')) {
+                  return <div key={index} className="text-center my-6 text-2xl text-gray-400">⸻</div>;
                 } else if (line.trim()) {
-                  return <div key={index} className="mb-1 text-gray-800">{line}</div>;
+                  return <div key={index} className="mb-2 text-gray-800 leading-relaxed">{line}</div>;
                 } else {
-                  return <div key={index} className="mb-2"></div>;
+                  return <div key={index} className="mb-3"></div>;
                 }
               })}
             </div>
@@ -187,8 +174,8 @@ Format everything as clear, actionable bullet points that someone can immediatel
           <div>
             <h3 className="font-bold text-xl text-blue-900 mb-2">Ready to Take Action?</h3>
             <p className="text-blue-700 leading-relaxed">
-              Great insights deserve great action plans! Let me help you turn this breakthrough 
-              into concrete steps you can take right away. 🚀
+              Transform your breakthrough insight into a strategic action framework that you can 
+              actually implement. Let's make this wisdom actionable! 🚀
             </p>
           </div>
         </div>
@@ -200,7 +187,7 @@ Format everything as clear, actionable bullet points that someone can immediatel
           {isGenerating ? (
             <>
               <Loader2 className="w-5 h-5 animate-spin" />
-              <span>Creating Your Plan...</span>
+              <span>Creating Framework...</span>
             </>
           ) : (
             <>
