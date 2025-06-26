@@ -2,11 +2,10 @@
 import { Archetype, ArchetypeResponse, LayerResult } from './types.ts';
 import { buildLayerContext } from './layer-context-builder.ts';
 import { buildSequentialTensionContext } from './context/sequentialContextBuilder.ts';
-import { shouldUseOpenAI, callOpenAIForPersonality, callClaudeForPersonality } from './api/aiServiceCaller.ts';
+import { callOpenAIForPersonality } from './api/aiServiceCaller.ts';
 import { createEnhancedFallbackResponse } from './fallback/fallbackResponseGenerator.ts';
 
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
-const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
 
 export async function processArchetypesWithPersonality(
   archetypes: Archetype[],
@@ -16,17 +15,22 @@ export async function processArchetypesWithPersonality(
   layerNumber: number = 1
 ): Promise<ArchetypeResponse[]> {
   console.log(`=== ENHANCED ARCHETYPE PROCESSING START ===`);
-  console.log(`Processing ${archetypes.length} archetypes for layer ${layerNumber} with personality engine`);
+  console.log(`Processing ${archetypes.length} archetypes for layer ${layerNumber} with OpenAI only`);
   
   if (!archetypes || archetypes.length === 0) {
     console.error('No archetypes provided for processing');
     return [];
   }
   
+  if (!openAIApiKey) {
+    console.error('OpenAI API key not available');
+    throw new Error('OpenAI API key is required');
+  }
+  
   const responses: ArchetypeResponse[] = [];
   const layerContext = buildLayerContext(previousLayers, layerNumber, question);
   
-  // Gate 1: Archetype Processing Reliability - Sequential with optimized timing
+  // Process all archetypes with OpenAI
   for (let i = 0; i < archetypes.length; i++) {
     const archetype = archetypes[i];
     console.log(`Processing personality-driven archetype ${i + 1}/${archetypes.length}: ${archetype.name}`);
@@ -36,7 +40,7 @@ export async function processArchetypesWithPersonality(
       buildSequentialTensionContext(responses, layerNumber) : '';
     
     try {
-      // Gate 1: Individual archetype timeout and retry logic
+      // Process archetype with retry logic using only OpenAI
       const response = await processArchetypeWithRetry(
         archetype,
         question,
@@ -63,7 +67,7 @@ export async function processArchetypesWithPersonality(
       responses.push(createEnhancedFallbackResponse(archetype, layerNumber, question, responses));
     }
     
-    // Gate 1: Optimized inter-archetype delay (reduced from 300ms to 100ms)
+    // Optimized inter-archetype delay
     if (i < archetypes.length - 1) {
       await new Promise(resolve => setTimeout(resolve, 100));
     }
@@ -72,7 +76,7 @@ export async function processArchetypesWithPersonality(
   console.log(`Generated ${responses.length} personality-driven responses for layer ${layerNumber}`);
   console.log(`=== ENHANCED ARCHETYPE PROCESSING COMPLETE ===`);
   
-  // Gate 1: Ensure we always return meaningful responses
+  // Ensure we always return meaningful responses
   if (responses.length === 0) {
     console.error('CRITICAL: No archetype responses generated, creating emergency fallbacks!');
     return archetypes.map(archetype => 
@@ -94,19 +98,19 @@ async function processArchetypeWithRetry(
   
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      // Gate 4: API Rate Limiting Management with exponential backoff
+      // Exponential backoff for retries
       if (attempt > 1) {
         const delay = Math.min(1000 * Math.pow(2, attempt - 2), 5000);
         console.log(`Retry attempt ${attempt} for ${archetype.name}, waiting ${delay}ms...`);
         await new Promise(resolve => setTimeout(resolve, delay));
       }
       
-      // Gate 1: Individual archetype timeout (15 seconds)
+      // Individual archetype timeout (reduced from 15s to 10s)
       const timeoutPromise = new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error('Archetype processing timeout')), 15000)
+        setTimeout(() => reject(new Error('Archetype processing timeout')), 10000)
       );
       
-      const processingPromise = generatePersonalityResponse(
+      const processingPromise = callOpenAIForPersonality(
         archetype, 
         question, 
         context, 
@@ -134,26 +138,4 @@ async function processArchetypeWithRetry(
   }
   
   throw new Error('All retry attempts exhausted');
-}
-
-async function generatePersonalityResponse(
-  archetype: Archetype,
-  question: string,
-  context: string,
-  layerNumber: number,
-  archetypeIndex: number
-): Promise<string> {
-  
-  // Determine which AI to use based on archetype
-  const useOpenAI = shouldUseOpenAI(archetype);
-  
-  if (useOpenAI && openAIApiKey) {
-    console.log(`Using OpenAI for ${archetype.name}`);
-    return await callOpenAIForPersonality(archetype, question, context, layerNumber, archetypeIndex);
-  } else if (anthropicApiKey) {
-    console.log(`Using Claude for ${archetype.name}`);
-    return await callClaudeForPersonality(archetype, question, context, layerNumber, archetypeIndex);
-  } else {
-    throw new Error('No API keys available for personality processing');
-  }
 }
