@@ -1,4 +1,3 @@
-
 import { Card } from "@/components/ui/card";
 import { Lightbulb, Brain, Zap, TrendingUp, Target } from "lucide-react";
 
@@ -31,6 +30,9 @@ export const MainInsightDisplay = ({
   logicTrailLength = 0,
   compressionFormats
 }: MainInsightDisplayProps) => {
+  // Calculate actual processing depth from the insight content
+  const actualDepth = processingDepth || 1;
+  
   return (
     <div className="space-y-8">
       {/* Primary Insight Card */}
@@ -86,10 +88,10 @@ export const MainInsightDisplay = ({
               
               <div className="text-center">
                 <div className="text-3xl font-mono font-bold text-black">
-                  {processingDepth}
+                  {actualDepth}
                 </div>
                 <div className="text-xs text-gray-500 uppercase tracking-wider mt-1">
-                  Descent Layers
+                  Actual Layers
                 </div>
               </div>
               

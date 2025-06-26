@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown, ChevronUp, Layers, TrendingUp, Brain } from "lucide-react";
+import { deduplicateLayers } from "../processing/layerNormalizer";
 
 interface ProcessingLayersSectionProps {
   layers?: Array<{
@@ -29,22 +30,21 @@ export const ProcessingLayersSection = ({ layers }: ProcessingLayersSectionProps
   }
 
   // Deduplicate and organize layers properly
-  const uniqueLayers = layers.reduce((acc, layer) => {
-    const key = `${layer.layerNumber}-${layer.circuitType}`;
-    if (!acc[key] || layer.confidence > acc[key].confidence) {
-      acc[key] = layer;
-    }
-    return acc;
-  }, {} as Record<string, any>);
-
-  const sortedLayers = Object.values(uniqueLayers).sort((a, b) => a.layerNumber - b.layerNumber);
+  const cleanLayers = deduplicateLayers(layers);
+  
+  if (cleanLayers.length === 0) {
+    return null;
+  }
 
   // Calculate progression metrics
-  const tensionProgression = sortedLayers.map(layer => layer.tensionPoints);
-  const confidenceProgression = sortedLayers.map(layer => Math.round(layer.confidence * 100));
+  const tensionProgression = cleanLayers.map(layer => layer.tensionPoints || 0);
+  const confidenceProgression = cleanLayers.map(layer => Math.round((layer.confidence || 0) * 100));
   const avgTensionIncrease = tensionProgression.length > 1 
     ? (tensionProgression[tensionProgression.length - 1] - tensionProgression[0]) / (tensionProgression.length - 1)
     : 0;
+
+  const finalLayer = cleanLayers[cleanLayers.length - 1];
+  const hasBreakthrough = cleanLayers.some(layer => layer.emergenceDetected);
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
@@ -58,7 +58,7 @@ export const ProcessingLayersSection = ({ layers }: ProcessingLayersSectionProps
                   Cognitive Descent Analysis
                 </h3>
                 <div className="text-sm text-gray-600 font-inter mt-1">
-                  {sortedLayers.length} layers processed • Tension escalation: {avgTensionIncrease > 0 ? '↗' : '→'} {avgTensionIncrease.toFixed(1)} pts/layer
+                  {cleanLayers.length} layers processed • Tension escalation: {avgTensionIncrease > 0 ? '↗' : '→'} {avgTensionIncrease.toFixed(1)} pts/layer
                 </div>
               </div>
             </div>
@@ -71,18 +71,18 @@ export const ProcessingLayersSection = ({ layers }: ProcessingLayersSectionProps
             {/* Processing Overview */}
             <div className="grid grid-cols-3 gap-6 p-6 bg-gray-50 rounded-lg border border-gray-200">
               <div className="text-center">
-                <div className="text-2xl font-mono font-bold text-black">{sortedLayers.length}</div>
-                <div className="text-xs text-gray-500 uppercase tracking-wider">Depth Layers</div>
+                <div className="text-2xl font-mono font-bold text-black">{cleanLayers.length}</div>
+                <div className="text-xs text-gray-500 uppercase tracking-wider">Actual Layers</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-mono font-bold text-black">
-                  {tensionProgression[tensionProgression.length - 1] || 0}
+                  {finalLayer?.tensionPoints || 0}
                 </div>
                 <div className="text-xs text-gray-500 uppercase tracking-wider">Final Tension</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-mono font-bold text-black">
-                  {confidenceProgression[confidenceProgression.length - 1] || 0}%
+                  {Math.round((finalLayer?.confidence || 0) * 100)}%
                 </div>
                 <div className="text-xs text-gray-500 uppercase tracking-wider">Peak Confidence</div>
               </div>
@@ -97,11 +97,11 @@ export const ProcessingLayersSection = ({ layers }: ProcessingLayersSectionProps
                     <div 
                       className="bg-black rounded-sm transition-all duration-300"
                       style={{ 
-                        height: `${Math.max(8, (tension / Math.max(...tensionProgression)) * 48)}px`,
+                        height: `${Math.max(8, (tension / Math.max(...tensionProgression, 1)) * 48)}px`,
                         width: '12px'
                       }}
                     ></div>
-                    <div className="text-xs text-gray-500 font-mono">L{sortedLayers[index]?.layerNumber}</div>
+                    <div className="text-xs text-gray-500 font-mono">L{cleanLayers[index]?.layerNumber}</div>
                   </div>
                 ))}
               </div>
@@ -110,8 +110,8 @@ export const ProcessingLayersSection = ({ layers }: ProcessingLayersSectionProps
             {/* Individual Layer Analysis */}
             <div className="space-y-4">
               <h4 className="font-cormorant text-lg font-normal text-black">Layer-by-Layer Insights</h4>
-              {sortedLayers.map((layer, index) => (
-                <Card key={`${layer.layerNumber}-${index}`} className="p-6 bg-white border border-gray-200">
+              {cleanLayers.map((layer, index) => (
+                <Card key={`layer-${layer.layerNumber}-${index}`} className="p-6 bg-white border border-gray-200">
                   <div className="space-y-4">
                     {/* Layer Header */}
                     <div className="flex items-center justify-between border-b border-gray-200 pb-3">
@@ -180,7 +180,7 @@ export const ProcessingLayersSection = ({ layers }: ProcessingLayersSectionProps
             </div>
 
             {/* Breakthrough Detection */}
-            {sortedLayers.some(layer => layer.emergenceDetected) && (
+            {hasBreakthrough && (
               <Card className="p-6 bg-purple-50 border border-purple-200">
                 <div className="flex items-center space-x-3">
                   <Brain className="w-6 h-6 text-purple-600" />
