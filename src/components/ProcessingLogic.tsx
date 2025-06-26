@@ -72,8 +72,8 @@ export const ProcessingLogic = ({
         onChunkProgressChange
       });
       
-      // Handle meta-learning recording
-      if (finalResults.questionQuality) {
+      // Handle meta-learning recording with proper type checking
+      if (finalResults && 'questionQuality' in finalResults && finalResults.questionQuality) {
         console.log('Recording learning cycle...');
         try {
           const assessment = currentAssessment || {

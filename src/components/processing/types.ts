@@ -1,5 +1,4 @@
 
-
 export interface ChunkedProcessorProps {
   baseConfig: any;
   totalDepth: number;
@@ -24,6 +23,16 @@ export interface ChunkResult {
   processingTime: number;
 }
 
+export interface QuestionQualityMetrics {
+  geniusYield: number;
+  constraintBalance: number;
+  metaPotential: number;
+  effortVsEmergence: number;
+  overallScore: number;
+  feedback: string;
+  recommendations: string[];
+}
+
 export interface ProcessingResult {
   insight?: string;
   confidence?: number;
@@ -35,6 +44,7 @@ export interface ProcessingResult {
   chunkProcessed?: boolean;
   partialResults?: boolean;
   errorMessage?: string;
+  questionQuality?: QuestionQualityMetrics;
   logicTrail?: Array<{
     archetype: string;
     contribution: string;
@@ -46,4 +56,3 @@ export interface ProcessingResult {
   finalTensionMetrics?: any;
   compressionFormats?: any;
 }
-

@@ -13,6 +13,15 @@ interface ReliableChunkConfig {
   fallbackThreshold: number;
 }
 
+interface SupabaseResponse {
+  data?: {
+    layers?: any[];
+    confidence?: number;
+    [key: string]: any;
+  };
+  error?: any;
+}
+
 export const useReliableChunkProcessor = () => {
   const { toast } = useToast();
 
@@ -87,7 +96,7 @@ export const useReliableChunkProcessor = () => {
       }
       
       let chunkSuccess = false;
-      let chunkResult: any = null;
+      let chunkResult: SupabaseResponse | null = null;
       
       // Retry logic with progressive backoff
       for (let attempt = 1; attempt <= config.maxRetries + 1; attempt++) {
@@ -97,18 +106,18 @@ export const useReliableChunkProcessor = () => {
           const chunkStartTime = Date.now();
           
           // Create timeout promise
-          const timeoutPromise = new Promise((_, reject) => 
+          const timeoutPromise = new Promise<never>((_, reject) => 
             setTimeout(() => reject(new Error(`Chunk timeout after ${Math.round(cappedTimeout/1000)}s`)), cappedTimeout)
           );
           
           // Create request promise
           const requestPromise = supabase.functions.invoke('genius-machine', {
             body: chunkConfig
-          }).then(result => {
+          }).then((result): SupabaseResponse => {
             if (result.error) {
               throw new Error(`Supabase function error: ${result.error.message}`);
             }
-            return result;
+            return result as SupabaseResponse;
           });
           
           // Race timeout vs request
@@ -151,8 +160,8 @@ export const useReliableChunkProcessor = () => {
       }
       
       // Handle chunk result or fallback
-      if (chunkSuccess && chunkResult) {
-        const normalizedLayers = chunkResult.data.layers
+      if (chunkSuccess && chunkResult && chunkResult.data) {
+        const normalizedLayers = chunkResult.data.layers!
           .map(normalizeLayerStructure)
           .sort((a, b) => a.layerNumber - b.layerNumber);
         
