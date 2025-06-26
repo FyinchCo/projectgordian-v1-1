@@ -47,6 +47,50 @@ export type Database = {
           },
         ]
       }
+      final_results: {
+        Row: {
+          confidence: number
+          created_at: string
+          emergence_detected: boolean
+          full_results: Json
+          id: string
+          job_id: string
+          novelty_score: number | null
+          synthesis: string
+          tension_points: number
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          emergence_detected?: boolean
+          full_results: Json
+          id?: string
+          job_id: string
+          novelty_score?: number | null
+          synthesis: string
+          tension_points?: number
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          emergence_detected?: boolean
+          full_results?: Json
+          id?: string
+          job_id?: string
+          novelty_score?: number | null
+          synthesis?: string
+          tension_points?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "final_results_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "processing_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       insights_history: {
         Row: {
           circuit_type: string
@@ -88,6 +132,130 @@ export type Database = {
           processing_depth?: number
           question?: string
           tension_points?: number
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      job_progress: {
+        Row: {
+          chunk_progress: Json | null
+          current_archetype: string | null
+          current_layer: number
+          id: string
+          job_id: string
+          processing_phase: string | null
+          total_layers: number
+          updated_at: string
+        }
+        Insert: {
+          chunk_progress?: Json | null
+          current_archetype?: string | null
+          current_layer?: number
+          id?: string
+          job_id: string
+          processing_phase?: string | null
+          total_layers: number
+          updated_at?: string
+        }
+        Update: {
+          chunk_progress?: Json | null
+          current_archetype?: string | null
+          current_layer?: number
+          id?: string
+          job_id?: string
+          processing_phase?: string | null
+          total_layers?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_progress_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "processing_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_results: {
+        Row: {
+          archetype_name: string
+          created_at: string
+          id: string
+          job_id: string
+          layer_content: Json
+          layer_number: number
+        }
+        Insert: {
+          archetype_name: string
+          created_at?: string
+          id?: string
+          job_id: string
+          layer_content: Json
+          layer_number: number
+        }
+        Update: {
+          archetype_name?: string
+          created_at?: string
+          id?: string
+          job_id?: string
+          layer_content?: Json
+          layer_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_results_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "processing_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      processing_jobs: {
+        Row: {
+          circuit_type: string
+          completed_at: string | null
+          created_at: string
+          current_assessment: Json | null
+          custom_archetypes: Json | null
+          enhanced_mode: boolean
+          error_message: string | null
+          id: string
+          processing_depth: number
+          question: string
+          started_at: string | null
+          status: Database["public"]["Enums"]["job_status"]
+          user_id: string | null
+        }
+        Insert: {
+          circuit_type?: string
+          completed_at?: string | null
+          created_at?: string
+          current_assessment?: Json | null
+          custom_archetypes?: Json | null
+          enhanced_mode?: boolean
+          error_message?: string | null
+          id?: string
+          processing_depth?: number
+          question: string
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["job_status"]
+          user_id?: string | null
+        }
+        Update: {
+          circuit_type?: string
+          completed_at?: string | null
+          created_at?: string
+          current_assessment?: Json | null
+          custom_archetypes?: Json | null
+          enhanced_mode?: boolean
+          error_message?: string | null
+          id?: string
+          processing_depth?: number
+          question?: string
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["job_status"]
           user_id?: string | null
         }
         Relationships: []
@@ -156,7 +324,12 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      job_status:
+        | "pending"
+        | "processing"
+        | "completed"
+        | "failed"
+        | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -271,6 +444,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      job_status: ["pending", "processing", "completed", "failed", "cancelled"],
+    },
   },
 } as const
