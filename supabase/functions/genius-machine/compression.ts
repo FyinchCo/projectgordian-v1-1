@@ -1,5 +1,3 @@
-import { SynthesisResult } from './types.ts';
-
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 
 export interface CompressionFormats {
@@ -10,7 +8,7 @@ export interface CompressionFormats {
 
 export async function generateCompressionFormats(
   insight: string,
-  synthesisResult: SynthesisResult,
+  synthesisResult: any,
   originalQuestion: string,
   compressionSettings?: any
 ): Promise<CompressionFormats> {

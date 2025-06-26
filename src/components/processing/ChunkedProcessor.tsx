@@ -1,3 +1,4 @@
+
 import { useCoreProcessor } from './coreProcessor';
 
 export const useChunkedProcessor = () => {
@@ -26,20 +27,35 @@ export class ChunkedProcessor {
     onCurrentLayerChange: (layer: number) => void;
     onChunkProgressChange: (progress: { current: number; total: number }) => void;
   }) {
-    const chunkSize = 10; // Example chunk size
-    const chunks = Array.from({ length: Math.ceil(question.length / chunkSize) }, (_, i) => i * chunkSize);
-
-    const chunkConfigs = chunks.map((chunkSize, index) => ({
-      question,
-      processingDepth: chunkSize,
-      circuitType,
-      enhancedMode,
-      customArchetypes,
-      compressionSettings,
-      chunkIndex: index,
-      totalChunks: chunks.length
+    // Mock processing results for now - this should be replaced with actual chunk processing
+    const mockLayers = Array.from({ length: processingDepth }, (_, i) => ({
+      layerNumber: i + 1,
+      insight: `Layer ${i + 1} processing result for: ${question}`,
+      confidence: 0.7 + (Math.random() * 0.2),
+      tensionPoints: Math.floor(Math.random() * 10),
+      noveltyScore: Math.floor(Math.random() * 10) + 1,
+      emergenceDetected: Math.random() > 0.7,
+      archetypeResponses: [],
+      timestamp: Date.now()
     }));
 
-    // ... keep existing code (rest of the processing logic)
+    // Simulate progress updates
+    for (let i = 0; i < processingDepth; i++) {
+      onCurrentLayerChange(i + 1);
+      onChunkProgressChange({ current: i + 1, total: processingDepth });
+      // Add small delay to simulate processing
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
+    return {
+      layers: mockLayers,
+      insight: mockLayers[mockLayers.length - 1]?.insight || 'Processing completed',
+      confidence: 0.8,
+      tensionPoints: 5,
+      noveltyScore: 7,
+      emergenceDetected: false,
+      circuitType,
+      processingDepth: mockLayers.length
+    };
   }
 }

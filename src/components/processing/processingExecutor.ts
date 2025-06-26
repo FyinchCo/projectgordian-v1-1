@@ -1,3 +1,4 @@
+
 import { useToast } from "@/hooks/use-toast";
 import { ChunkedProcessor } from './ChunkedProcessor';
 import { normalizeLayerStructure, deduplicateLayers } from './layerNormalizer';
@@ -46,7 +47,7 @@ export const useProcessingExecutor = () => {
       });
       
       // Normalize and deduplicate layers
-      const normalizedLayers = rawResults.layers.map(normalizeLayerStructure);
+      const normalizedLayers = rawResults.layers?.map(normalizeLayerStructure) || [];
       const cleanLayers = deduplicateLayers(normalizedLayers);
 
       // Basic insight extraction
@@ -86,7 +87,6 @@ export const useProcessingExecutor = () => {
       }
       
       const finalResults = {
-        ...rawResults,
         insight,
         confidence,
         tensionPoints,
@@ -95,8 +95,13 @@ export const useProcessingExecutor = () => {
         compressionFormats,
         layers: cleanLayers,
         processingDepth: cleanLayers.length,
-        logicTrailLength: cleanLayers.reduce((sum, layer) => 
-          sum + (layer.archetypeResponses?.length || 0), 0)
+        logicTrail: cleanLayers.reduce((acc, layer) => 
+          acc.concat(layer.archetypeResponses?.map((response: any) => ({
+            archetype: response.archetype || 'Unknown',
+            contribution: response.response || ''
+          })) || []), [] as Array<{archetype: string; contribution: string}>),
+        circuitType,
+        enhancedMode
       };
       
       console.log('Final results prepared for display:', {
