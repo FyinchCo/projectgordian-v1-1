@@ -1,9 +1,8 @@
 
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Activity, Brain } from "lucide-react";
+import { Activity, Brain, Zap } from "lucide-react";
 import { ProcessingMetrics } from "./ProcessingMetrics";
-import { ProcessingPhaseTimeline } from "./ProcessingPhaseTimeline";
 import { getCircuitIcon } from "./processingInsights";
 
 interface ProcessingHeaderProps {
@@ -28,6 +27,10 @@ export const ProcessingHeader = ({
   chunkProgress
 }: ProcessingHeaderProps) => {
   const CircuitIcon = getCircuitIcon(circuitType);
+  
+  // Calculate real progress based on engine layers
+  const engineProgress = Math.min(95, (currentLayer / totalLayers) * 100);
+  const estimatedMinutes = Math.ceil((totalLayers * 35) / 60);
 
   return (
     <Card className="p-6 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 border-2 border-blue-200 shadow-lg">
@@ -41,11 +44,11 @@ export const ProcessingHeader = ({
               </div>
               <div>
                 <div className="font-bold text-2xl text-blue-800">
-                  Layer {currentLayer} of {totalLayers}
+                  Engine Layer {currentLayer} of {totalLayers}
                 </div>
                 <div className="text-sm text-blue-600 capitalize flex items-center space-x-2">
-                  <Activity className="w-4 h-4 animate-pulse" />
-                  <span>{circuitType} Circuit Processing</span>
+                  <Zap className="w-4 h-4 animate-pulse" />
+                  <span>Genius Engine Processing • ~{estimatedMinutes}min total</span>
                 </div>
               </div>
             </div>
@@ -54,26 +57,26 @@ export const ProcessingHeader = ({
           {/* Real-time Metrics */}
           <ProcessingMetrics 
             processingTime={processingTime}
-            efficiencyScore={efficiencyScore}
+            efficiencyScore={Math.round(engineProgress)}
             chunkProgress={chunkProgress}
           />
         </div>
         
-        {/* Enhanced Progress Bar with Phase Information */}
+        {/* Engine Progress Bar */}
         <div className="space-y-3">
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-2">
               <Brain className="w-4 h-4 text-blue-600" />
-              <span className="text-sm font-medium text-gray-700 max-w-md truncate">
-                {currentPhase}
+              <span className="text-sm font-medium text-gray-700">
+                Real Engine Progress
               </span>
             </div>
-            <span className="font-bold text-blue-700 text-lg">{Math.round(overallProgress)}%</span>
+            <span className="font-bold text-blue-700 text-lg">{Math.round(engineProgress)}%</span>
           </div>
-          <Progress value={overallProgress} className="h-4 bg-blue-100" />
-          
-          {/* Phase Timeline */}
-          <ProcessingPhaseTimeline />
+          <Progress value={engineProgress} className="h-4 bg-blue-100" />
+          <div className="text-xs text-gray-500 text-center">
+            Genuine {totalLayers}-layer analysis in progress
+          </div>
         </div>
       </div>
     </Card>

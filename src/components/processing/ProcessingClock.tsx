@@ -1,5 +1,5 @@
 
-import { Clock, TrendingUp, AlertCircle } from "lucide-react";
+import { Clock, TrendingUp, AlertCircle, Zap } from "lucide-react";
 import { useState, useEffect } from "react";
 
 interface ProcessingClockProps {
@@ -41,15 +41,15 @@ export const ProcessingClock = ({
   const getStatusInfo = () => {
     switch (connectionStatus) {
       case 'connecting':
-        return { text: 'Connecting...', icon: Clock, color: 'text-blue-600' };
+        return { text: 'Initializing Engine...', icon: Clock, color: 'text-blue-600' };
       case 'processing':
-        return { text: 'Processing...', icon: TrendingUp, color: 'text-green-600' };
+        return { text: 'Engine Processing...', icon: Zap, color: 'text-green-600' };
       case 'completed':
-        return { text: 'Completed', icon: TrendingUp, color: 'text-green-700' };
+        return { text: 'Analysis Complete', icon: TrendingUp, color: 'text-green-700' };
       case 'error':
-        return { text: 'Error', icon: AlertCircle, color: 'text-red-600' };
+        return { text: 'Engine Error', icon: AlertCircle, color: 'text-red-600' };
       default:
-        return { text: 'Connecting...', icon: Clock, color: 'text-blue-600' };
+        return { text: 'Initializing Engine...', icon: Clock, color: 'text-blue-600' };
     }
   };
 
@@ -57,6 +57,10 @@ export const ProcessingClock = ({
 
   const status = getStatusInfo();
   const StatusIcon = status.icon;
+  
+  // Calculate estimated total time (about 30-45 seconds per layer)
+  const estimatedTotalSeconds = totalLayers * 35;
+  const progressPercent = connectionStatus === 'processing' ? Math.min(95, (currentLayer / totalLayers) * 100) : 0;
 
   return (
     <div className="flex items-center space-x-6 bg-white/80 backdrop-blur-sm rounded-lg px-4 py-2 border border-gray-200">
@@ -65,7 +69,11 @@ export const ProcessingClock = ({
         <span className="font-mono text-lg font-bold text-gray-800">
           {formatTime(elapsedTime)}
         </span>
-        <div className="text-xs text-gray-500">Processing Time</div>
+        <div className="text-xs text-gray-500">
+          {connectionStatus === 'processing' && estimatedTotalSeconds > 60 ? 
+            `/ ~${Math.ceil(estimatedTotalSeconds / 60)}min` : 'Processing Time'
+          }
+        </div>
       </div>
       
       <div className="flex items-center space-x-2">
@@ -75,7 +83,7 @@ export const ProcessingClock = ({
         </span>
         {connectionStatus === 'processing' && (
           <div className="text-xs text-gray-500">
-            Layer {currentLayer}/{totalLayers}
+            Layer {currentLayer}/{totalLayers} ({Math.round(progressPercent)}%)
           </div>
         )}
       </div>
