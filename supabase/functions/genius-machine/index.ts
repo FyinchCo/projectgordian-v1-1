@@ -2,8 +2,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.2';
 import { corsHeaders } from '../_shared/cors.ts';
-import { processArchetypes } from './archetype-processor.ts';
-import { synthesizeLayer, generateFinalResults } from './synthesis-processor.ts';
+import { processArchetypesWithPersonality } from './enhanced-archetype-processor.ts';
+import { synthesizeLayerWithTensionEscalation, generateFinalResultsWithTensionEscalation } from './enhanced-synthesis-processor.ts';
 import { defaultArchetypes, buildSystemPromptFromPersonality } from './archetypes.ts';
 import { Archetype, LayerResult } from './types.ts';
 
@@ -15,11 +15,11 @@ serve(async (req) => {
   try {
     const { question, processingDepth = 3, circuitType = 'sequential', customArchetypes, enhancedMode = true } = await req.json();
     
-    console.log('=== GENIUS MACHINE REQUEST ===');
+    console.log('=== ENHANCED GENIUS MACHINE REQUEST ===');
     console.log('Question:', question?.substring(0, 100) + '...');
     console.log('Processing depth:', processingDepth);
-    console.log('Circuit type:', circuitType);
-    console.log('Custom archetypes:', customArchetypes ? customArchetypes.length : 0);
+    console.log('Enhanced personality processing: ENABLED');
+    console.log('Tension escalation logic: ENABLED');
     
     if (!question || typeof question !== 'string' || question.trim().length < 10) {
       throw new Error('Question must be a string with at least 10 characters');
@@ -29,7 +29,7 @@ serve(async (req) => {
     let archetypes: Archetype[];
     
     if (customArchetypes && Array.isArray(customArchetypes) && customArchetypes.length > 0) {
-      console.log('Using custom archetypes');
+      console.log('Using custom archetypes with personality enhancement');
       archetypes = customArchetypes.map(arch => ({
         name: arch.name || 'Custom Archetype',
         description: arch.description || 'A custom archetype',
@@ -51,24 +51,24 @@ serve(async (req) => {
         )
       }));
     } else {
-      console.log('Using default archetypes');
+      console.log('Using default archetypes with personality enhancement');
       archetypes = defaultArchetypes;
     }
     
-    console.log(`Configured ${archetypes.length} archetypes:`, archetypes.map(a => a.name));
+    console.log(`Configured ${archetypes.length} enhanced archetypes:`, archetypes.map(a => a.name));
     
-    // Process layers
+    // Process layers with enhanced personality and tension escalation
     const layers: LayerResult[] = [];
     const actualDepth = Math.min(Math.max(processingDepth, 1), 10);
     
-    console.log(`Starting ${actualDepth} layer processing...`);
+    console.log(`Starting ${actualDepth} layer processing with enhanced tension escalation...`);
     
     for (let layerNumber = 1; layerNumber <= actualDepth; layerNumber++) {
-      console.log(`\n=== PROCESSING LAYER ${layerNumber}/${actualDepth} ===`);
+      console.log(`\n=== PROCESSING ENHANCED LAYER ${layerNumber}/${actualDepth} ===`);
       
       try {
-        // Process archetypes for this layer
-        const archetypeResponses = await processArchetypes(
+        // Process archetypes with personality-driven responses
+        const archetypeResponses = await processArchetypesWithPersonality(
           archetypes,
           question,
           circuitType,
@@ -76,15 +76,15 @@ serve(async (req) => {
           layerNumber
         );
         
-        console.log(`Layer ${layerNumber}: Got ${archetypeResponses.length} archetype responses`);
+        console.log(`Layer ${layerNumber}: Got ${archetypeResponses.length} personality-driven responses`);
         
         if (archetypeResponses.length === 0) {
-          console.error(`No archetype responses for layer ${layerNumber}`);
+          console.error(`No personality responses for layer ${layerNumber}`);
           break;
         }
         
-        // Synthesize the layer
-        const layerResult = await synthesizeLayer(
+        // Synthesize with tension escalation logic
+        const layerResult = await synthesizeLayerWithTensionEscalation(
           archetypeResponses,
           question,
           layerNumber,
@@ -93,7 +93,7 @@ serve(async (req) => {
         );
         
         layers.push(layerResult);
-        console.log(`✓ Layer ${layerNumber} completed successfully`);
+        console.log(`✓ Enhanced Layer ${layerNumber} completed - Tension: ${layerResult.synthesis.tensionPoints}`);
         
         // Add delay between layers to avoid rate limits
         if (layerNumber < actualDepth) {
@@ -101,11 +101,11 @@ serve(async (req) => {
         }
         
       } catch (layerError) {
-        console.error(`Layer ${layerNumber} failed:`, layerError);
+        console.error(`Enhanced Layer ${layerNumber} failed:`, layerError);
         
         // If we have at least one successful layer, continue
         if (layers.length > 0) {
-          console.log(`Continuing with ${layers.length} completed layers`);
+          console.log(`Continuing with ${layers.length} completed enhanced layers`);
           break;
         } else {
           throw layerError;
@@ -114,21 +114,22 @@ serve(async (req) => {
     }
     
     if (layers.length === 0) {
-      throw new Error('No layers were successfully processed');
+      throw new Error('No enhanced layers were successfully processed');
     }
     
-    console.log(`\n=== GENERATING FINAL RESULTS ===`);
-    console.log(`Processed ${layers.length} layers successfully`);
+    console.log(`\n=== GENERATING ENHANCED FINAL RESULTS ===`);
+    console.log(`Processed ${layers.length} enhanced layers with tension escalation`);
     
-    // Generate final results
-    const finalResults = await generateFinalResults(layers, question, circuitType);
+    // Generate final results with enhanced analysis
+    const finalResults = await generateFinalResultsWithTensionEscalation(layers, question, circuitType);
     
-    console.log('✓ Final results generated');
-    console.log('Response summary:', {
+    console.log('✓ Enhanced final results generated');
+    console.log('Enhanced response summary:', {
       insight: finalResults.insight?.substring(0, 100) + '...',
       confidence: finalResults.confidence,
       tensionPoints: finalResults.tensionPoints,
-      logicTrailLength: finalResults.logicTrail?.length || 0,
+      noveltyScore: finalResults.noveltyScore,
+      emergenceDetected: finalResults.emergenceDetected,
       layersProcessed: layers.length
     });
     
@@ -140,14 +141,14 @@ serve(async (req) => {
     });
     
   } catch (error) {
-    console.error('=== GENIUS MACHINE ERROR ===');
+    console.error('=== ENHANCED GENIUS MACHINE ERROR ===');
     console.error('Error details:', error);
     console.error('Stack trace:', error.stack);
     
     const errorResponse = {
       error: true,
-      message: error.message || 'Processing failed',
-      insight: 'Processing encountered an error. The system is designed to handle complex philosophical questions, but this particular analysis could not be completed.',
+      message: error.message || 'Enhanced processing failed',
+      insight: 'Enhanced processing encountered an error. The personality-driven tension system requires further calibration.',
       confidence: 0.1,
       tensionPoints: 0,
       noveltyScore: 0,
@@ -159,7 +160,7 @@ serve(async (req) => {
     };
     
     return new Response(JSON.stringify(errorResponse), {
-      status: 200, // Return 200 to avoid client-side error handling
+      status: 200,
       headers: { 
         ...corsHeaders, 
         'Content-Type': 'application/json' 
