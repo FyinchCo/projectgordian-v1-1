@@ -1,4 +1,3 @@
-
 export interface ChunkedProcessorProps {
   baseConfig: any;
   totalDepth: number;
@@ -33,6 +32,21 @@ export interface QuestionQualityMetrics {
   recommendations: string[];
 }
 
+export interface EnhancedQualityMetrics {
+  insightDepth: number;
+  practicalValue: number;
+  noveltyScore: number;
+  coherenceScore: number;
+  systemReliability: number;
+  responseCompleteness: number;
+  breakthroughPotential: number;
+  userSatisfactionPredictor: number;
+  overallQuality: number;
+  strengths: string[];
+  improvements: string[];
+  confidenceLevel: 'High' | 'Medium' | 'Low';
+}
+
 export interface ProcessingResult {
   insight?: string;
   confidence?: number;
@@ -45,6 +59,7 @@ export interface ProcessingResult {
   partialResults?: boolean;
   errorMessage?: string;
   questionQuality?: QuestionQualityMetrics;
+  enhancedQualityMetrics?: EnhancedQualityMetrics;
   logicTrail?: Array<{
     archetype: string;
     contribution: string;
