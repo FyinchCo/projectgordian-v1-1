@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { ProcessingSection } from "@/components/ProcessingSection";
 import { SimpleProcessingLogic } from "@/components/SimpleProcessingLogic";
@@ -83,10 +82,13 @@ const Index = () => {
     setProcessingPhase("Ready to process");
   };
 
-  // Get the simple processing logic handler
+  // Get the simple processing logic handler with enhanced parameters
   const simpleProcessingComponent = SimpleProcessingLogic({
     question,
     customArchetypes,
+    processingDepth, // Now passed to processing
+    circuitType, // Now passed to processing
+    enhancedMode, // Now passed to processing
     onProcessingStart: handleProcessingStart,
     onProcessingComplete: handleProcessingComplete,
     onProcessingError: handleProcessingError,

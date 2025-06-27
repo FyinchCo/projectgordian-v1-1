@@ -13,6 +13,7 @@ interface Archetype {
   emotionality: number[];
   icon: any;
   constraint: string;
+  customInstructions: string; // New field for user customization
 }
 
 const defaultArchetypes: Archetype[] = [
@@ -26,7 +27,8 @@ const defaultArchetypes: Archetype[] = [
     aggression: [2],
     emotionality: [8],
     icon: Eye,
-    constraint: ""
+    constraint: "",
+    customInstructions: ""
   },
   {
     id: 2,
@@ -38,7 +40,8 @@ const defaultArchetypes: Archetype[] = [
     aggression: [1],
     emotionality: [10],
     icon: Sparkles,
-    constraint: ""
+    constraint: "",
+    customInstructions: ""
   },
   {
     id: 3,
@@ -50,7 +53,8 @@ const defaultArchetypes: Archetype[] = [
     aggression: [5],
     emotionality: [1],
     icon: Shield,
-    constraint: ""
+    constraint: "",
+    customInstructions: ""
   },
   {
     id: 4,
@@ -62,19 +66,21 @@ const defaultArchetypes: Archetype[] = [
     aggression: [8],
     emotionality: [2],
     icon: AlertCircle,
-    constraint: "Assume people are not capable of true authenticity, and that ambition is a coping strategy for mortality."
+    constraint: "Assume people are not capable of true authenticity, and that ambition is a coping strategy for mortality.",
+    customInstructions: ""
   },
   {
     id: 5,
     name: "The Contrarian",
-    description: "Ruthless challenger of consensus, seeks inversion.",
+    description: "Ruthuthless challenger of consensus, seeks inversion.",
     languageStyle: "disruptive",
     imagination: [6],
     skepticism: [6],
     aggression: [9],
     emotionality: [3],
     icon: Zap,
-    constraint: ""
+    constraint: "",
+    customInstructions: ""
   }
 ];
 
@@ -107,7 +113,8 @@ export const useArchetypes = () => {
       aggression: [5],
       emotionality: [5],
       icon: Plus,
-      constraint: ""
+      constraint: "",
+      customInstructions: ""
     };
     setArchetypes(prev => [...prev, newArchetype]);
   };
