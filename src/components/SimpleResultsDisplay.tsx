@@ -48,9 +48,13 @@ export const SimpleResultsDisplay = ({ results, question, onReset }: SimpleResul
           </div>
           
           <div className="bg-gray-50 p-6 rounded-lg border-l-4 border-purple-500">
-            <p className="text-gray-700 leading-relaxed whitespace-pre-wrap text-base">
-              {results.insight || 'No insight available'}
-            </p>
+            <div className="text-gray-700 leading-relaxed text-base space-y-4">
+              {(results.insight || 'No insight available').split('\n\n').map((paragraph: string, index: number) => (
+                <p key={index} className="mb-3 last:mb-0">
+                  {paragraph}
+                </p>
+              ))}
+            </div>
           </div>
         </div>
       </Card>
@@ -70,9 +74,13 @@ export const SimpleResultsDisplay = ({ results, question, onReset }: SimpleResul
                       {response.archetype || `Perspective ${index + 1}`}
                     </h4>
                   </div>
-                  <p className="text-gray-700 leading-relaxed">
-                    {response.response || 'No response available'}
-                  </p>
+                  <div className="text-gray-700 leading-relaxed space-y-3">
+                    {(response.response || 'No response available').split('\n\n').map((paragraph: string, idx: number) => (
+                      <p key={idx} className="mb-2 last:mb-0">
+                        {paragraph}
+                      </p>
+                    ))}
+                  </div>
                 </div>
               ))}
             </div>
