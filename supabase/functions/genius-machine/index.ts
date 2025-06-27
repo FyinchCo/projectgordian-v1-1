@@ -1,10 +1,9 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from '../_shared/cors.ts';
-import { validateRequest } from './request/requestValidator.ts';
-import { buildArchetypes } from './request/archetypeBuilder.ts';
-import { processLayers } from './processing/layerProcessor.ts';
-import { buildFinalResponse, buildErrorResponse } from './response/responseBuilder.ts';
+import { processArchetypes } from './core/archetypeProcessor.ts';
+import { synthesizeInsights } from './core/synthesisEngine.ts';
+import { DEFAULT_ARCHETYPES } from './core/defaultArchetypes.ts';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -13,74 +12,63 @@ serve(async (req) => {
 
   try {
     const requestData = await req.json();
+    const { question, customArchetypes } = requestData;
     
-    console.log('=== ENHANCED GENIUS MACHINE WITH REAL-TIME PROGRESS ===');
-    console.log('Question:', requestData.question?.substring(0, 100) + '...');
-    console.log('Processing depth:', requestData.processingDepth);
-    console.log('Output type:', requestData.outputType);
+    console.log('=== GENIUS MACHINE REBUILD - SIMPLE & WORKING ===');
+    console.log('Question:', question?.substring(0, 100) + '...');
     
-    // Validate and structure the request
-    const validatedRequest = validateRequest(requestData);
+    // Validate input
+    if (!question || typeof question !== 'string' || question.trim().length < 10) {
+      throw new Error('Question must be a string with at least 10 characters');
+    }
+
+    // Use custom archetypes if provided, otherwise use defaults
+    const archetypes = customArchetypes && customArchetypes.length > 0 
+      ? customArchetypes 
+      : DEFAULT_ARCHETYPES;
     
-    // Build archetypes array
-    const archetypes = buildArchetypes(validatedRequest.customArchetypes);
-    console.log(`Configured ${archetypes.length} archetypes:`, archetypes.map(a => a.name));
+    console.log(`Using ${archetypes.length} archetypes`);
     
-    // Create a progress tracking system
-    let lastProgressUpdate = Date.now();
-    const progressUpdates: any[] = [];
+    // Step 1: Process archetypes with real AI calls
+    console.log('Step 1: Processing archetypes...');
+    const archetypeResponses = await processArchetypes(archetypes, question);
     
-    const progressCallback = (progress: any) => {
-      const now = Date.now();
-      // Throttle progress updates to every 500ms to avoid overwhelming the client
-      if (now - lastProgressUpdate > 500) {
-        progressUpdates.push({
-          ...progress,
-          timestamp: now,
-          phase: progress.phase,
-          currentLayer: progress.currentLayer,
-          totalLayers: progress.totalLayers,
-          currentArchetype: progress.currentArchetype,
-          estimatedTimeRemaining: Math.round(progress.estimatedTimeRemaining / 1000) // Convert to seconds
-        });
-        lastProgressUpdate = now;
-        console.log(`Progress: ${progress.phase} - Layer ${progress.currentLayer}/${progress.totalLayers} - ${progress.currentArchetype}`);
-      }
-    };
+    if (archetypeResponses.length === 0) {
+      throw new Error('No archetype responses were generated successfully');
+    }
     
-    // Process layers with real-time progress reporting
-    const layers = await processLayers(
-      archetypes,
-      validatedRequest.question,
-      validatedRequest.circuitType,
-      validatedRequest.processingDepth,
-      progressCallback
-    );
+    console.log(`Step 1 complete: ${archetypeResponses.length} responses generated`);
     
-    // Build final response with compression
-    const finalResults = await buildFinalResponse(
-      layers,
-      validatedRequest.question,
-      validatedRequest.circuitType,
-      validatedRequest.compressionSettings,
-      validatedRequest.outputType
-    );
+    // Step 2: Synthesize insights
+    console.log('Step 2: Synthesizing insights...');
+    const synthesizedAnswer = await synthesizeInsights(archetypeResponses, question);
     
-    // Add progress metadata to final results
-    const enhancedResults = {
-      ...finalResults,
+    if (!synthesizedAnswer || synthesizedAnswer.trim().length < 50) {
+      throw new Error('Synthesis failed to generate adequate response');
+    }
+    
+    console.log('Step 2 complete: Synthesis generated');
+    
+    // Build simple, clean response
+    const response = {
+      insight: synthesizedAnswer,
+      archetypeResponses: archetypeResponses.map(r => ({
+        archetype: r.archetype,
+        response: r.response
+      })),
+      confidence: 0.8, // Simple fixed confidence for now
+      processingDepth: 1,
+      timestamp: Date.now(),
       metadata: {
-        ...finalResults.metadata,
-        progressUpdates,
-        totalProgressUpdates: progressUpdates.length,
-        realTimeProcessing: true,
-        processingPhases: ['initializing', 'processing', 'synthesizing', 'completing', 'completed']
+        processingMode: 'SIMPLE_WORKING',
+        archetypesUsed: archetypes.length,
+        responseLength: synthesizedAnswer.length
       }
     };
     
-    console.log(`✓ Processing complete with ${progressUpdates.length} progress updates`);
+    console.log('✓ Genius analysis complete - returning working results');
     
-    return new Response(JSON.stringify(enhancedResults), {
+    return new Response(JSON.stringify(response), {
       headers: { 
         ...corsHeaders, 
         'Content-Type': 'application/json' 
@@ -88,11 +76,19 @@ serve(async (req) => {
     });
     
   } catch (error) {
-    console.error('Enhanced processing failed:', error);
-    const errorResponse = buildErrorResponse(error);
+    console.error('Genius machine error:', error);
+    
+    const errorResponse = {
+      insight: `Processing error: ${error.message}. The system encountered an issue but is designed to fail gracefully.`,
+      confidence: 0.1,
+      processingDepth: 0,
+      error: true,
+      errorDetails: error.message,
+      timestamp: Date.now()
+    };
     
     return new Response(JSON.stringify(errorResponse), {
-      status: 200,
+      status: 200, // Return 200 to avoid frontend errors
       headers: { 
         ...corsHeaders, 
         'Content-Type': 'application/json' 
