@@ -3,7 +3,6 @@ import { supabase } from "@/integrations/supabase/client";
 
 interface ProcessingRequest {
   question: string;
-  processingDepth: number[];
   customArchetypes: any;
   onProcessingComplete: (results: any) => void;
   onCurrentLayerChange: (layer: number) => void;
