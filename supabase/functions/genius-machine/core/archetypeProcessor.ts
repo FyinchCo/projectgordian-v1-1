@@ -5,7 +5,9 @@ const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 
 export async function processArchetypes(
   archetypes: Archetype[],
-  question: string
+  question: string,
+  layer?: number,
+  previousResponses?: ArchetypeResponse[]
 ): Promise<ArchetypeResponse[]> {
   console.log(`Processing ${archetypes.length} archetypes for question: ${question.substring(0, 100)}...`);
   
@@ -19,12 +21,13 @@ export async function processArchetypes(
     try {
       console.log(`Processing archetype: ${archetype.name}`);
       
-      const response = await callOpenAIForArchetype(archetype, question);
+      const response = await callOpenAIForArchetype(archetype, question, layer, previousResponses);
       
       if (response && response.trim().length > 50) {
         responses.push({
           archetype: archetype.name,
           response: response.trim(),
+          layer: layer || 1,
           processingTime: 0,
           timestamp: Date.now()
         });
@@ -46,8 +49,15 @@ export async function processArchetypes(
   return responses;
 }
 
-async function callOpenAIForArchetype(archetype: Archetype, question: string): Promise<string> {
-  const systemPrompt = `You are ${archetype.name}, representing a specific cognitive perspective.
+async function callOpenAIForArchetype(
+  archetype: Archetype, 
+  question: string, 
+  layer?: number,
+  previousResponses?: ArchetypeResponse[]
+): Promise<string> {
+  
+  // Build the system prompt with personality traits
+  let systemPrompt = `You are ${archetype.name}, representing a specific cognitive perspective.
 
 PERSONALITY TRAITS:
 - Imagination: ${archetype.imagination}/10
@@ -56,15 +66,33 @@ PERSONALITY TRAITS:
 - Emotionality: ${archetype.emotionality}/10
 - Language Style: ${archetype.languageStyle}
 
-${archetype.constraint ? `CONSTRAINT: ${archetype.constraint}` : ''}
+DESCRIPTION: ${archetype.description}`;
 
-Your task is to analyze the user's question from your unique perspective. Provide a thoughtful response that reflects your archetype's characteristics and viewpoint. Be authentic to your role while providing genuine insight.
+  // Add constraint if it exists
+  if (archetype.constraint && archetype.constraint.trim()) {
+    systemPrompt += `\n\nCONSTRAINT: ${archetype.constraint}`;
+  }
+
+  // Add custom instructions if they exist - THIS IS THE KEY FIX
+  if (archetype.customInstructions && archetype.customInstructions.trim()) {
+    systemPrompt += `\n\nCUSTOM INSTRUCTIONS: ${archetype.customInstructions}`;
+  }
+
+  // Add context from previous responses if this is a deeper layer
+  if (previousResponses && previousResponses.length > 0 && layer && layer > 1) {
+    systemPrompt += `\n\nPREVIOUS LAYER INSIGHTS: You should build upon or challenge these previous perspectives:\n`;
+    previousResponses.slice(-5).forEach((resp, idx) => {
+      systemPrompt += `${resp.archetype}: ${resp.response.substring(0, 200)}...\n`;
+    });
+  }
+
+  systemPrompt += `\n\nYour task is to analyze the user's question from your unique perspective. Provide a thoughtful response that reflects your archetype's characteristics and viewpoint. Be authentic to your role while providing genuine insight.
 
 Respond with 150-300 words that directly address the question from your perspective.`;
 
-  const userPrompt = `Question: ${question}
-
-Analyze this question from your perspective as ${archetype.name}. Provide your unique viewpoint and insights.`;
+  const userPrompt = layer && layer > 1 
+    ? `Layer ${layer} Analysis - Question: ${question}\n\nAnalyze this question from your perspective as ${archetype.name}, considering the deeper implications and building upon previous insights.`
+    : `Question: ${question}\n\nAnalyze this question from your perspective as ${archetype.name}. Provide your unique viewpoint and insights.`;
 
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',

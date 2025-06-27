@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Eye, Shield, Sparkles, Zap, Hammer, Plus, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -13,7 +14,7 @@ interface Archetype {
   emotionality: number[];
   icon: any;
   constraint: string;
-  customInstructions: string; // New field for user customization
+  customInstructions: string;
 }
 
 const defaultArchetypes: Archetype[] = [
@@ -72,7 +73,7 @@ const defaultArchetypes: Archetype[] = [
   {
     id: 5,
     name: "The Contrarian",
-    description: "Ruthuthless challenger of consensus, seeks inversion.",
+    description: "Ruthless challenger of consensus, seeks inversion.",
     languageStyle: "disruptive",
     imagination: [6],
     skepticism: [6],
@@ -91,9 +92,25 @@ export const useArchetypes = () => {
   useEffect(() => {
     const savedArchetypes = localStorage.getItem('genius-machine-archetypes');
     if (savedArchetypes) {
-      setArchetypes(JSON.parse(savedArchetypes));
+      try {
+        const parsed = JSON.parse(savedArchetypes);
+        // Ensure all archetypes have the customInstructions field
+        const updated = parsed.map((archetype: any) => ({
+          ...archetype,
+          customInstructions: archetype.customInstructions || ""
+        }));
+        setArchetypes(updated);
+      } catch (error) {
+        console.error('Failed to parse saved archetypes:', error);
+        // Fall back to defaults if parsing fails
+      }
     }
   }, []);
+
+  // Auto-save whenever archetypes change
+  useEffect(() => {
+    localStorage.setItem('genius-machine-archetypes', JSON.stringify(archetypes));
+  }, [archetypes]);
 
   const updateArchetype = (id: number, field: string, value: any) => {
     setArchetypes(prev => prev.map(archetype => 

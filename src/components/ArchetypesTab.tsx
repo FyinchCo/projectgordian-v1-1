@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import { ArchetypeCard } from "./ArchetypeCard";
+import { ArchetypeCustomizationCard } from "./ArchetypeCustomizationCard";
 
 interface Archetype {
   id: number;
@@ -14,6 +14,7 @@ interface Archetype {
   emotionality: number[];
   icon: any;
   constraint: string;
+  customInstructions: string;
 }
 
 interface ArchetypesTabProps {
@@ -45,12 +46,12 @@ export const ArchetypesTab = ({
 
       <div className="grid gap-6">
         {archetypes.map((archetype) => (
-          <ArchetypeCard
+          <ArchetypeCustomizationCard
             key={archetype.id}
             archetype={archetype}
             onUpdate={onUpdateArchetype}
             onRemove={onRemoveArchetype}
-            canRemove={archetype.id > 6}
+            canRemove={archetype.id > 5}
           />
         ))}
       </div>

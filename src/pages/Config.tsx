@@ -1,128 +1,33 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Save, Brain, RotateCcw } from "lucide-react";
+import { ArrowLeft, Save, RotateCcw } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useArchetypes } from "@/hooks/useArchetypes";
-import { useAIConfigOptimization } from "@/hooks/useAIConfigOptimization";
-import { useOutputType } from "@/hooks/useOutputType";
 import { ArchetypesTab } from "@/components/ArchetypesTab";
-import { TensionTab } from "@/components/TensionTab";
-import { CompressionTab } from "@/components/CompressionTab";
-import { OptimizationReasoningCard } from "@/components/OptimizationReasoningCard";
 
 const Config = () => {
   const { toast } = useToast();
   const { archetypes, updateArchetype, addCustomArchetype, removeArchetype } = useArchetypes();
-  const { 
-    optimizeAndApplyConfiguration, 
-    isAssessing, 
-    optimizationReasoning, 
-    clearOptimizationReasoning 
-  } = useAIConfigOptimization();
-  const { outputType } = useOutputType('practical');
-  
-  const [question, setQuestion] = useState("");
-  const [tensionSettings, setTensionSettings] = useState({
-    contradictionThreshold: [5],
-    recursionDepth: [3],
-    archetypeOverlap: [2]
-  });
-
-  const [compressionSettings, setCompressionSettings] = useState({
-    style: "insight-summary",
-    length: "medium",
-    includeTrail: true,
-    includeFullTranscript: false,
-    customInstructions: ""
-  });
-
-  // Get the current outputType from localStorage to sync with main page
-  const [currentOutputType, setCurrentOutputType] = useState('practical');
-
-  const updateCurrentOutputType = () => {
-    const savedOutputType = localStorage.getItem('genius-machine-output-type') || 'practical';
-    setCurrentOutputType(savedOutputType);
-  };
-
-  useEffect(() => {
-    // Initial load
-    updateCurrentOutputType();
-
-    // Listen for window focus to detect navigation back to config page
-    const handleFocus = () => {
-      updateCurrentOutputType();
-    };
-
-    window.addEventListener('focus', handleFocus);
-
-    // Also listen for storage changes in case of multiple tabs
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'genius-machine-output-type') {
-        updateCurrentOutputType();
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-
-    return () => {
-      window.removeEventListener('focus', handleFocus);
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, []);
-
-  // Load saved configuration on mount
-  useEffect(() => {
-    const savedTension = localStorage.getItem('genius-machine-tension');
-    if (savedTension) {
-      setTensionSettings(JSON.parse(savedTension));
-    }
-
-    const savedCompression = localStorage.getItem('genius-machine-compression');
-    if (savedCompression) {
-      setCompressionSettings(JSON.parse(savedCompression));
-    }
-  }, []);
-
-  const updateTensionSettings = (field: string, value: number[]) => {
-    setTensionSettings(prev => ({ ...prev, [field]: value }));
-  };
-
-  const updateCompressionSettings = (field: string, value: any) => {
-    setCompressionSettings(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleAIOptimization = async () => {
-    await optimizeAndApplyConfiguration(
-      question,
-      updateArchetype,
-      updateTensionSettings,
-      updateCompressionSettings
-    );
-    
-    // Auto-save after AI optimization
-    saveConfiguration();
-  };
 
   const saveConfiguration = () => {
-    // Save to localStorage for rapid prototyping
+    // Save archetypes to localStorage for immediate use
     localStorage.setItem('genius-machine-archetypes', JSON.stringify(archetypes));
-    localStorage.setItem('genius-machine-tension', JSON.stringify(tensionSettings));
-    localStorage.setItem('genius-machine-compression', JSON.stringify(compressionSettings));
     
     toast({
       title: "Configuration Saved",
-      description: "Your archetype configuration has been saved for this session.",
+      description: "Your archetype configuration has been saved and will be used in the next analysis.",
     });
   };
 
   const resetToDefaults = () => {
     localStorage.removeItem('genius-machine-archetypes');
-    localStorage.removeItem('genius-machine-tension');
-    localStorage.removeItem('genius-machine-compression');
-    clearOptimizationReasoning(); // Clear the reasoning when resetting
+    toast({
+      title: "Reset Complete",
+      description: "Configuration has been reset to default archetypes.",
+    });
     window.location.reload();
   };
 
@@ -139,8 +44,8 @@ const Config = () => {
               </Button>
             </Link>
             <div>
-              <h1 className="text-2xl text-zen-heading text-zen-ink tracking-tight">SYSTEM CONFIGURATION</h1>
-              <p className="text-xs text-zen-mono text-zen-medium uppercase tracking-wide">Customize Agent Behavior</p>
+              <h1 className="text-2xl text-zen-heading text-zen-ink tracking-tight">ARCHETYPE CONFIGURATION</h1>
+              <p className="text-xs text-zen-mono text-zen-medium uppercase tracking-wide">Customize Agent Behavior & Instructions</p>
             </div>
           </div>
           <div className="flex space-x-2">
@@ -163,90 +68,21 @@ const Config = () => {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-6 py-8 space-zen">
-        {/* Optimization Reasoning Display - Shows if optimization was done from main page */}
-        {optimizationReasoning && (
-          <div className="mb-6">
-            <OptimizationReasoningCard
-              reasoning={optimizationReasoning.reasoning}
-              domainType={optimizationReasoning.domainType}
-              onDismiss={clearOptimizationReasoning}
-            />
-          </div>
-        )}
+      <main className="max-w-6xl mx-auto px-6 py-8">
+        <div className="mb-8 p-4 bg-zen-whisper rounded-md border border-zen-light">
+          <h3 className="text-sm font-mono uppercase tracking-wide text-zen-ink mb-2">How to Use</h3>
+          <p className="text-sm text-zen-body leading-relaxed">
+            Customize each archetype's personality traits, behavior constraints, and add specific custom instructions. 
+            The <strong>Custom Instructions</strong> field is where you can add detailed behavioral instructions that will directly influence how each archetype analyzes questions.
+          </p>
+        </div>
 
-        {/* AI Optimization Section - Only show if no existing optimization */}
-        {!optimizationReasoning && (
-          <div className="p-6 bg-zen-whisper rounded-md border border-zen-light mb-8">
-            <div className="space-y-4">
-              <div className="flex items-center space-x-2">
-                <Brain className="w-5 h-5 text-zen-charcoal" />
-                <h3 className="text-zen-mono text-sm uppercase tracking-wide text-zen-ink">AI Configuration Optimizer</h3>
-              </div>
-              <p className="text-sm text-zen-body text-zen-charcoal leading-relaxed">
-                Enter a question to automatically optimize all archetype personalities, tension detection, and compression settings for the highest quality analysis.
-              </p>
-              
-              <Textarea
-                placeholder="Enter your question here to optimize configuration settings..."
-                value={question}
-                onChange={(e) => setQuestion(e.target.value)}
-                rows={3}
-                className="w-full border-zen-light focus:border-zen-medium bg-zen-paper"
-              />
-              
-              <Button
-                onClick={handleAIOptimization}
-                disabled={!question.trim() || isAssessing}
-                className="bg-zen-ink hover:bg-zen-charcoal text-zen-paper text-zen-mono uppercase tracking-wide"
-              >
-                {isAssessing ? (
-                  <>
-                    <Brain className="w-4 h-4 mr-2 animate-pulse" />
-                    Optimizing & Applying...
-                  </>
-                ) : (
-                  <>
-                    <Brain className="w-4 h-4 mr-2" />
-                    Optimize All Settings
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
-        )}
-
-        <Tabs defaultValue="archetypes" className="space-y-8">
-          <TabsList className="grid w-full grid-cols-3 bg-zen-whisper border border-zen-light">
-            <TabsTrigger value="archetypes" className="text-zen-mono">Archetypes</TabsTrigger>
-            <TabsTrigger value="tension" className="text-zen-mono">Tension Detection</TabsTrigger>
-            <TabsTrigger value="compression" className="text-zen-mono">Compression</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="archetypes">
-            <ArchetypesTab
-              archetypes={archetypes}
-              onUpdateArchetype={updateArchetype}
-              onAddArchetype={addCustomArchetype}
-              onRemoveArchetype={removeArchetype}
-            />
-          </TabsContent>
-
-          <TabsContent value="tension">
-            <TensionTab
-              tensionSettings={tensionSettings}
-              onUpdateTensionSettings={updateTensionSettings}
-            />
-          </TabsContent>
-
-          <TabsContent value="compression">
-            <CompressionTab
-              compressionSettings={compressionSettings}
-              onUpdateCompressionSettings={updateCompressionSettings}
-              outputType={currentOutputType}
-            />
-          </TabsContent>
-        </Tabs>
+        <ArchetypesTab
+          archetypes={archetypes}
+          onUpdateArchetype={updateArchetype}
+          onAddArchetype={addCustomArchetype}
+          onRemoveArchetype={removeArchetype}
+        />
       </main>
     </div>
   );
