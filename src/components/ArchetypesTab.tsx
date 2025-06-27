@@ -30,6 +30,19 @@ export function ArchetypesTab({
   onAddArchetype, 
   onRemoveArchetype 
 }: ArchetypesTabProps) {
+  console.log("ArchetypesTab rendering with", archetypes?.length, "archetypes");
+  
+  if (!archetypes || archetypes.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div className="text-center space-y-2">
+          <h2 className="text-xl font-mono uppercase tracking-wide text-zen-ink">Archetypal Agents</h2>
+          <p className="text-sm text-zen-body">Loading configuration...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="text-center space-y-2">

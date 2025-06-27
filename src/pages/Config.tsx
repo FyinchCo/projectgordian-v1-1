@@ -11,23 +11,42 @@ const Config = () => {
   const { toast } = useToast();
   const { archetypes, updateArchetype, addCustomArchetype, removeArchetype } = useArchetypes();
 
+  console.log("Config page rendering with archetypes:", archetypes);
+
   const saveConfiguration = () => {
-    // Save archetypes to localStorage for immediate use
-    localStorage.setItem('genius-machine-archetypes', JSON.stringify(archetypes));
-    
-    toast({
-      title: "Configuration Saved",
-      description: "Your archetype configuration has been saved successfully.",
-    });
+    try {
+      localStorage.setItem('genius-machine-archetypes', JSON.stringify(archetypes));
+      
+      toast({
+        title: "Configuration Saved",
+        description: "Your archetype configuration has been saved successfully.",
+      });
+    } catch (error) {
+      console.error("Failed to save configuration:", error);
+      toast({
+        title: "Save Failed",
+        description: "There was an error saving your configuration.",
+        variant: "destructive"
+      });
+    }
   };
 
   const resetToDefaults = () => {
-    localStorage.removeItem('genius-machine-archetypes');
-    toast({
-      title: "Reset Complete",
-      description: "Configuration has been reset to default archetypes.",
-    });
-    window.location.reload();
+    try {
+      localStorage.removeItem('genius-machine-archetypes');
+      toast({
+        title: "Reset Complete",
+        description: "Configuration has been reset to default archetypes.",
+      });
+      window.location.reload();
+    } catch (error) {
+      console.error("Failed to reset configuration:", error);
+      toast({
+        title: "Reset Failed",
+        description: "There was an error resetting your configuration.",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
@@ -77,12 +96,18 @@ const Config = () => {
           </p>
         </div>
 
-        <ArchetypesTab
-          archetypes={archetypes}
-          onUpdateArchetype={updateArchetype}
-          onAddArchetype={addCustomArchetype}
-          onRemoveArchetype={removeArchetype}
-        />
+        {archetypes && archetypes.length > 0 ? (
+          <ArchetypesTab
+            archetypes={archetypes}
+            onUpdateArchetype={updateArchetype}
+            onAddArchetype={addCustomArchetype}
+            onRemoveArchetype={removeArchetype}
+          />
+        ) : (
+          <div className="text-center py-8">
+            <p className="text-zen-body">Loading archetypes configuration...</p>
+          </div>
+        )}
       </main>
     </div>
   );

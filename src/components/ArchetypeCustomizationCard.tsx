@@ -9,7 +9,19 @@ import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
 
 interface ArchetypeCustomizationCardProps {
-  archetype: any;
+  archetype: {
+    id: number;
+    name: string;
+    description: string;
+    languageStyle: string;
+    imagination: number[];
+    skepticism: number[];
+    aggression: number[];
+    emotionality: number[];
+    icon: any;
+    constraint: string;
+    customInstructions: string;
+  };
   onUpdate: (id: number, field: string, value: any) => void;
   onRemove?: (id: number) => void;
   canRemove?: boolean;
