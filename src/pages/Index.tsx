@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
+
+import { useState, useEffect } from "react";
 import { ProcessingSection } from "@/components/ProcessingSection";
-import { ResultsSection } from "@/components/ResultsSection";
-import { ProcessingLogic } from "@/components/ProcessingLogic";
+import { SimpleProcessingLogic } from "@/components/SimpleProcessingLogic";
+import { SimpleResultsDisplay } from "@/components/SimpleResultsDisplay";
 import { ConsolidatedGeniusInterface } from "@/components/ConsolidatedGeniusInterface";
 import { PasswordGate } from "@/components/PasswordGate";
 import { useToast } from "@/hooks/use-toast";
@@ -17,11 +18,10 @@ const Index = () => {
   const [processingDepth, setProcessingDepth] = useState([5]);
   const [circuitType, setCircuitType] = useState("sequential");
   const [enhancedMode, setEnhancedMode] = useState(true);
-  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [customArchetypes, setCustomArchetypes] = useState(null);
   const [currentAssessment, setCurrentAssessment] = useState(null);
   const [chunkProgress, setChunkProgress] = useState({ current: 0, total: 0 });
-  const [processingPhase, setProcessingPhase] = useState("Initializing...");
+  const [processingPhase, setProcessingPhase] = useState("Ready to process");
   const { toast } = useToast();
 
   const { outputType, setOutputType } = useOutputType('practical');
@@ -56,26 +56,24 @@ const Index = () => {
   const handleProcessingStart = () => {
     setIsProcessing(true);
     setResults(null);
-    setProcessingPhase("Initializing enhanced processing system...");
+    setProcessingPhase("Initializing clean processing system...");
   };
 
   const handleProcessingComplete = (finalResults: any) => {
+    console.log('=== PROCESSING COMPLETE - DISPLAYING RESULTS ===');
+    console.log('Final results received:', finalResults);
     setResults(finalResults);
     setIsProcessing(false);
-    setProcessingPhase("Analysis complete with breakthrough insights");
+    setProcessingPhase("Analysis complete - ready for display");
   };
 
   const handleProcessingError = () => {
     setIsProcessing(false);
-    setProcessingPhase("Processing encountered an error");
+    setProcessingPhase("Processing encountered an error - ready to retry");
   };
 
   const handleProcessingPhaseChange = (phase: string) => {
     setProcessingPhase(phase);
-  };
-
-  const handleExportInsight = () => {
-    setIsExportModalOpen(true);
   };
 
   const handleReset = () => {
@@ -85,8 +83,8 @@ const Index = () => {
     setProcessingPhase("Ready to process");
   };
 
-  // Get the processing logic handler function with simplified props
-  const processingLogicComponent = ProcessingLogic({
+  // Get the simple processing logic handler
+  const simpleProcessingComponent = SimpleProcessingLogic({
     question,
     customArchetypes,
     onProcessingStart: handleProcessingStart,
@@ -121,7 +119,7 @@ const Index = () => {
             customArchetypes={customArchetypes}
             currentAssessment={currentAssessment}
             setCurrentAssessment={setCurrentAssessment}
-            onStartGenius={processingLogicComponent.handleStartGenius}
+            onStartGenius={simpleProcessingComponent.handleStartGenius}
           />
         )}
 
@@ -138,13 +136,10 @@ const Index = () => {
         )}
 
         {results && (
-          <ResultsSection
+          <SimpleResultsDisplay
             results={results}
             question={question}
             onReset={handleReset}
-            onExport={handleExportInsight}
-            isExportModalOpen={isExportModalOpen}
-            setIsExportModalOpen={setIsExportModalOpen}
           />
         )}
       </main>
