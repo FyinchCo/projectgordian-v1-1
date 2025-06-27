@@ -15,12 +15,12 @@ interface ArchetypeCustomizationCardProps {
   canRemove?: boolean;
 }
 
-export const ArchetypeCustomizationCard = ({ 
+export function ArchetypeCustomizationCard({ 
   archetype, 
   onUpdate, 
   onRemove, 
   canRemove = true 
-}: ArchetypeCustomizationCardProps) => {
+}: ArchetypeCustomizationCardProps) {
   const IconComponent = archetype.icon;
 
   return (
@@ -174,4 +174,4 @@ export const ArchetypeCustomizationCard = ({
       </div>
     </Card>
   );
-};
+}

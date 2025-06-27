@@ -24,12 +24,12 @@ interface ArchetypesTabProps {
   onRemoveArchetype: (id: number) => void;
 }
 
-export const ArchetypesTab = ({ 
+export function ArchetypesTab({ 
   archetypes, 
   onUpdateArchetype, 
   onAddArchetype, 
   onRemoveArchetype 
-}: ArchetypesTabProps) => {
+}: ArchetypesTabProps) {
   return (
     <div className="space-y-6">
       <div className="text-center space-y-2">
@@ -60,4 +60,4 @@ export const ArchetypesTab = ({
       </div>
     </div>
   );
-};
+}
