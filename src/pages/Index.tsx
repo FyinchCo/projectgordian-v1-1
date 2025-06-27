@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { ProcessingSection } from "@/components/ProcessingSection";
 import { ResultsSection } from "@/components/ResultsSection";
@@ -86,15 +85,10 @@ const Index = () => {
     setProcessingPhase("Ready to process");
   };
 
-  // Get the processing logic handler function with enhanced tracking
+  // Get the processing logic handler function with simplified props
   const processingLogicComponent = ProcessingLogic({
     question,
-    processingDepth,
-    circuitType,
-    enhancedMode,
     customArchetypes,
-    currentAssessment,
-    outputType,
     onProcessingStart: handleProcessingStart,
     onProcessingComplete: handleProcessingComplete,
     onProcessingError: handleProcessingError,

@@ -4,7 +4,6 @@ import { useProcessingExecutor } from "./processing/processingExecutor";
 
 interface ProcessingLogicProps {
   question: string;
-  processingDepth: number[];
   customArchetypes: any;
   onProcessingStart: () => void;
   onProcessingComplete: (results: any) => void;
@@ -59,7 +58,6 @@ export const ProcessingLogic = ({
     try {
       const finalResults = await executeProcessing({
         question,
-        processingDepth: [1], // Simplified to single layer for now
         customArchetypes,
         onProcessingComplete,
         onCurrentLayerChange,
