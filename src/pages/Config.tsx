@@ -1,7 +1,6 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Save, RotateCcw } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -18,7 +17,7 @@ const Config = () => {
     
     toast({
       title: "Configuration Saved",
-      description: "Your archetype configuration has been saved and will be used in the next analysis.",
+      description: "Your archetype configuration has been saved successfully.",
     });
   };
 
@@ -73,7 +72,8 @@ const Config = () => {
           <h3 className="text-sm font-mono uppercase tracking-wide text-zen-ink mb-2">How to Use</h3>
           <p className="text-sm text-zen-body leading-relaxed">
             Customize each archetype's personality traits, behavior constraints, and add specific custom instructions. 
-            The <strong>Custom Instructions</strong> field is where you can add detailed behavioral instructions that will directly influence how each archetype analyzes questions.
+            The <strong>Custom Instructions</strong> field allows you to add detailed behavioral instructions that will directly influence how each archetype analyzes questions.
+            Changes are automatically saved as you edit.
           </p>
         </div>
 

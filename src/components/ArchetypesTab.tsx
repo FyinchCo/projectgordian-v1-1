@@ -33,12 +33,15 @@ export const ArchetypesTab = ({
   return (
     <div className="space-y-6">
       <div className="text-center space-y-2">
-        <h2 className="text-2xl font-bold">ARCHETYPAL AGENTS</h2>
-        <p className="text-gray-600">Configure the personality and behavior of each cognitive archetype</p>
+        <h2 className="text-xl font-mono uppercase tracking-wide text-zen-ink">Archetypal Agents</h2>
+        <p className="text-sm text-zen-body">Configure the personality and behavior of each cognitive archetype</p>
       </div>
 
       <div className="flex justify-center">
-        <Button onClick={onAddArchetype} className="flex items-center space-x-2">
+        <Button 
+          onClick={onAddArchetype} 
+          className="flex items-center space-x-2 bg-zen-ink text-zen-paper hover:bg-zen-charcoal"
+        >
           <Plus className="w-4 h-4" />
           <span>Add Custom Archetype</span>
         </Button>
